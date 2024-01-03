@@ -5,9 +5,9 @@ body, html {
     font-family: ArtifaktElement;
 }
 
-#header, #preview, #overlay {
+#header, #preview, #overlay, #analytics {
     position: absolute;
-    width: 100%;
+    width: 75%;
 }
 
 #header {
@@ -52,4 +52,11 @@ body, html {
 #models {
     flex: 0 1 auto;
     min-width: 2em;
+}
+
+#analytics {
+    top: 35em;
+    bottom: 0;
+    z-index: 2;
+    padding:10px
 }
