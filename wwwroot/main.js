@@ -120,7 +120,7 @@ function clearNotification() {
 
 function openaiquery(prompt) {
 
-    let access_token="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";
+    let access_token=process.env.OPENAI_KEY;
 
     let query = {
         "model": "gpt-3.5-turbo",

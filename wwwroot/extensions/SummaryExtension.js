@@ -44,7 +44,7 @@ class SummaryExtension extends BaseExtension {
 
         function openaiquery() {
 
-            let access_token="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";
+            let access_token="";
 
             let query = {
                 "model": "gpt-3.5-turbo",
@@ -73,7 +73,7 @@ class SummaryExtension extends BaseExtension {
         }
 
 
-        openaiquery()
+        // openaiquery()
 
 
         return true;
