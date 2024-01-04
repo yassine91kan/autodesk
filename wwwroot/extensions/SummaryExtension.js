@@ -1,7 +1,14 @@
 import { BaseExtension } from './BaseExtension.js';
 import { SummaryPanel } from './SummaryPanel.js';
+// import { OpenAI } from '../../node_modules/openai/index.mjs';
+// const  OpenAIApi = require('openai');
+
+
 
 //Property Names
+
+// import { ChatOpenAI } from "langchain/chat_models/openai";
+
 const SUMMARY_PROPS = ['Length', 'Area', 'Volume', 'Density', 'Mass', 'Price'];
 
 class SummaryExtension extends BaseExtension {
@@ -14,6 +21,61 @@ class SummaryExtension extends BaseExtension {
     load() {
         super.load();
         console.log('SummaryExtension loaded.');
+
+        // Code goes here
+
+        // const openai = new OpenAI({
+        //     organization: 'org-hY3ebtVlOfD56J3IBx5a2xgo',apiKey: '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'
+        //   });
+
+            
+        //     async function main() {
+        //     const completion = await openai.chat.completions.create({
+        //         messages: [{ role: "system", content: "You are a helpful assistant." }],
+        //         model: "gpt-3.5-turbo",
+        //     });
+
+        //     console.log(completion.choices[0]);
+        //     }
+
+        //     main();
+
+        //
+
+        function openaiquery() {
+
+            let access_token="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";
+
+            let query = {
+                "model": "gpt-3.5-turbo",
+                "messages": [{"role": "user", "content": "Say this is a test!"}],
+                "temperature": 0.7
+    
+            };
+
+            fetch(`https://api.openai.com/v1/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body:JSON.stringify(query)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("GPT Response:", data);
+
+                document.getElementById("analytics").text="New"
+            })
+            .catch(error => {
+                console.error("Error retrieving object tree:", error);
+            });
+        }
+
+
+        openaiquery()
+
+
         return true;
     }
 

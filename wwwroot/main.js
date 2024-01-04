@@ -106,3 +106,55 @@ function clearNotification() {
     overlay.innerHTML = '';
     overlay.style.display = 'none';
 }
+
+
+/// Additional GPT Context 
+
+// async function selectGPT(response){
+
+//     const overlaynew = document.getElementById('analyticss');
+//     overlaynew.innerHTML = response;
+
+// }
+
+
+function openaiquery(prompt) {
+
+    let access_token="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";
+
+    let query = {
+        "model": "gpt-3.5-turbo",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.7
+
+    };
+
+    fetch(`https://api.openai.com/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${access_token}`,
+            'Content-Type': 'application/json'
+        },
+        body:JSON.stringify(query)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("GPT Response:", data.choices[0].message.content);
+
+        document.getElementById('analyticss').innerHTML=data.choices[0].message.content;
+    })
+    .catch(error => {
+        console.error("Error retrieving object tree:", error);
+    });
+}
+
+
+
+document.querySelector('#fname').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+    //   console.log(document.querySelector('#fname').value);
+      openaiquery(document.querySelector('#fname').value)
+
+
+    }
+});
