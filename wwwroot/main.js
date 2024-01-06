@@ -1,5 +1,7 @@
 import { initViewer, loadModel } from './viewer.js';
 
+// import { OPENAIKEY } from '../config.js';
+
 initViewer(document.getElementById('preview')).then(viewer => {
     const urn = window.location.hash?.substring(1);
     setupModelSelection(viewer, urn);
@@ -118,42 +120,75 @@ function clearNotification() {
 // }
 
 
-function openaiquery(prompt) {
+// function openaiquery(prompt) {
 
-    let access_token=process.env.OPENAI_KEY;
+//     // let access_token=OPENAIKEY;
 
-    let query = {
-        "model": "gpt-3.5-turbo",
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.7
+//     let query = {
+//         "model": "gpt-3.5-turbo",
+//         "messages": [{"role": "user", "content": prompt}],
+//         "temperature": 0.7
 
-    };
+//     };
 
-    fetch(`https://api.openai.com/v1/chat/completions`, {
+//     fetch(`https://api.openai.com/v1/chat/completions`, {
+//         method: 'POST',
+//         headers: {
+//             'Authorization': `Bearer ${access_token}`,
+//             'Content-Type': 'application/json'
+//         },
+//         body:JSON.stringify(query)
+//     })
+//     .then(response => response.json())
+//     .then(data => {
+//         console.log("GPT Response:", data.choices[0].message.content);
+
+//         document.getElementById('analyticss').innerHTML=data.choices[0].message.content;
+//     })
+//     .catch(error => {
+//         console.error("Error retrieving object tree:", error);
+//     });
+// }
+
+
+async function getopenai(prompt) {
+    // try {
+    //     const resp = await fetch('/openai');
+    //     console.log(resp);
+    //     console.log(resp.json());
+    // } catch (err) {
+    //     alert('Could not obtain access token. See the console for more details.');
+    //     console.error(err);
+    // }
+
+
+    fetch(`/openai`, {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${access_token}`,
             'Content-Type': 'application/json'
         },
-        body:JSON.stringify(query)
+        body:JSON.stringify({"prompt":prompt})
     })
     .then(response => response.json())
     .then(data => {
-        console.log("GPT Response:", data.choices[0].message.content);
 
-        document.getElementById('analyticss').innerHTML=data.choices[0].message.content;
+        console.log(data.message);
+        document.getElementById('analyticss').innerHTML=data.message;
+
     })
     .catch(error => {
         console.error("Error retrieving object tree:", error);
+        // res.json({success: false, message: "You are unsuccessful"})
     });
+
 }
-
-
 
 document.querySelector('#fname').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
     //   console.log(document.querySelector('#fname').value);
-      openaiquery(document.querySelector('#fname').value)
+    //   openaiquery(document.querySelector('#fname').value)
+
+    getopenai(document.querySelector('#fname').value);
 
 
     }
