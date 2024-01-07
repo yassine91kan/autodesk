@@ -1,11 +1,12 @@
 const express = require('express');
+const { OPENAIKEY } = require('../config.js');
 
 
 let router = express.Router();
 
 router.post('/openai', async function (req, res, next) {
 
-    let access_token="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";
+
 
     console.log(req.body);
 
@@ -20,7 +21,7 @@ router.post('/openai', async function (req, res, next) {
     fetch(`https://api.openai.com/v1/chat/completions`, {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${access_token}`,
+            'Authorization': `Bearer ${OPENAIKEY}`,
             'Content-Type': 'application/json'
         },
         body:JSON.stringify(query)
