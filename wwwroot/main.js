@@ -162,7 +162,7 @@ async function getopenai(prompt) {
     // }
 
 
-    fetch(`/openai`, {
+    fetch(`/openaifunc`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -173,7 +173,7 @@ async function getopenai(prompt) {
     .then(data => {
 
         console.log(data.message);
-        document.getElementById('analyticss').innerHTML=data.message;
+        document.getElementById('analyticss').innerHTML=JSON.stringify(data.message);
 
     })
     .catch(error => {

@@ -22,25 +22,6 @@ class SummaryExtension extends BaseExtension {
         super.load();
         console.log('SummaryExtension loaded.');
 
-        // Code goes here
-
-        // const openai = new OpenAI({
-        //     organization: 'org-hY3ebtVlOfD56J3IBx5a2xgo',apiKey: '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'
-        //   });
-
-            
-        //     async function main() {
-        //     const completion = await openai.chat.completions.create({
-        //         messages: [{ role: "system", content: "You are a helpful assistant." }],
-        //         model: "gpt-3.5-turbo",
-        //     });
-
-        //     console.log(completion.choices[0]);
-        //     }
-
-        //     main();
-
-        //
 
         function openaiquery() {
 

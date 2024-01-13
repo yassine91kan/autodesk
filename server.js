@@ -9,5 +9,6 @@ app.use(express.static('wwwroot'));
 app.use(require('./routes/auth.js'));
 app.use(require('./routes/models.js'));
 app.use(require('./routes/openai.js'));
+app.use(require('./routes/openaifunc.js'));
 // app.listen(PORT, function () { console.log(`Server listening on port ${PORT}...`); });
-app.listen(process.env.PORT || 47279, function () { console.log(`Server listening on port ...`); });
+app.listen(process.env.PORT || 8080, function () { console.log(`Server listening on port ...`); });
