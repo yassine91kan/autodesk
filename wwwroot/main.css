@@ -7,7 +7,7 @@ body, html {
 
 #header, #preview, #overlay, #analytics {
     position: absolute;
-    width: 75%;
+    width: 50%;
 }
 
 #header {
@@ -55,10 +55,11 @@ body, html {
 }
 
 #analytics {
-    top: 35em;
+    top: 2em;
     bottom: 0;
     z-index: 2;
-    padding:10px
+    padding:10px;
+    margin-left:50em;
 }
 
 h2{
@@ -70,3 +71,36 @@ h2{
 font-size:14px;
 font-weight: 600;
 }
+
+#ai {
+    width:25px;
+
+    }
+
+
+#fname{
+
+padding:15px;
+
+
+font-family: ArtifaktElement;
+border-radius: 5px;
+width:70%;
+margin-top: 50px;
+
+}
+
+#gpt_response{
+
+    background-color: #dee0df;
+    /* padding:13px; */
+    border-radius: 10px;
+    margin-left: 10px;
+
+}
+
+#type0, #type1, #type2{
+
+    font-family: ArtifaktElement;
+}
+

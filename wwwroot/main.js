@@ -1,6 +1,9 @@
 import { initViewer, loadModel } from './viewer.js';
 
+
 // import { OPENAIKEY } from '../config.js';
+
+let routeselect = "langchain";
 
 initViewer(document.getElementById('preview')).then(viewer => {
     const urn = window.location.hash?.substring(1);
@@ -109,46 +112,16 @@ function clearNotification() {
     overlay.style.display = 'none';
 }
 
+// Function to handle click events
+function handleClick(routeselectValue) {
+    routeselect = routeselectValue;
+    console.log(routeselect);
+}
 
-/// Additional GPT Context 
-
-// async function selectGPT(response){
-
-//     const overlaynew = document.getElementById('analyticss');
-//     overlaynew.innerHTML = response;
-
-// }
-
-
-// function openaiquery(prompt) {
-
-//     // let access_token=OPENAIKEY;
-
-//     let query = {
-//         "model": "gpt-3.5-turbo",
-//         "messages": [{"role": "user", "content": prompt}],
-//         "temperature": 0.7
-
-//     };
-
-//     fetch(`https://api.openai.com/v1/chat/completions`, {
-//         method: 'POST',
-//         headers: {
-//             'Authorization': `Bearer ${access_token}`,
-//             'Content-Type': 'application/json'
-//         },
-//         body:JSON.stringify(query)
-//     })
-//     .then(response => response.json())
-//     .then(data => {
-//         console.log("GPT Response:", data.choices[0].message.content);
-
-//         document.getElementById('analyticss').innerHTML=data.choices[0].message.content;
-//     })
-//     .catch(error => {
-//         console.error("Error retrieving object tree:", error);
-//     });
-// }
+// Attach event listeners to elements
+document.getElementById('type0').addEventListener("click", () => handleClick("aps_agent"));
+document.getElementById('type1').addEventListener("click", () => handleClick("langchain_great"));
+document.getElementById('type2').addEventListener("click", () => handleClick("openaifunc"));
 
 
 async function getopenai(prompt) {
@@ -162,7 +135,7 @@ async function getopenai(prompt) {
     // }
 
 
-    fetch(`/openaifunc`, {
+    fetch(`/${routeselect}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -173,7 +146,7 @@ async function getopenai(prompt) {
     .then(data => {
 
         console.log(data.message);
-        document.getElementById('analyticss').innerHTML=JSON.stringify(data.message);
+        document.getElementById('gpt_response').innerHTML=data.message;
 
     })
     .catch(error => {
@@ -183,12 +156,15 @@ async function getopenai(prompt) {
 
 }
 
+
 document.querySelector('#fname').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
     //   console.log(document.querySelector('#fname').value);
     //   openaiquery(document.querySelector('#fname').value)
 
     getopenai(document.querySelector('#fname').value);
+
+
 
 
     }

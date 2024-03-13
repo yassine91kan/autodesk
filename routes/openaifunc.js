@@ -1,10 +1,9 @@
 const express = require('express');
-const { OPENAIKEY } = require('../config.js');
+const { OPENAIKEY, APS_CLIENT_ID, APS_CLIENT_SECRET } = require('../config.js');
 // import OpenAI from "openai";
 const OpenAI = require('openai');
 const axios = require("axios");    // For making HTTP requests.
 const moment = require("moment-timezone");
-
 
 
 let router = express.Router();
@@ -13,15 +12,12 @@ let access_token;
 
 let resp_forge;
 
+const openai = new OpenAI({
+    apiKey: OPENAIKEY
+  });
+
 router.post('/openaifunc', async function (req, res, next) {
-
-    const openai = new OpenAI({
-        apiKey: OPENAIKEY
-      });
-
-
-      
-
+  
       function queryModel(access_token,mat) {
 
         let query = {
@@ -39,8 +35,8 @@ router.post('/openaifunc', async function (req, res, next) {
                 "properties.Materials and Finishes"
             ],
             "pagination": {
-                "offset": 30,
-                "limit": 30
+                "offset": 5,
+                "limit": 100
             },
             "payload": "text"
     
@@ -72,11 +68,9 @@ router.post('/openaifunc', async function (req, res, next) {
     }
 
 
-    function authenticate(material){
+    function SelectElement(material){
 
-      const client_id = 'fQPtGtGD67GG4gVubAGeIvjPXUsuOimS';
-      const client_secret = 'Wrwo4ROxNFlfrYmG';
-      const credentials = `client_id=${client_id}&client_secret=${client_secret}&grant_type=client_credentials&scope=data:read`;
+      const credentials = `client_id=${APS_CLIENT_ID}&client_secret=${APS_CLIENT_SECRET}&grant_type=client_credentials&scope=data:read`;
 
       fetch('https://developer.api.autodesk.com/authentication/v1/authenticate', {
             method: 'POST',
@@ -136,7 +130,7 @@ router.post('/openaifunc', async function (req, res, next) {
                 }
               },
               {
-                name: "authenticate",
+                name: "SelectElement",
                 description: "searches the elements in the model that are made of a specific material",
                 parameters: {
                     type: "object", // specify that the parameter is an object
@@ -160,11 +154,11 @@ router.post('/openaifunc', async function (req, res, next) {
             console.log("I am here");
             const functionCallName = chatCompletion.choices[0].message.function_call.name;
 
-            if(functionCallName === "authenticate") {
+            if(functionCallName === "SelectElement") {
 
               const completionArguments = JSON.parse(chatCompletion.choices[0].message.function_call.arguments);
 
-              const completion_text = await authenticate(completionArguments.material);
+              const completion_text = await SelectElement(completionArguments.material);
 
               console.log(completion_text);
 
@@ -179,7 +173,7 @@ router.post('/openaifunc', async function (req, res, next) {
           else if(chatCompletion.choices[0].message.content) { 
 
             
-            authenticate();
+            SelectElement();
 
             // res.json({success: true, message: chatCompletion.choices[0].message.content});
             
