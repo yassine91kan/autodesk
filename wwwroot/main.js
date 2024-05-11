@@ -119,7 +119,7 @@ function handleClick(routeselectValue) {
 }
 
 // Attach event listeners to elements
-document.getElementById('type0').addEventListener("click", () => handleClick("aps_agent"));
+document.getElementById('type0').addEventListener("click", () => handleClick("ask_agent_simple"));
 document.getElementById('type1').addEventListener("click", () => handleClick("langchain_great"));
 document.getElementById('type2').addEventListener("click", () => handleClick("openaifunc"));
 
@@ -134,25 +134,74 @@ async function getopenai(prompt) {
     //     console.error(err);
     // }
 
+    if (routeselect=="langchain"){
 
-    fetch(`/${routeselect}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body:JSON.stringify({"prompt":prompt})
-    })
-    .then(response => response.json())
-    .then(data => {
+        const response = await fetch(`/${routeselect}`, {
 
-        console.log(data.message);
-        document.getElementById('gpt_response').innerHTML=data.message;
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body:JSON.stringify({"prompt":prompt})
 
-    })
-    .catch(error => {
-        console.error("Error retrieving object tree:", error);
-        // res.json({success: false, message: "You are unsuccessful"})
-    });
+        });
+
+        console.log(response)
+
+        // const data = await response.json();
+
+        const reader = response.body.getReader();
+
+        console.log(reader);
+        document.getElementById('gpt_response').innerHTML="";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              // Do something with last chunk of data then exit reader
+              break;
+            }
+            // Otherwise do something here to process current chunk
+            console.log(value);
+            console.log(done);
+            const text = new TextDecoder().decode(value);
+            console.log(text);
+            document.getElementById('gpt_response').innerHTML+=text;
+          }
+
+        //   console.log(done);
+          
+
+        // document.getElementById('gpt_response').innerHTML=data.message;
+
+        // console.log(data.message);
+
+    }
+
+    else {
+
+        fetch(`/${routeselect}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body:JSON.stringify({"prompt":prompt})
+        })
+        .then(response => response.json())
+        .then(data => {
+
+            console.log(data.message);
+            document.getElementById('gpt_response').innerHTML=data.message;
+
+        })
+        .catch(error => {
+            console.error("Error retrieving object tree:", error);
+            // res.json({success: false, message: "You are unsuccessful"})
+        });
+
+    }  
+    
+    
 
 }
 

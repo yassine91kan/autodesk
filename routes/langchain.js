@@ -65,7 +65,7 @@ router.post('/langchain', async function (req, res, next) {
     const outputParser = new StringOutputParser();
     const nameGenerationChain = promptFromMessages.pipe(model).pipe(outputParser);
 
-    const resp = await nameGenerationChain.invoke({
+    const resp = await nameGenerationChain.stream({
         input_prompt: req.body.prompt
     });
 
@@ -73,7 +73,20 @@ router.post('/langchain', async function (req, res, next) {
 
     // console.log(typeof resp);
 
-    res.json({success: true, message: resp});
+    // res.json({success: true, message: resp});
+
+    for await (const chunk of resp){
+        console.log(JSON.stringify(chunk, null, 2));
+        console.log("------");
+        // res.json({success: true, message: JSON.stringify(chunk, null, 2)});
+        // res.write(JSON.stringify(chunk, null, 2));
+        res.write(chunk);
+
+        console.log(chunk);
+
+    }
+
+    res.end();
 
     // Streaming
 
