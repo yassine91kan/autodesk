@@ -80,7 +80,7 @@ font-weight: 600;
 
 #fname{
 
-padding:15px;
+padding:10px;
 
 
 font-family: ArtifaktElement;
@@ -102,5 +102,9 @@ margin-top: 50px;
 #type0, #type1, #type2{
 
     font-family: ArtifaktElement;
+}
+
+.prompt_output{
+    height:70%;
 }
 
