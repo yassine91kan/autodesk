@@ -113,15 +113,21 @@ function clearNotification() {
 }
 
 // Function to handle click events
-function handleClick(routeselectValue) {
+function handleClick(routeselectValue,checked) {
+
+    if(checked){
+
     routeselect = routeselectValue;
     console.log(routeselect);
+
+    }
 }
 
 // Attach event listeners to elements
-document.getElementById('type0').addEventListener("click", () => handleClick("ask_agent_simple"));
-document.getElementById('type1').addEventListener("click", () => handleClick("langchain_great"));
-document.getElementById('type2').addEventListener("click", () => handleClick("openaifunc"));
+document.getElementById('type0').addEventListener("click", () => handleClick("ask_agent_simple",document.getElementById('type0').checked));
+document.getElementById('type1').addEventListener("click", () => handleClick("langchain_great",document.getElementById('type1').checked));
+document.getElementById('type2').addEventListener("click", () => handleClick("openaifunc",document.getElementById('type2').checked));
+document.getElementById('type3').addEventListener("click", () => handleClick("agent_trial",document.getElementById('type3').checked));
 
 
 async function getopenai(prompt) {
@@ -134,7 +140,7 @@ async function getopenai(prompt) {
     //     console.error(err);
     // }
 
-    if (routeselect=="langchain"){
+    if (routeselect=="openaifunc"){
 
         const response = await fetch(`/${routeselect}`, {
 
@@ -191,7 +197,20 @@ async function getopenai(prompt) {
         .then(data => {
 
             console.log(data.message);
-            document.getElementById('gpt_response').innerHTML=data.message;
+
+            let customItems = data.message;
+            customItems = customItems.split("\n");
+
+            for (let i = 0; i < customItems.length; i++) {
+            customItems[i] =  customItems[i] + "<br>";
+            }
+
+            customItems = customItems.join("");
+
+
+
+
+            document.getElementById('gpt_response').innerHTML=customItems;
 
         })
         .catch(error => {

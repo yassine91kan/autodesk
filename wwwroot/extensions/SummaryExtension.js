@@ -54,50 +54,6 @@ class SummaryExtension extends BaseExtension {
     onModelLoaded(model) {
         super.onModelLoaded(model);
         this.update();
-     
-
-        // console.log("Fetch Call from the Summary Extension");
-
-        // let prompt = "Select the elements that are made of steel";
-
-
-        // fetch(`/openaifunc`, {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json'
-        //     },
-        //     body:JSON.stringify({"prompt":prompt})
-        // })
-        // .then(response => response.json())
-        // .then(data => {
-
-        //     let objectids=[];
-
-        //     for (let i = 0; i < data.message.length; i++) {
-        //         objectids.push(data.message[i].objectid);
-        //       }
-
-        //     console.log(objectids);
-
-        //     console.log(data.message);
-    
-        //     console.log(data.message[0]);
-        //     console.log(typeof data.message[0].objectid);
-
-        //     this.viewer.select(objectids);
-
-        //     console.log(document.getElementById('fname').value);
-
-
-        //     // this.viewer.isolate(objectids);
-        //     // document.getElementById('analyticss').innerHTML=JSON.stringify(data.message);
-    
-        // })
-        // .catch(error => {
-        //     console.error("Error retrieving object tree:", error);
-        //     // res.json({success: false, message: "You are unsuccessful"})
-        // });
-
 
     }
 
@@ -129,15 +85,12 @@ class SummaryExtension extends BaseExtension {
             }  else if(document.getElementById('fname').value) {
                 // Added Code
 
-                let prompt = document.getElementById('fname').value;
 
-
-                    fetch(`/openaifunc`, {
-                        method: 'POST',
+                    fetch(`/ask_agent_simple`, {
+                        method: 'GET',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body:JSON.stringify({"prompt":prompt})
                     })
                     .then(response => response.json())
                     .then(data => {

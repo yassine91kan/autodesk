@@ -59,7 +59,7 @@ body, html {
     bottom: 0;
     z-index: 2;
     padding:10px;
-    margin-left:50em;
+    margin-left:70em;
 }
 
 h2{
@@ -70,6 +70,8 @@ h2{
 #analyticss {
 font-size:14px;
 font-weight: 600;
+overflow-y: scroll;
+max-height:400px;
 }
 
 #ai {
@@ -80,7 +82,7 @@ font-weight: 600;
 
 #fname{
 
-padding:10px;
+padding:15px;
 
 
 font-family: ArtifaktElement;
@@ -99,12 +101,12 @@ margin-top: 50px;
 
 }
 
-#type0, #type1, #type2{
+#type0, #type1, #type2, #type3{
 
     font-family: ArtifaktElement;
 }
 
 .prompt_output{
-    height:70%;
+    height:60%;
 }
 

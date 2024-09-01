@@ -18,8 +18,11 @@ const { z } = require('zod');
 let router = express.Router();
 
 let access_token;
-
 let resp_forge;
+let tokenExpirationTime;
+let metadata_ask;
+let propertiesList;
+let objid_coord ;
 
 const openai = new OpenAI({
     apiKey: OPENAIKEY
@@ -67,6 +70,7 @@ async function authenticate(){
         const data = await response.json();
         console.log('Basic ' + cred_encod);
         console.log(data);
+        tokenExpirationTime = Date.now() + data.expires_in * 1000;
 
         return data.access_token;
     } catch (error) {
@@ -74,6 +78,16 @@ async function authenticate(){
         throw error; // rethrow the error if needed
     }
 
+}
+
+async function getAccessToken() {
+    if (!access_token || Date.now() >= tokenExpirationTime) {
+        return await authenticate();
+    }
+
+    console.log("access Token is the same");
+
+    return access_token;
 }
 
 //getmodel metadata
@@ -88,25 +102,6 @@ async function getModelMetadata(urn, guid, access_token) {
 
 }
 
-//
-
-  
-//   function extractProperties(data) {
-//     const propertiesList = [];
-  
-//     data.forEach((item, index) => {
-//       const { objectid, name, properties } = item;
-//       for (const [propertyCategory, propertyDetails] of Object.entries(properties)) {
-//         propertiesList.push({
-//           objectid,
-//           name,
-//           path: `object ${index + 1} -> properties -> ${propertyCategory} ->${propertyDetails}`
-//         });
-//       }
-//     });
-  
-//     return propertiesList;
-//   }
 
 const propertiesUnique = [];
 
@@ -143,20 +138,74 @@ function extractProperties(data) {
   
     return propertiesList;
   }
+
+  let uniqueNames;
+
+  function getUniqueNames(data) {
+    // Extract names from the collection and store them in a set to ensure uniqueness
+    const uniqueNamesSet = new Set();
+  
+    data.collection.forEach(item => {
+      if (item.name) {
+        uniqueNamesSet.add(item.name.toLowerCase().split("[")[0]);
+      }
+    });
+  
+    // Convert the set back to an array
+    return Array.from(uniqueNamesSet);
+  }
   
 //
 
+
+
+let resultGeometry ;
+
+router.get('/ask_agent_simple', async function (req, res, next) {
+
+    res.json({success: true, message: resultGeometry});
+ 
+ });
+
+ router.put('/ask_agent_simple', async function (req, res, next) {
+
+    // console.log(req.body);
+
+    objid_coord = req.body ; 
+
+    console.log(objid_coord["2442"])
+
+    res.json({success: true, message: objid_coord});
+ 
+ });
+
 router.post('/ask_agent_simple', async function (req, res, next) {
 
-    const access_token = await authenticate();
+    // console.log(objid_coord);
 
-    const metadata_ask = await getModelMetadata(urn, guid, access_token);
+    const access_token = await getAccessToken();
 
-    const propertiesList = extractProperties(metadata_ask.data.collection);
+    if(!metadata_ask){
+
+        metadata_ask = await getModelMetadata(urn, guid, access_token);
+        propertiesList = extractProperties(metadata_ask.data.collection);
+        uniqueNames = getUniqueNames(metadata_ask.data);
+        console.log("I am here AUTH again");
+        console.log(uniqueNames);
+        console.log(metadata_ask);
+
+    }
+
+    // console.log(metadata_ask);
+    // console.log(uniqueNames);
+
+    console.log("The corresponding name to beam is ");
+
+    console.log(uniqueNames.filter(name => name.includes("beam"))) ;
 
     let path_property ="";
     
-    async function querymodel(material, path_property,){
+    async function querymodel(material, path_property){
 
         const query = {
             "query": {
@@ -165,19 +214,24 @@ router.post('/ask_agent_simple', async function (req, res, next) {
                     `properties.${path_property}`,
                     material
                 ]
+                // "$prefix": [
+                //     "name",
+                //     "Pile"
+                // ]
             },
             // Other query fields
             "fields":[
+                "objectid",
                 "name",
-                `properties.${path_property}`
+                // `properties.${path_property}`
+                `properties.Dimensions`
             ]
         };
 
 
-        console.log("These are the properties with paths.")
-        // console.log(propertiesList);
+        console.log("These are the properties with paths.");
         console.log(propertiesList.length);
-        // console.log(propertiesUnique);
+
 
         const response = await axios.post(`https://developer.api.autodesk.com/modelderivative/v2/designdata/${urn}/metadata/${guid}/properties:query`, query, {
         headers: {
@@ -185,6 +239,52 @@ router.post('/ask_agent_simple', async function (req, res, next) {
             'Content-Type': 'application/json'
         }
         });
+
+        resultGeometry =response.data.data.collection;
+
+        return JSON.stringify(response.data.data.collection);
+
+    }
+
+    async function querymodel_type(type){
+
+        const query = {
+            "query": {
+                // "$contains": [
+                //     // "properties.Materials and Finishes.Structural Material",
+                //     `properties.${path_property}`,
+                //     material
+                // ]
+                "$prefix": [
+                    "name",
+                    `${type}`
+                ]
+            },
+            // Other query fields
+            "fields":[
+                "objectid",
+                "name",
+                // `properties.${path_property}`
+                // `properties.Dimensions`
+            ]
+        };
+
+
+        // console.log("These are the properties with paths.")
+        // console.log(propertiesList.length);
+
+
+        const response = await axios.post(`https://developer.api.autodesk.com/modelderivative/v2/designdata/${urn}/metadata/${guid}/properties:query`, query, {
+        headers: {
+            'Authorization': `Bearer ${access_token}`,
+            'Content-Type': 'application/json'
+        }
+        });
+
+        console.log(response.data.data.collection);
+
+        resultGeometry =response.data.data.collection;
+
         return JSON.stringify(response.data.data.collection);
 
     }
@@ -196,7 +296,7 @@ router.post('/ask_agent_simple', async function (req, res, next) {
         description: "Searches the objects in the model using a specific property and its corresponding value. example would be the property is material and value is steel. the function has two mandatory parameters property and value",
         schema: z.object({
             property: z.string().describe("the property to be used for querying the model"),
-            value: z.string().describe("the value to be used for querying the model"),
+            value: z.string().describe("the value to be used for querying the model. Use Tavily search for unusual values"),
           }),       
         func: async ({ property, value }) => {
             try {
@@ -245,13 +345,93 @@ router.post('/ask_agent_simple', async function (req, res, next) {
     });
 
     
-    const customTool_2 = new DynamicTool({
-        name: "get_word_length",
-        description: "Returns the length of a word.",
-        func: async (input) => input.length.toString(),
-      });
+    const customTool_2 = new DynamicStructuredTool({
+        name: "SearchElement_Type",
+        description: "Searches the objects in the model using a specific type of the elements. example would be door, wall ...",
+        schema: z.object({
+            type: z.string().describe("the type of elements to be used for querying the model "),
+            
+        }),       
+        func: async (type) => {
+            try {
+                if ( !type) {
+                    console.log(type);
+                      throw new Error("The object ID of element must be specified.");
+                }
+
+                return await querymodel_type(type.type);
+            } catch (error) {
+                console.error("Error in customTool function:", error);
+                return `Error: ${error.message}`;
+            }
+        }
+    });
+
+
+    const customTool_3 = new DynamicStructuredTool({
+        name: "SearchElem_Coordinate",
+        description: "Searches the Coordinates of objects in the model using an objectID",
+        schema: z.object({
+            type: z.string().describe("the objectID of elements to be used for getting the coordinates use a number only without type"),
+            
+        }),       
+        func: async (id) => {
+            try {
+                if (!objid_coord[id.type].elementCent) {
+                    console.log(id);
+                      throw new Error("The objectid of element must be specified.");
+                }
+
+                
+                console.log("I am here");
+                console.log(id.type)
+
+                console.log("The objectid of elements specified is : ");
+
+                // let num= objid_coord[id.type].elementCent.z;
+
+               return  JSON.stringify(objid_coord[id.type].elementCent) ;
+
+            //    return "The coordinates are : x=4, y=10, z=20";
+
+            } catch (error) {
+                console.error("Error in customTool function:", error);
+                return `Error: ${error.message}`;
+            }
+        }
+    });
+
+    const customTool_4 = new DynamicStructuredTool({
+        name: "SearchElem_Type_Valid_Name",
+        description: "Searches the valid element types in the model. It returns valid type names from the model",
+        schema: z.object({
+            type: z.string().describe("the type of element to be used get a valid type name from the model. For example if type is wall, this function can give back ub-wall "),
+            
+        }),       
+        func: async (id) => {
+            try {
+                if (!id) {
+                    console.log(id);
+                      throw new Error("The objectid of element must be specified.");
+                }
+
+                let uniqueNamearray = uniqueNames.filter(name => name.includes(id.type));
+
+                console.log(uniqueNamearray);
+                console.log(uniqueNamearray[0]);
+               
+              return  uniqueNamearray[0] ;
+
+            //    return "The coordinates are : x=4, y=10, z=20";
+
+            } catch (error) {
+                console.error("Error in customTool function:", error);
+                return `Error: ${error.message}`;
+            }
+        }
+    });
   
-    const tools = [customTool, customTool_2, new TavilySearchResults({ maxResults: 1, apiKey:"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" })];
+    const tools = [customTool, customTool_2, customTool_3, customTool_4, new TavilySearchResults({ maxResults: 1, apiKey:"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" })];
 
 
 
@@ -267,13 +447,13 @@ router.post('/ask_agent_simple', async function (req, res, next) {
     //   );
 
     //   const prompt = ChatPromptTemplate.fromMessages([
-    //     ["system", "You are very powerful assistant, but don't know current events"],
+    //     ["system", "You are a very powerful assistant that can derive specific properties and its corresponding values from a given prompt to query a model. Identify the property and its corresponding value from the user's input"],
     //     ["human", "{input}"],
-    //     new MessagesPlaceholder("agent_scratchpad"),
+    //     new MessagesPlaceholder("agent_scratchpad")
     //   ]);
 
       const prompt = ChatPromptTemplate.fromMessages([
-        ["system", "You are a very powerful assistant that can derive specific properties and its corresponding values from a given prompt to query a model. Identify the property and its corresponding value from the user's input"],
+        ["system", "You are a very powerful assistant that can search a model using specified attributes of the elements from the prompt."],
         ["human", "{input}"],
         new MessagesPlaceholder("agent_scratchpad")
       ]);
@@ -289,7 +469,7 @@ router.post('/ask_agent_simple', async function (req, res, next) {
     const agentExecutor = new AgentExecutor({
         agent,
         tools,
-        // verbose:true
+        verbose:true,
         // returnIntermediateSteps: true,
         
         
@@ -301,8 +481,8 @@ router.post('/ask_agent_simple', async function (req, res, next) {
     })
 
     // for await (const chunk of results){
-    //     console.log(JSON.stringify(chunk, null, 2));
-    //     console.log("------");
+    //     // console.log(JSON.stringify(chunk, null, 2));
+    //     // console.log("------");
     //     // res.json({success: true, message: JSON.stringify(chunk, null, 2)});
     //     res.write(JSON.stringify(chunk, null, 2));
 
@@ -310,12 +490,30 @@ router.post('/ask_agent_simple', async function (req, res, next) {
 
     // res.end();
 
+    // for await (const chunk of results) {
+    //     if (chunk.ops?.length > 0 && chunk.ops[0].op === "add") {
+    //       const addOp = chunk.ops[0];
+    //       if (
+    //         addOp.path.startsWith("/logs/ChatOpenAI") &&
+    //         typeof addOp.value === "string" &&
+    //         addOp.value.length
+    //       ) {
+    //         console.log(addOp.value);
+    //         res.write(JSON.stringify(addOp.value, null, 2));
+    //       }
+    //     }
+    //   }
+
+    //   res.end();
     // console.log(results);
 
     // console.log(JSON.stringify(results, null, 2));
 
 
     res.json({success: true, message: results.output});
+
+    //Stream The response using the Log
+
 
   
  });

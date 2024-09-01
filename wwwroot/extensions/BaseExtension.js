@@ -20,6 +20,8 @@ export class BaseExtension extends Autodesk.Viewing.Extension {
         return true;
     }
 
+    
+
     onToolbarCreated() {}
 
     onModelLoaded(model) {}
@@ -107,10 +109,164 @@ export class BaseExtension extends Autodesk.Viewing.Extension {
         });
     }
 
+    async getAllDbIds(viewer) {
+
+        try {
+
+            var instanceTree = viewer.model.getData().instanceTree;
+      
+            var allDbIdsStr = Object.keys(instanceTree.nodeAccess.dbIdToIndex);
+
+        } catch (error) {
+            console.error('Error getting to add the model list od dbIDs:', error);
+        }
+
+        console.log(allDbIdsStr.map(function(id) { return parseInt(id)}));
+   
+        return allDbIdsStr.map(function(id) { return parseInt(id)});
+
+    }
+
+
+    async getElementCoordinates(model, dbId) {
+        return new Promise((resolve, reject) => {
+            model.getProperties(dbId, (props) => {
+                console.log('Element properties:', props);
+
+                const instanceTree = model.getInstanceTree();
+                const fragList = model.getFragmentList();
+
+                if (!instanceTree || !fragList) {
+                    console.error('Instance tree or fragment list is not available.');
+                    return reject('Instance tree or fragment list is not available.');
+                }
+
+                const fragIds = [];
+
+                const collectFragIds = (nodeId) => {
+                    instanceTree.enumNodeFragments(nodeId, (fragId) => {
+                        fragIds.push(fragId);
+                    });
+                    instanceTree.enumNodeChildren(nodeId, (childId) => {
+                        collectFragIds(childId);
+                    });
+                };
+
+                collectFragIds(dbId);
+
+                console.log('Collected fragment IDs:', fragIds);
+
+                if (fragIds.length === 0) {
+                    console.log(`No fragments found for dbId ${dbId} or its children.`);
+                    return reject(`No fragments found for dbId ${dbId} or its children.`);
+                }
+
+                const coordinates = [];
+                let elementCent;
+
+                fragIds.forEach(fragId => {
+                    const fragProxy = this.viewer.impl.getFragmentProxy(model, fragId);
+                    fragProxy.updateAnimTransform();
+
+                    const matrix = new THREE.Matrix4();
+                    fragProxy.getWorldMatrix(matrix);
+
+                    console.log(matrix);
+
+                    const position = new THREE.Vector3();
+                    const rotation = new THREE.Quaternion();
+                    let scale = new THREE.Vector3();
+
+                    matrix.decompose(position, rotation, scale);
+
+                    coordinates.push({ x: position.x, y: position.y, z: position.z });
+
+                    console.log(`Element coordinates: ${position.x}, ${position.y}, ${position.z}`);
+
+                    scale += 10.0; 
+
+                    fragList.getWorldMatrix(fragId, matrix);
+                  
+                    
+                    let bbox = new THREE.Box3();
+                    
+                    
+                    fragList.getWorldBounds(fragId, bbox);
+                    elementCent = bbox.getCenter(new THREE.Vector3());
+                    console.log('World bounds:', JSON.stringify(bbox));
+                    console.log('Center of BB',elementCent);
+
+
+                    // const geoExt = this.viewer.getExtension('Autodesk.Geolocation');
+                    // if (geoExt) {
+                    //     geoExt.dbIdToGeolocation(dbId, (geolocation) => {
+                    //         if (geolocation) {
+                    //             console.log(`Element geolocation: Latitude: ${geolocation.latitude}, Longitude: ${geolocation.longitude}, Elevation: ${geolocation.elevation}`);
+                    //         } else {
+                    //             console.log('Geolocation data not available for this element.');
+                    //         }
+                    //     });
+                    // } else {
+                    //     console.error('Geolocation extension is not available.');
+                    // }
+                });
+
+                resolve({ coordinates, elementCent });
+            });
+        });
+
+    }
+
+    findLeafNodes(nodeId, fragIds) {
+        const instanceTree = this.viewer.model.getInstanceTree();
+
+        if (!instanceTree) {
+            return;
+        }
+
+        const collectLeafNodes = (nodeId) => {
+            instanceTree.enumNodeChildren(nodeId, (childId) => {
+                if (instanceTree.getChildCount(childId) === 0) {
+                    instanceTree.enumNodeFragments(childId, (fragId) => {
+                        fragIds.push(fragId);
+                    });
+                } else {
+                    collectLeafNodes(childId);
+                }
+            });
+        };
+
+        collectLeafNodes(nodeId);
+    }
+
+    async addModel(viewer, point){
 
 
 
+        const sceneBuilder = await viewer.loadExtension('Autodesk.Viewing.SceneBuilder');
+        const modelBuilder = await sceneBuilder.addNewModel({
+            conserveMemory: false,
+            modelNameOverride: 'My Model Name'
+        });
+
+        let elementCenter;
+        elementCenter = new THREE.Vector3(0, 0, 0);
+
+        const boxGeometry = new THREE.BufferGeometry().fromGeometry(new THREE.BoxGeometry(1, 1, 1));
+        const boxMaterial = new THREE.MeshPhongMaterial({
+            color: new THREE.Color(1, 0, 1)
+        });
+        const boxMesh = new THREE.Mesh(boxGeometry, boxMaterial);
+        boxMesh.matrix= new THREE.Matrix4().compose(
+            // new THREE.Vector3(0, 0, 0),
+            point,
+            new THREE.Quaternion(0, 0, 0, 1),
+            new THREE.Vector3(1, 1, 1)
+        )
+
+        modelBuilder.addMesh(boxMesh);
 
 
+    }
 
 }
