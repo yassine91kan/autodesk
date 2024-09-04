@@ -127,7 +127,7 @@ function handleClick(routeselectValue,checked) {
 document.getElementById('type0').addEventListener("click", () => handleClick("ask_agent_simple",document.getElementById('type0').checked));
 document.getElementById('type1').addEventListener("click", () => handleClick("langchain_great",document.getElementById('type1').checked));
 document.getElementById('type2').addEventListener("click", () => handleClick("openaifunc",document.getElementById('type2').checked));
-document.getElementById('type3').addEventListener("click", () => handleClick("agent_trial",document.getElementById('type3').checked));
+document.getElementById('type3').addEventListener("click", () => handleClick("sql",document.getElementById('type3').checked));
 
 
 async function getopenai(prompt) {
@@ -175,19 +175,13 @@ async function getopenai(prompt) {
             document.getElementById('gpt_response').innerHTML+=text;
           }
 
-        //   console.log(done);
-          
-
-        // document.getElementById('gpt_response').innerHTML=data.message;
-
-        // console.log(data.message);
 
     }
 
     else {
 
         fetch(`/${routeselect}`, {
-            method: 'POST',
+            method:  'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -197,6 +191,8 @@ async function getopenai(prompt) {
         .then(data => {
 
             console.log(data.message);
+
+            console.log(data.token);
 
             let customItems = data.message;
             customItems = customItems.split("\n");
@@ -211,6 +207,12 @@ async function getopenai(prompt) {
 
 
             document.getElementById('gpt_response').innerHTML=customItems;
+
+            if(data.token){
+
+                document.getElementById('compToken').innerHTML=data.token.completionTokens;
+                document.getElementById('promptToken').innerHTML=data.token.promptTokens ;
+            }
 
         })
         .catch(error => {

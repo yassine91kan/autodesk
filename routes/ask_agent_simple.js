@@ -23,6 +23,9 @@ let tokenExpirationTime;
 let metadata_ask;
 let propertiesList;
 let objid_coord ;
+let token;
+let completionTokens=0;
+let promptTokens=0;
 
 const openai = new OpenAI({
     apiKey: OPENAIKEY
@@ -224,7 +227,6 @@ router.post('/ask_agent_simple', async function (req, res, next) {
                 "objectid",
                 "name",
                 // `properties.${path_property}`
-                `properties.Dimensions`
             ]
         };
 
@@ -439,7 +441,33 @@ router.post('/ask_agent_simple', async function (req, res, next) {
         // modelName: "gpt-3.5-turbo-1106",
         modelName: "gpt-4o-mini",      
         temperature: 0,
-        apiKey: OPENAIKEY
+        apiKey: OPENAIKEY,
+        callbacks: [
+            {
+              handleLLMEnd(output) {
+                
+                // Directly access the token usage values from the output object
+                completionTokens = completionTokens + output.llmOutput.tokenUsage.completionTokens;
+                promptTokens = promptTokens + output.llmOutput.tokenUsage.promptTokens;
+                
+                // Log the token values
+                console.log(`Completion Tokens: ${completionTokens}`);
+                console.log(`Prompt Tokens: ${promptTokens}`);
+
+                // Store the tokens in variables if needed
+                token = {
+                    completionTokens,
+                    promptTokens
+                };
+
+                // If you need to store it as a string
+                const tokenString = JSON.stringify(token, null, 2);
+                console.log(tokenString);
+
+                
+              },
+            },
+          ],
       });
 
     // const prompt = await pull(
@@ -510,7 +538,7 @@ router.post('/ask_agent_simple', async function (req, res, next) {
     // console.log(JSON.stringify(results, null, 2));
 
 
-    res.json({success: true, message: results.output});
+    res.json({success: true, message: results.output, token:token});
 
     //Stream The response using the Log
 

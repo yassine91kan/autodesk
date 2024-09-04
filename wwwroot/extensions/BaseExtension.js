@@ -196,20 +196,7 @@ export class BaseExtension extends Autodesk.Viewing.Extension {
                     console.log('World bounds:', JSON.stringify(bbox));
                     console.log('Center of BB',elementCent);
 
-
-                    // const geoExt = this.viewer.getExtension('Autodesk.Geolocation');
-                    // if (geoExt) {
-                    //     geoExt.dbIdToGeolocation(dbId, (geolocation) => {
-                    //         if (geolocation) {
-                    //             console.log(`Element geolocation: Latitude: ${geolocation.latitude}, Longitude: ${geolocation.longitude}, Elevation: ${geolocation.elevation}`);
-                    //         } else {
-                    //             console.log('Geolocation data not available for this element.');
-                    //         }
-                    //     });
-                    // } else {
-                    //     console.error('Geolocation extension is not available.');
-                    // }
-                });
+               });
 
                 resolve({ coordinates, elementCent });
             });

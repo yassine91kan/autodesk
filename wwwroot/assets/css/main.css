@@ -2446,9 +2446,11 @@ h6,
   cursor: auto;
 }
 .checkbox-style label {
-  margin-top: 6px;
+  margin-top: 4px;
   cursor: pointer;
   user-select: none;
+  color:#9ca4c9;
+  font-size:13px;
 }
 .checkbox-style.checkbox-success .form-check-input:checked {
   background-color: #219653;
@@ -2692,7 +2694,7 @@ h6,
 /* ========== header css ========== */
 .header {
   padding: 22px 0;
-  background: #fff;
+  background: #383838;
   position: sticky;
   top: 0;
   z-index: 99;
@@ -3620,7 +3622,7 @@ h6,
 
 /* =========== Sidebar css =========== */
 .sidebar-nav-wrapper {
-  background: #fff;
+  background: #383838;
   width: 250px;
   padding: 20px 0px;
   height: 100vh;
@@ -3630,7 +3632,7 @@ h6,
   top: 0;
   left: 0;
   z-index: 999;
-  box-shadow: 0px 0px 30px 0px rgba(200, 208, 216, 0.3);
+  box-shadow: 0px 0px 0.5px 0px rgba(200, 208, 216, 0.3);
   -webkit-transition: all 0.3s ease-out 0s;
   -moz-transition: all 0.3s ease-out 0s;
   -ms-transition: all 0.3s ease-out 0s;
@@ -3765,7 +3767,7 @@ h6,
 .sidebar-nav-wrapper .sidebar-nav ul .nav-item a {
   display: flex;
   align-items: center;
-  color: #9AA4CA;
+  color: white;
   font-size: 14px;
   font-weight: 500;
   width: 100%;
@@ -3783,6 +3785,7 @@ h6,
   -ms-transition: all 0.3s ease-out 0s;
   -o-transition: all 0.3s ease-out 0s;
   transition: all 0.3s ease-out 0s;
+  color:#ddd;
 }
 .sidebar-nav-wrapper .sidebar-nav ul .nav-item a span.pro-badge {
   background: #365CF5;
@@ -6077,6 +6080,28 @@ margin-top: 50px;
 
 #innovation{
   padding-top:10px;
+}
+
+/* .author{
+
+  border-radius: 5px;
+  background-color: #005596;
+  width:30px;
+  padding:5px;
+
+
+} */
+
+.fn__svg{
+  height:15px;
+  width:15px;
+
+}
+
+#icons{
+  background-color:#dee0df;
+  padding:5px;
+  border-radius:20px;
 }
 
 
