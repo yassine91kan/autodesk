@@ -229,7 +229,6 @@ export class BaseExtension extends Autodesk.Viewing.Extension {
     async addModel(viewer, point){
 
 
-
         const sceneBuilder = await viewer.loadExtension('Autodesk.Viewing.SceneBuilder');
         const modelBuilder = await sceneBuilder.addNewModel({
             conserveMemory: false,
@@ -255,5 +254,18 @@ export class BaseExtension extends Autodesk.Viewing.Extension {
 
 
     }
+
+    
+    
+
+
+        async addgltf(viewer){
+
+            await viewer.loadExtension('Autodesk.glTF');
+            viewer.loadModel('./assets/glTf/scene.gltf');
+    
+        }
+
+
 
 }

@@ -17,5 +17,6 @@ app.use(require('./routes/aps_agent_simple.js'));
 app.use(require('./routes/ask_agent_simple.js'));
 app.use(require('./routes/agent_trial.js'));
 app.use(require('./routes/SQL.js'));
+app.use(require('./routes/geom_agent.js'));
 // app.listen(PORT, function () { console.log(`Server listening on port ${PORT}...`); });
 app.listen(process.env.PORT || 8080, function () { console.log(`Server listening on port ...`); });

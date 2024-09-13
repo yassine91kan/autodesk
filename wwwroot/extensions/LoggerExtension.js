@@ -38,25 +38,20 @@ class LoggerExtension extends BaseExtension {
             console.log(coordinateJson);
 
             // Convert array to a map
-            let coordinateMap = {};
+            let coordinateMap = {};       
 
-            // array.forEach(item => {
-            //     coordinateMap[item.objectID] = item.coordinateCent;
-            // });
-          
+            // for (let i=1;i<900;i++) {
 
-            for (let i=1;i<900;i++) {
+            //     console.log('I am here',i);
+            //     console.log(coordinateAll[10]);
 
-                console.log('I am here',i);
-                console.log(coordinateAll[10]);
+            //     const coordinateUpd = await this.getElementCoordinates(model, coordinateAll[i])
 
-                const coordinateUpd = await this.getElementCoordinates(model, coordinateAll[i])
+            //     console.log(coordinateUpd);
 
-                console.log(coordinateUpd);
+            //     coordinateMap[coordinateAll[i]] = coordinateUpd;
 
-                coordinateMap[coordinateAll[i]] = coordinateUpd;
-
-                console.log(coordinateMap);
+            //     console.log(coordinateMap);
 
                 // try {
                 //     this.addModel(this.viewer, coordinateUpd.elementCent);
@@ -65,14 +60,50 @@ class LoggerExtension extends BaseExtension {
                 //     console.error('Error getting to add the model:', error);
                 // }
                 
+            // }
+
+            if (document.getElementById('addGeom').checked) {
+                try {
+                    const response = await fetch(`/geom_agent`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                    });
+            
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+            
+                    const data = await response.json();
+                    console.log(data.message);
+            
+                    let id_search = data.message.split(',');
+                    console.log(id_search[2]);
+            
+                    // Assuming you want to use `id_search[2]` with other functions:
+                     // Iterate over each element in the id_search array
+
+                    for (let id of id_search) {
+                        console.log(`Processing ID: ${id}`);
+
+                        // Assuming getElementCoordinates returns a promise
+                        const coordinateElement = await this.getElementCoordinates(model, parseInt(id));
+
+                        // Call addModel for each coordinateElement
+                        this.addModel(this.viewer, coordinateElement.elementCent);
+                    }
+                } catch (error) {
+                    console.error("Error retrieving object tree or adding the model:", error);
+                }
             }
 
-            try {
-                this.addModel(this.viewer, coordinates[1].elementCent);
+            // try {
+            //     this.addModel(this.viewer, coordinates[1].elementCent);
     
-            } catch (error) {
-                console.error('Error getting to add the model:', error);
-            }
+            // } catch (error) {
+            //     console.error('Error getting to add the model:', error);
+            // }
 
             fetch(`/ask_agent_simple`, {
                 method: 'PUT',
