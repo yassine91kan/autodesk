@@ -259,10 +259,132 @@ export class BaseExtension extends Autodesk.Viewing.Extension {
     
 
 
-        async addgltf(viewer){
+        async addgltf(viewer,elementcent,geomT){
+
+
+            // let xform = new THREE.Vector3(100, 7, -3);
+            // const matrix = new THREE.Matrix4().makeTranslation(xform.x, xform.y, xform.z);
+            // matrix.scale(new THREE.Vector3(2, 2, 2)); 
+
+
+            const translation = new THREE.Matrix4().makeTranslation(10, 5, -3);
+            const rotation = new THREE.Matrix4().makeRotationX(Math.PI / 2);  // Rotate 90 degrees around Z
+            const scaling = new THREE.Matrix4().makeScale(3, 3, 3);  // Double size
+
+            // Combine the transformations
+            let xform = new THREE.Matrix4();
+            // xform.multiply(translation).multiply(rotation).multiply(scaling);
+            xform.multiply(translation).multiply(scaling);
+
+            let xformArray=[];
+            let matrixArray=[];
+            let j;
+            let b;
 
             await viewer.loadExtension('Autodesk.glTF');
-            viewer.loadModel('./assets/glTf/scene.gltf');
+
+
+
+            for (let i=0;i<1;i++) {
+
+                for(let k=0;k<1;k++){
+
+                j=0+i*20;
+                console.log(j);
+                b = 50+k*20
+
+                // xformArray[i]= new THREE.Vector3(j, b, 0);
+                // xformArray[i]= new THREE.Vector3(0, 0, 0);
+                // xformArray[i]= new THREE.Vector3(-45.16, 17.95, -2.77);
+                xformArray[i]= new THREE.Vector3(elementcent.x, elementcent.y, elementcent.z);
+                console.log(xformArray[i]);
+                matrixArray[i]= new THREE.Matrix4().makeTranslation(xformArray[i].x, xformArray[i].y, xformArray[i].z).multiply(rotation).multiply(scaling);
+                
+
+                viewer.loadModel(`./assets/glTf/${geomT}/scene.gltf`, 
+                {
+                    placementTransform: new THREE.Matrix4()
+                },
+                function (secondModel) {  // onSuccessCallback
+
+                    let sr = secondModel.getPlacementTransform();
+                    console.log(sr);
+
+                    // Assuming 'm.xform' is a valid position vector
+                    secondModel.setPlacementTransform(matrixArray[i]);
+                    // secondModel.setPlacementTransform(sr);
+
+                    let tr = secondModel.getPlacementTransform();
+                    console.log(tr);
+
+
+                },
+                function (error) {  // onErrorCallback
+                    console.error('Error loading the model:', error);
+                }
+
+                
+                );
+
+
+
+                }
+
+                
+
+
+            }
+
+            // let xformm = new THREE.Vector3(1, 50, 0);
+            // let xformmm = new THREE.Vector3(30, 50, 0);
+
+            // const matrix = new THREE.Matrix4().makeTranslation(xformm.x, xformm.y, xformm.z).multiply(scaling);
+
+            // const matrix2 = new THREE.Matrix4().makeTranslation(xformmm.x, xformmm.y, xformmm.z).multiply(scaling);
+
+
+            // viewer.loadModel('./assets/glTf/solar_panel/scene.gltf', 
+            //     {
+            //         placementTransform: new THREE.Matrix4()
+            //     },
+            //     function (secondModel) {  // onSuccessCallback
+            //         // Assuming 'm.xform' is a valid position vector
+            //         secondModel.setPlacementTransform(matrix);
+
+            //         let tr = secondModel.getPlacementTransform();
+            //         console.log(tr);
+            //     },
+            //     function (error) {  // onErrorCallback
+            //         console.error('Error loading the model:', error);
+            //     }
+
+                
+            //     );
+
+
+            //     viewer.loadModel('./assets/glTf/solar_panel/scene.gltf', 
+            //     {
+            //         placementTransform: new THREE.Matrix4()
+            //     },
+            //     function (thirdModel) {  // onSuccessCallback
+            //         // Assuming 'm.xform' is a valid position vector
+            //         thirdModel.setPlacementTransform(matrix2);
+
+            //         let tr = thirdModel.getPlacementTransform();
+            //         console.log(tr);
+            //     },
+            //     function (error) {  // onErrorCallback
+            //         console.error('Error loading the model:', error);
+            //     }
+
+                
+            //     );
+
+                
+
+                
+
+
     
         }
 

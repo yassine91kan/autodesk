@@ -2091,6 +2091,7 @@ h6,
   resize: none;
   transition: all 0.3s;
   font-size:12px;
+
 }
 @media (max-width: 767px) {
   .input-style-1 input,
@@ -6099,9 +6100,24 @@ margin-top: 50px;
 }
 
 #icons{
-  background-color:#dee0df;
+  /* background-color:#dee0df; */
   padding:5px;
   border-radius:20px;
+}
+
+#buttonForm{
+
+
+border-color: transparent;
+
+background: rgba(239, 239, 239, 0.5);
+
+padding: 11px;
+color: #5d657b;
+
+border-radius: 4px;
+margin-right: -10px;
+
 }
 
 

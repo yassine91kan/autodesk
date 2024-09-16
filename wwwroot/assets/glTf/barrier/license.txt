@@ -1,0 +1,11 @@
+Model Information:
+* title:	A construction barrier.
+* source:	https://sketchfab.com/3d-models/a-construction-barrier-7b8e620679ba4567b08c2897461d8471
+* author:	Valger (https://sketchfab.com/Valger)
+
+Model License:
+* license type:	CC-BY-NC-ND-4.0 (http://creativecommons.org/licenses/by-nc-nd/4.0/)
+* requirements:	Author must be credited. No commercial use. Modified versions can not be distributed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "A construction barrier." (https://sketchfab.com/3d-models/a-construction-barrier-7b8e620679ba4567b08c2897461d8471) by Valger (https://sketchfab.com/Valger) licensed under CC-BY-NC-ND-4.0 (http://creativecommons.org/licenses/by-nc-nd/4.0/)

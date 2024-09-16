@@ -126,7 +126,7 @@ function handleClick(routeselectValue,checked) {
 // Attach event listeners to elements
 document.getElementById('type0').addEventListener("click", () => handleClick("ask_agent_simple",document.getElementById('type0').checked));
 document.getElementById('type1').addEventListener("click", () => handleClick("langchain_great",document.getElementById('type1').checked));
-document.getElementById('type2').addEventListener("click", () => handleClick("openaifunc",document.getElementById('type2').checked));
+document.getElementById('type2').addEventListener("click", () => handleClick("ask_agent_simple",document.getElementById('type2').checked));
 document.getElementById('type3').addEventListener("click", () => handleClick("sql",document.getElementById('type3').checked));
 document.getElementById('addGeom').addEventListener("click", () => handleClick("geom_agent",document.getElementById('addGeom').checked));
 

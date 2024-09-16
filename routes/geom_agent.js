@@ -26,6 +26,7 @@ let objid_coord ;
 let token;
 let completionTokens=0;
 let promptTokens=0;
+let geomType ;
 
 const openai = new OpenAI({
     apiKey: OPENAIKEY
@@ -155,7 +156,7 @@ let resultGeometry ;
 
 router.get('/geom_agent', async function (req, res, next) {
 
-    res.json({success: true, message: objid_coord});
+    res.json({success: true, message: objid_coord,geomtype:geomType});
  
  });
 
@@ -167,13 +168,38 @@ router.get('/geom_agent', async function (req, res, next) {
 
     console.log(objid_coord["2442"])
 
-    res.json({success: true, message: objid_coord});
+    res.json({success: true, message:objid_coord});
  
  });
 
 router.post('/geom_agent', async function (req, res, next) {
 
     // console.log(objid_coord);
+
+    if (req.body.prompt.includes("solar")){
+
+            geomType="solar_panel";
+            console.log(geomType);
+    }
+
+    else if(req.body.prompt.includes("wind")){
+
+        geomType="wind_turbine";
+        console.log(geomType);
+
+    }
+
+    else if(req.body.prompt.includes("barrier")){
+
+        geomType="barrier";
+        console.log(geomType);
+    }
+
+    else if(req.body.prompt.includes("wash")){
+
+        geomType="wash_station";
+        console.log(geomType);
+    }
 
     const access_token = await getAccessToken();
 
@@ -330,34 +356,35 @@ router.post('/geom_agent', async function (req, res, next) {
     });
 
 
-    const customTool_3 = new DynamicStructuredTool({
-        name: "SearchElem_Coordinate",
-        description: "Searches the Coordinates of objects in the model using an objectID",
-        schema: z.object({
-            type: z.string().describe("the objectID of elements to be used for getting the coordinates use a number only without type"),
+    // const customTool_3 = new DynamicStructuredTool({
+    //     name: "SearchElem_Coordinate",
+    //     description: "Searches the Coordinates of objects in the model using an objectID",
+    //     schema: z.object({
+    //         type: z.string().describe("the objectID of elements to be used for getting the coordinates use a number only without type"),
             
-        }),       
-        func: async (id) => {
-            try {
-                if (!objid_coord[id.type].elementCent) {
-                    console.log(id);
-                      throw new Error("The objectid of element must be specified.");
-                }
+    //     }),       
+    //     func: async (id) => {
+    //         try {
+    //             if (!objid_coord[id.type].elementCent) {
+    //                 console.log(id);
+    //                   throw new Error("The objectid of element must be specified.");
+    //             }
 
                 
-                console.log("I am here");
-                console.log(id.type)
+    //             console.log("I am here");
+    //             console.log(id.type)
 
-                console.log("The objectid of elements specified is : ");
+    //             console.log("The objectid of elements specified is : ");
 
-               return  JSON.stringify(objid_coord[id.type].elementCent) ;
+    //            return  JSON.stringify(objid_coord[id.type].elementCent) ;
 
-            } catch (error) {
-                console.error("Error in customTool function:", error);
-                return `Error: ${error.message}`;
-            }
-        }
-    });
+    //         } catch (error) {
+    //             console.error("Error in customTool function:", error);
+    //             return `Error: ${error.message}`;
+    //         }
+    //     }
+    // });
+
 
     const customTool_4 = new DynamicStructuredTool({
         name: "Add_Object_Model",
@@ -388,7 +415,7 @@ router.post('/geom_agent', async function (req, res, next) {
         }
     });
   
-    const tools = [customTool, customTool_2, customTool_3, customTool_4, new TavilySearchResults({ maxResults: 1, apiKey:"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" })];
+    const tools = [customTool, customTool_2,customTool_4];
 
 
 
@@ -424,7 +451,7 @@ router.post('/geom_agent', async function (req, res, next) {
 
 
       const prompt = ChatPromptTemplate.fromMessages([
-        ["system", "You are a very powerful assistant that can help me add geometries to objects in the 3D model. For example you can be requested to add a box to each wall"],
+        ["system", "You are a very powerful assistant that can help me add geometries to objects in the 3D model. For example you can be requested to add a box,solar panel, wind turbine, barrier, wash station to each wall, floor, door .."],
         ["human", "{input}"],
         new MessagesPlaceholder("agent_scratchpad")
       ]);
@@ -440,7 +467,7 @@ router.post('/geom_agent', async function (req, res, next) {
     const agentExecutor = new AgentExecutor({
         agent,
         tools,
-        verbose:true,
+        // verbose:true,
         // returnIntermediateSteps: true,
         
         

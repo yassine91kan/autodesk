@@ -17,6 +17,8 @@ class LoggerExtension extends BaseExtension {
         super.onModelLoaded(model);
         const props = await this.findPropertyNames(this.viewer.model);
         console.log('New model has been loaded. Its objects contain the following properties:', props);
+
+        
     }
 
     async onSelectionChanged(model, dbids) {
@@ -38,20 +40,22 @@ class LoggerExtension extends BaseExtension {
             console.log(coordinateJson);
 
             // Convert array to a map
-            let coordinateMap = {};       
+            let coordinateMap = {}; 
+            
+            if (document.getElementById('type2').checked) {
 
-            // for (let i=1;i<900;i++) {
+            for (let i=1;i<900;i++) {
 
-            //     console.log('I am here',i);
-            //     console.log(coordinateAll[10]);
+                console.log('I am here',i);
+                console.log(coordinateAll[10]);
 
-            //     const coordinateUpd = await this.getElementCoordinates(model, coordinateAll[i])
+                const coordinateUpd = await this.getElementCoordinates(model, coordinateAll[i])
 
-            //     console.log(coordinateUpd);
+                console.log(coordinateUpd);
 
-            //     coordinateMap[coordinateAll[i]] = coordinateUpd;
+                coordinateMap[coordinateAll[i]] = coordinateUpd;
 
-            //     console.log(coordinateMap);
+                console.log(coordinateMap);
 
                 // try {
                 //     this.addModel(this.viewer, coordinateUpd.elementCent);
@@ -60,7 +64,9 @@ class LoggerExtension extends BaseExtension {
                 //     console.error('Error getting to add the model:', error);
                 // }
                 
-            // }
+            }
+
+            }
 
             if (document.getElementById('addGeom').checked) {
                 try {
@@ -77,6 +83,8 @@ class LoggerExtension extends BaseExtension {
             
                     const data = await response.json();
                     console.log(data.message);
+
+                    console.log(data);
             
                     let id_search = data.message.split(',');
                     console.log(id_search[2]);
@@ -91,11 +99,23 @@ class LoggerExtension extends BaseExtension {
                         const coordinateElement = await this.getElementCoordinates(model, parseInt(id));
 
                         // Call addModel for each coordinateElement
-                        this.addModel(this.viewer, coordinateElement.elementCent);
+                        // this.addModel(this.viewer, coordinateElement.elementCent);
+
+                        this.addgltf(this.viewer, coordinateElement.elementCent,data.geomtype);
                     }
                 } catch (error) {
                     console.error("Error retrieving object tree or adding the model:", error);
                 }
+
+                // try {
+                //     this.addgltf(this.viewer);
+                
+                // } catch (error) {
+                //     console.error('Error getting to add the gltf model:', error);
+                // }
+
+
+
             }
 
             // try {

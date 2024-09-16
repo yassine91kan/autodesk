@@ -36,8 +36,7 @@ router.post('/sql', async function (req, res, next) {
     });
 
     const llm = new ChatOpenAI({
-        modelName: "gpt-3.5-turbo-1106",
-        // modelName: "gpt-4o-mini",      
+        modelName: "gpt-4o-mini",      
         temperature: 0,
         apiKey: OPENAIKEY,
         callbacks: [
@@ -80,11 +79,33 @@ router.post('/sql', async function (req, res, next) {
     You have access to tools for interacting with the database.
     Only use the below tools.
     Only use the information returned by the below tools to construct your final answer.
-    You MUST double check your query before executing it. If you get an error while executing a query, rewrite the query and try again.
+    You MUST the two examples below if possible first . No need to query the list of tables first. If you get an error while executing a query, rewrite the query and try again.
 
     DO NOT make any DML statements (INSERT, UPDATE, DELETE, DROP etc.) to the database.
 
-    For example to get the objects where the structural material property contains concrete we can use the following :
+    Format the result as ObjectID: objectID and then Name : name of elements.
+
+    For example to get the objects per specific type (Walls, Floors, Doors, ):
+    
+    SELECT _objects_id.id AS dbId,  
+    _objects_attr.name AS propName, 
+    _objects_val.value AS propValue
+        FROM _objects_eav
+        INNER JOIN _objects_id ON _objects_eav.entity_id = _objects_id.id
+        INNER JOIN _objects_attr ON _objects_eav.attribute_id = _objects_attr.id
+        INNER JOIN _objects_val ON _objects_eav.value_id = _objects_val.id
+        WHERE _objects_id.id IN (
+        SELECT _objects_id.id 
+        FROM _objects_eav
+            INNER JOIN _objects_id ON _objects_eav.entity_id = _objects_id.id
+            INNER JOIN _objects_attr ON _objects_eav.attribute_id = _objects_attr.id
+            INNER JOIN _objects_val ON _objects_eav.value_id = _objects_val.id
+        WHERE _objects_attr.name = 'Category' 
+        AND _objects_val.value LIKE  '%Revit Floor%'
+        ) AND _objects_attr.name='name'
+
+
+    A separate example to get the objects where the structural material property contains concrete we can use the following :
 
     SELECT _objects_id.id AS dbId, _objects_attr.display_name AS propName, _objects_val.value AS propValue
         FROM _objects_eav
@@ -92,6 +113,7 @@ router.post('/sql', async function (req, res, next) {
             INNER JOIN _objects_attr ON _objects_eav.attribute_id = _objects_attr.id
             INNER JOIN _objects_val ON _objects_eav.value_id = _objects_val.id
         WHERE propName ="Structural Material" and propValue LIKE "%concrete%"
+ 
 
     If the question does not seem related to the database, just return "I don't know" as the answer.`;
     const SQL_SUFFIX = `Begin!
@@ -121,15 +143,10 @@ router.post('/sql', async function (req, res, next) {
     const agentExecutor = new AgentExecutor({
         agent: runnableAgent,
         tools,
-        // verbose:true
+        verbose:true,
+        max_iterations:3,
     });
 
-    // console.log(
-    //     await agentExecutor.invoke({
-    //       input:
-    //         "List the total sales per country. Which country's customers spent the most?",
-    //     })
-    // );
 
     const results = await agentExecutor.invoke({
         input: req.body.prompt,

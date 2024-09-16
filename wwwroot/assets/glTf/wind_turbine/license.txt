@@ -1,0 +1,8 @@
+Model Information:
+* title:	Wind Turbine 3D, PBR
+* source:	https://sketchfab.com/3d-models/wind-turbine-3d-pbr-7b72ec7278fa49e2a60611884878b114
+* author:	super_arte (https://sketchfab.com/super_arte)
+
+Model License:
+* license type:	SKETCHFAB Standard (https://sketchfab.com/licenses)
+* requirements:	Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works

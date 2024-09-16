@@ -172,11 +172,11 @@ router.get('/ask_agent_simple', async function (req, res, next) {
 
  router.put('/ask_agent_simple', async function (req, res, next) {
 
-    // console.log(req.body);
+    console.log(req.body);
 
     objid_coord = req.body ; 
 
-    console.log(objid_coord["2442"])
+    // console.log(objid_coord["2442"])
 
     res.json({success: true, message: objid_coord});
  
