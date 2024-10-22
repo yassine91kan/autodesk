@@ -129,9 +129,12 @@ async function initialize(long,lat) {
     });
 
     // Add a grid of solar panels near the geocoded location
-    const numRows = 5;            // Number of rows of panels
-    const numCols = 5;            // Number of columns of panels
+    const numRows = 28;            // Number of rows of panels
+    const numCols = 10;            // Number of columns of panels
     const panelSpacing = 0.0001;   // Approx. 11 meters spacing
+
+    const spacingRow = 0.000015;
+    const spacingCol = 0.0001;
 
     const startLongitude = addressData.longitude;
     const startLatitude = addressData.latitude;
@@ -142,8 +145,8 @@ async function initialize(long,lat) {
 
     for (let row = 0; row < numRows; row++) {
         for (let col = 0; col < numCols; col++) {
-            const longitude = startLongitude + col * panelSpacing;
-            const latitude = startLatitude + row * panelSpacing;
+            const longitude = startLongitude + col * spacingCol;
+            const latitude = startLatitude + row * spacingRow;
 
             polygonArray.push(longitude);
             polygonArray.push(latitude);
