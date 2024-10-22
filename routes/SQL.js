@@ -86,6 +86,9 @@ router.post('/sql', async function (req, res, next) {
     Format the result as ObjectID: objectID and then Name : name of elements.
 
     For example to get the objects per specific type (Walls, Floors, Doors, ):
+
+    For Walls, use category Revit Walls. For Floors, use category Revit Floors, for beams use category Revit Structural Framing, for piles use category Revit Structural Foundation.
+    The different categories available are : Revit Floors, Revit Structural Framing, Revit Walls, Revit Structural Foundations.
     
     SELECT _objects_id.id AS dbId,  
     _objects_attr.name AS propName, 

@@ -21,6 +21,11 @@
     <link rel="stylesheet" href="assets/css/fullcalendar.css" />
     <link rel="stylesheet" href="assets/css/fullcalendar.css" />
     <link rel="stylesheet" href="assets/css/main.css" />
+
+    <!-- ========== Cesium Files ========= -->
+    
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.121/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/map.css" />
   </head>
   <body>
     <!-- ======== Preloader =========== -->
@@ -114,10 +119,10 @@
             </a>
             <ul id="ddmenu_2" class="collapse dropdown-nav">
               <li>
-                <a href="map_frame.html"> Map Platform </a>
+                <a href="Map.html"> Map Platform </a>
               </li>
               <li>
-                <a href="Map.html"> Blank Page </a>
+                <a href="blank-page.html"> Blank Page </a>
               </li>
             </ul>
           </li>
@@ -419,7 +424,7 @@
             <div class="row align-items-center">
               <div class="col-md-6">
                 <div class="title">
-                  <h2>Chatbot</h2>
+                  <h2>Geolocalisation</h2>
                 </div>
               </div>
               <!-- end col -->
@@ -446,12 +451,16 @@
           <div class="row">
             <div class="col-lg-7">
 
-
+                <div id="cesiumContainer"></div>
+                
+                <!-- <script type="module"> -->
+              
+                  <script src="https://cesium.com/downloads/cesiumjs/releases/1.121/Build/Cesium/Cesium.js"></script>              
+              
+                <!-- </script> -->
                 <!-- End Title -->
-                <div id="preview"></div>
-                <div id="overlay"></div>
-                <script src="https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.js"></script>
-                <script src="/main.js" type="module"></script>
+
+               <script src="/main_2.js" type="module"></script>
 
                 <!-- End Chart -->
 
@@ -485,9 +494,99 @@
             </div>
             <!-- End Col -->
           </div>
-          <!-- End Row -->
+
+         
 
           <!-- End Row -->
+          <div class="row">
+            <div class="col-lg-7">
+              <div class="card-style mb-30">
+                <h6 class="mb-10">Foundation Summary</h6>
+                <p class="text-sm mb-20">
+                  This will show a summary of the foundations for the solar farm.
+                </p>
+                <div class="table-wrapper table-responsive">
+                  <table class="table striped-table">
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th>
+                          <h6>Pile No</h6>
+                        </th>
+                        <th>
+                          <h6>Coordinate</h6>
+                        </th>
+                        <th>
+                          <h6>Longitude</h6>
+                        </th>
+                        <th>
+                          <h6>Latitude</h6>
+                        </th>
+                        <th>
+                          <h6>Height</h6>
+                        </th>
+                        <th>
+                          <h6>Action</h6>
+                        </th>
+                      </tr>
+                      <!-- end table row-->
+                    </thead>
+                    <tbody id="table_pile">
+                       <!-- end table row -->
+
+                      <!-- end table row -->
+                                           <!-- end table row -->
+                    </tbody>
+                  </table>
+                  <!-- end table -->
+                </div>
+              </div>
+              <!-- end card -->
+            </div>
+          <!-- End Row Table -->
+
+          
+            <div class="col-lg-5">
+              <div class="card-style mb-30">
+                <h6 class="mb-10">Geometry Operations</h6>
+                <p class="text-sm mb-20">
+                  This will show a summary of geometry operations for the farm.
+                </p>
+                <div class="form-check checkbox-style mb-16">
+                  <input class="form-check-input" type="checkbox" value="" id="move" />
+                  <label class="form-check-label" for="checkbox-1">
+                    Move Objects</label>
+                </div>
+                <div class="form-check checkbox-style mb-16">
+                  <input class="form-check-input" type="checkbox" value="" id="move" />
+                  <label class="form-check-label" for="checkbox-1">
+                    Draw Polygon BB</label>
+                </div>
+                <div class="form-check checkbox-style mb-16">
+                  <input class="form-check-input" type="checkbox" value="" id="addRob" />
+                  <label class="form-check-label" for="checkbox-1">
+                    Add Robotic Pile Driver</label>
+                </div>
+                <div class="form-check checkbox-style mb-16">
+                  <input class="form-check-input" type="checkbox" value="" id="remove" />
+                  <label class="form-check-label" for="checkbox-1">
+                    Remove Entities</label>
+                </div>
+                <form id="form">
+                  <input
+                    name="file"
+                    type="file"
+                    id="input_form"
+                  />
+                  <button type="submit" id="submit_form">Upload</button>
+                </form>
+              </div>
+
+              
+
+              
+              <!-- end card -->
+          </div>
 
           <!-- End Row -->
         

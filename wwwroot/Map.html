@@ -1,0 +1,319 @@
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Include the CesiumJS JavaScript and CSS files -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.121/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.121/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/map.css" />
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <div class="input-style-1">
+    <input type="text" placeholder="Enter your prompt" id="fname"/>
+    <button class="btn btn-outline-secondary" type="button" id="buttonForm"><i class="lni lni-angle-double-down" id="icons"></i></button>
+  </div>
+  <script type="module">
+    // Your access token can be found at: https://ion.cesium.com/tokens.
+    // This is the default access token from your ion account
+
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkNjI4NTkwMC03OWZjLTQyZGQtOWM5ZS04YWM0OWJkMzY3YjQiLCJpZCI6MjQyMjc0LCJpYXQiOjE3MjY2MjYxOTR9.kwtkAvEFXBiLJOCOBYZejDQZbqPZrLZzdcSjbI284bM';
+
+    // Initialize the Cesium Viewer in the HTML element with the `cesiumContainer` ID.
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+        terrain: Cesium.Terrain.fromWorldTerrain({
+            // requestWaterMask: true,
+            // requestVertexNormals: true,
+        }),
+    
+    });    
+
+
+
+    // Fly the camera to San Francisco at the given longitude, latitude, and height.
+    // viewer.camera.flyTo({
+    //   destination: Cesium.Cartesian3.fromDegrees(-122.4175, 37.655, 400),
+    //   orientation: {
+    //     heading: Cesium.Math.toRadians(0.0),
+    //     pitch: Cesium.Math.toRadians(-15.0),
+    //   }
+    // });
+
+    // Add Cesium OSM Buildings, a global 3D buildings layer.
+    // const buildingTileset = await Cesium.createOsmBuildingsAsync();
+    // viewer.scene.primitives.add(buildingTileset);   
+
+    // STEP 3 CODE (first point)
+    // This is one of the first radar samples collected for our flight.
+
+        // const dataPoint = { longitude: -75.736993, latitude: 45.440697, height: 50 };
+        // // Mark this location with a red point.
+        // const pointEntity = viewer.entities.add({
+        // description: `First data point at (${dataPoint.longitude}, ${dataPoint.latitude})`,
+        // position: Cesium.Cartesian3.fromDegrees(dataPoint.longitude, dataPoint.latitude, dataPoint.height),
+        // point: { pixelSize: 10, color: Cesium.Color.RED }
+        // });
+
+
+       
+        // Create a point for each.
+        // for (let i = 0; i < flightData.length; i++) {
+        // const dataPoint = flightData[i];
+
+        // viewer.entities.add({
+        //     description: `Location: (${dataPoint.longitude}, ${dataPoint.latitude}, ${dataPoint.height})`,
+        //     position: Cesium.Cartesian3.fromDegrees(dataPoint.longitude, dataPoint.latitude, dataPoint.height),
+        //     point: { pixelSize: 10, color: Cesium.Color.RED }
+        // });
+        // }
+    // Fly the camera to this point.
+    // viewer.flyTo(pointEntity);
+
+    // STEP 6 CODE
+
+    // Add the 3D Tileset you created from your Cesium ion account.
+    // const newBuildingTileset = await Cesium.Cesium3DTileset.fromIonAssetId(2743151);
+    // viewer.scene.primitives.add(newBuildingTileset);
+// Function to geocode an address
+
+let apiKey = "ee92de415a9747069da56179e723f4ba";
+
+// async function geocodeAddress(address) {
+//   const url = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(address)}&key=${apiKey}&limit=1`;
+
+//   try {
+//     const response = await fetch(url);
+//     const data = await response.json();
+    
+//     if (data.results.length > 0) {
+//       const { lat, lng } = data.results[0].geometry;
+//       console.log("geocoding");
+//       console.log(lat);
+//       console.log(lng);
+//       return { latitude: lat, longitude: lng };
+//     } else {
+//       throw new Error('Address not found');
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     throw error;
+//   }
+// }
+
+
+// const address = await geocodeAddress("42 Rue Fortier Gatineau Canada");
+// console.log(address);
+
+// const numberOfRows = 10;  // Customize based on the size of your farm
+// const numberOfColumns = 10;
+// const panelSpacing = 0.0001;  // Distance between panels
+// let gltfModel=[]
+
+// // const dataPoint = { longitude: -75.736993, latitude: 45.440697, height: 50 };
+
+// // let startLongitude = -122.38985;
+// // let startLatitude = 37.61864;
+
+// // let startLongitude = -75.736993;
+// // let startLatitude = 45.440697;
+
+// let startLongitude = address.lng;
+// let startLatitude = address.lat;
+
+
+// const numRows = 10;             // Number of rows in the grid
+// const numCols = 10;             // Number of columns in the grid
+//   // Spacing between panels in degrees (about 11 meters at the equator)
+// const modelUrl = './assets/glTf/solar_panel/scene.gltf';  // Replace with your GLTF model
+
+// // Create an array to store instance positions
+// function addSolarPanel(viewer, longitude, latitude,height) {
+//   Cesium.Model.fromGltfAsync({
+//     url: modelUrl,
+//     modelMatrix: Cesium.Transforms.eastNorthUpToFixedFrame(
+//       Cesium.Cartesian3.fromDegrees(longitude, latitude,height)
+//     ),
+
+//     scale: 1.0 // Adjust scale as needed
+//   }).then((model) => {
+//     // Add the model to the scene
+//     console.log(Cesium.Cartesian3.fromDegrees(longitude, latitude,height));
+//     console.log(Cesium.Transforms.eastNorthUpToFixedFrame(
+//       Cesium.Cartesian3.fromDegrees(longitude, latitude,height)
+//     ));
+//     viewer.scene.primitives.add(model);
+//     // viewer.flyTo(model);
+//   }).catch((error) => {
+//     console.error('Error loading model:', error);
+//   });
+// }
+
+// // Loop to create the grid of solar panels
+// for (let row = 0; row < numRows; row++) {
+//   for (let col = 0; col < numCols; col++) {
+//     const longitude = startLongitude + col * panelSpacing;
+//     const latitude = startLatitude + row * panelSpacing;
+//     // const longitude = startLongitude ;
+//     // const latitude = startLatitude;
+//     // const height = -29.32;
+
+//     const height = 50;
+
+//     // console.log(height);
+    
+//     // Add each solar panel to the scene
+//     addSolarPanel(viewer, longitude, latitude,height);
+//   }
+// }
+
+async function geocodeAddress(address) {
+        const apiKey = "ee92de415a9747069da56179e723f4ba";
+        const url = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(address)}&key=${apiKey}&limit=1`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.results.length > 0) {
+                const { lat, lng } = data.results[0].geometry;
+                return { latitude: lat, longitude: lng };
+            } else {
+                throw new Error('Address not found');
+            }
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+    }
+
+// Function to add solar panels to the viewer
+function addSolarPanel(viewer, longitude, latitude, height) {
+        const modelUrl = './assets/glTf/wind_turbine/scene.gltf';  // Your model URL here
+
+        Cesium.Model.fromGltfAsync({
+            url: modelUrl,
+            modelMatrix: Cesium.Transforms.eastNorthUpToFixedFrame(
+                Cesium.Cartesian3.fromDegrees(longitude, latitude, height)
+            ),
+            scale: 1.0 // Adjust scale as needed
+        }).then((model) => {
+            viewer.scene.primitives.add(model);
+        }).catch((error) => {
+            console.error('Error loading model:', error);
+        });
+    }
+
+   // Function to initialize the viewer and add the solar panels
+   async function initialize() {
+        // Example: Geocode an address and fly to its location
+        // const addressData = await geocodeAddress("1251 Thomas A. Dolan Pkwy, Dunrobin, Ontario");
+        // console.log("Geocoded Address:", addressData);
+
+        const addressData = {"longitude":-76.0316771,"latitude":45.4160587}
+
+        viewer.camera.flyTo({
+            destination: Cesium.Cartesian3.fromDegrees(addressData.longitude, addressData.latitude, 40),
+            destination: Cesium.Cartesian3.fromDegrees(addressData.longitude, addressData.latitude, 40),
+            orientation: {
+                heading: Cesium.Math.toRadians(0.0),
+                pitch: Cesium.Math.toRadians(-15.0),
+            }
+        });
+
+        // Add a grid of solar panels near the geocoded location
+        const numRows = 10;            // Number of rows of panels
+        const numCols = 10;            // Number of columns of panels
+        const panelSpacing = 0.0001;   // Approx. 11 meters spacing
+
+        const startLongitude = addressData.longitude;
+        const startLatitude = addressData.latitude;
+
+        for (let row = 0; row < numRows; row++) {
+            for (let col = 0; col < numCols; col++) {
+                const longitude = startLongitude + col * panelSpacing;
+                const latitude = startLatitude + row * panelSpacing;
+                const height = 33.53;  // You can adjust the height
+
+                // Add each solar panel to the scene
+                addSolarPanel(viewer, longitude, latitude, height);
+            }
+        }
+    }
+
+    // Function to sample the terrain for height 
+
+
+
+    // Start the initialization process
+    initialize();
+
+    // Callback function for handling terrain sampling success
+function terrainsuccess(positions) {
+    console.log('Sampled positions:', positions);
+}
+
+// Function to sample the terrain
+
+function terrain() {
+    // Define terrain sample positions (as an array)
+    const terrainSamplePositions = [
+        Cesium.Cartographic.fromDegrees(-76.0316771, 45.4160587)
+    ];
+
+    // Sample the terrain at zoom level 9
+    Cesium.sampleTerrain(viewer.terrainProvider, 12, terrainSamplePositions)
+        .then(terrainsuccess)  // Pass callback correctly
+        .catch(error => console.error('Error sampling terrain:', error));  // Handle errors
+        }
+
+// Trigger terrain sampling immediately (no need for a readyPromise)
+        // Poll the terrain provider until it's ready
+    function waitForTerrainToLoad() {
+        // Check if the terrain provider is ready
+        // if (viewer.terrainProvider.ready) {
+        //     console.log("Terrain is ready, starting sampling.");
+        console.log("Executing Terrain Loading...");
+            terrain();  // Sample the terrain once it's ready
+        // } else {
+            console.log("Waiting for terrain to load...");
+            // Retry until terrain is ready
+            // setTimeout(waitForTerrainToLoad, 60000);  // Check every 100 milliseconds
+        // }
+    }
+
+// Start checking for terrain readiness
+setTimeout(waitForTerrainToLoad, 60000); 
+
+
+
+
+    // // Set the terrain provider (use Cesium World Terrain instead of a small terrain)
+    // var terrainProvider = Cesium.Terrain.fromWorldTerrain();  // Correct the terrain provider
+
+    // // Callback function for handling successful terrain sampling
+    // function terrainsuccess(positions) {
+    //     console.log('Sampled positions:', positions);
+    // }
+
+    // // Function to sample the terrain
+    // function terrain() {
+    //     // Define terrain sample positions as an array (even if you only have one point)
+    //     const terrainSamplePositions = [
+    //         Cesium.Cartographic.fromDegrees(-76.0316771, 45.4160587)
+    //     ];
+
+    //     console.log(terrainSamplePositions);
+
+    //     // Sample the terrain at zoom level 9
+    //     Cesium.sampleTerrain(viewer.terrainProvider, 9, terrainSamplePositions)
+    //         .then(terrainsuccess)  // Pass the callback as a reference, not invoking it directly
+    //         .catch(error => console.error('Error sampling terrain:', error));  // Handle any errors
+    // }
+
+    // // Call the function
+    // terrain();
+
+
+  </script>
+ </div>
+</body>
+</html>
