@@ -1,5 +1,9 @@
 // Start the initialization process
 
+// }
+
+const { PDFDocument, StandardFonts, rgb, degrees } = PDFLib ; 
+
 Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkNjI4NTkwMC03OWZjLTQyZGQtOWM5ZS04YWM0OWJkMzY3YjQiLCJpZCI6MjQyMjc0LCJpYXQiOjE3MjY2MjYxOTR9.kwtkAvEFXBiLJOCOBYZejDQZbqPZrLZzdcSjbI284bM';
               
 // Initialize the Cesium Viewer in the HTML element with the `cesiumContainer` ID.
@@ -64,14 +68,14 @@ function addTurbine(viewer,longitude,latitude,height){
         model: {
           uri: './assets/glTf/solar_panel/scene.gltf',
         },
-        label: {
-            text: "P01",
-            font: "10pt monospace",
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-            outlineWidth: 2,
-            verticalOrigin: Cesium.VerticalOrigin.TOP,
-            pixelOffset: new Cesium.Cartesian2(0, 32),
-          },
+        // label: {
+        //     text: "P01",
+        //     font: "10pt monospace",
+        //     style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        //     outlineWidth: 2,
+        //     verticalOrigin: Cesium.VerticalOrigin.TOP,
+        //     pixelOffset: new Cesium.Cartesian2(0, 32),
+        //   },
       });
 
       loadedEntities.push(entity);
@@ -110,7 +114,7 @@ function addPoint (long,lat){
 }
 
 // Function to initialize the viewer and add the solar panels
-async function initialize(long,lat) {
+async function initialize(long,lat,powerPlant) {
     // Example: Geocode an address and fly to its location
     // const addressData = await geocodeAddress("1251 Thomas A. Dolan Pkwy, Dunrobin, Ontario");
     // console.log("Geocoded Address:", addressData);
@@ -129,12 +133,17 @@ async function initialize(long,lat) {
     });
 
     // Add a grid of solar panels near the geocoded location
-    const numRows = 28;            // Number of rows of panels
+    
     const numCols = 10;            // Number of columns of panels
+    const powerModule =450 ;        // Each Module provides 450 w
+    const numRows = Math.round((powerPlant/powerModule)/numCols);            // Number of rows of panels
+
+    console.log(numRows);
+
     const panelSpacing = 0.0001;   // Approx. 11 meters spacing
 
-    const spacingRow = 0.000015;
-    const spacingCol = 0.0001;
+    const spacingRow = 0.000015; // 
+    const spacingCol = 0.00005; // This the spacing between the rows of panels or the pitch.
 
     const startLongitude = addressData.longitude;
     const startLatitude = addressData.latitude;
@@ -174,10 +183,10 @@ async function initialize(long,lat) {
                 <p>Steel Pile</p> <!-- You can replace 'Some Value 1' with actual dynamic values -->
                 </td>
                 <td>
-                <p>${longitude.toFixed(4).toString()}<</p>
+                <p>${longitude.toFixed(6).toString()}<</p>
                 </td>
                 <td>
-                <p>${latitude.toFixed(4)}<</p>
+                <p>${latitude.toFixed(6)}<</p>
                 </td>
                 <td>
                 <p>Some Value 4</p>
@@ -270,16 +279,7 @@ async function moveEntities(number) {
         // drawPolygon(polygonArray);
         drawPolygon(bouboxArray);
 
-        // viewer.camera.flyTo({
-        //     destination: Cesium.Cartesian3.fromDegrees(targetLongitude, targetLatitude, 100),
-        //     orientation: {
-        //         heading: Cesium.Math.toRadians(0.0),
-        //         pitch: Cesium.Math.toRadians(-15.0),
-        //     }
-        // });
-
-
-
+   
     } catch (error) {
         console.error(error);
         throw error;
@@ -354,6 +354,130 @@ async function BoundaryBox(points){
 
 }
 
+async function drawTerrain(){
+
+    viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(
+        Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK,
+      );
+
+      function createPoint(worldPosition) {
+        const point = viewer.entities.add({
+          position: worldPosition,
+          point: {
+            color: Cesium.Color.WHITE,
+            pixelSize: 5,
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          },
+        });
+        return point;
+      }
+      let drawingMode = "line";
+      function drawShape(positionData) {
+        let shape;
+        if (drawingMode === "line") {
+          shape = viewer.entities.add({
+            polyline: {
+              positions: positionData,
+              clampToGround: true,
+              width: 3,
+            },
+          });
+        } else if (drawingMode === "polygon") {
+          shape = viewer.entities.add({
+            polygon: {
+              hierarchy: positionData,
+              material: new Cesium.ColorMaterialProperty(
+                Cesium.Color.WHITE.withAlpha(0.7),
+              ),
+            },
+          });
+        }
+        return shape;
+      }
+
+      let activeShapePoints = [];
+let activeShape;
+let floatingPoint;
+const handler = new Cesium.ScreenSpaceEventHandler(viewer.canvas);
+handler.setInputAction(function (event) {
+  // We use `viewer.scene.globe.pick here instead of `viewer.camera.pickEllipsoid` so that
+  // we get the correct point when mousing over terrain.
+  const ray = viewer.camera.getPickRay(event.position);
+  const earthPosition = viewer.scene.globe.pick(ray, viewer.scene);
+  // `earthPosition` will be undefined if our mouse is not over the globe.
+  if (Cesium.defined(earthPosition)) {
+    if (activeShapePoints.length === 0) {
+      floatingPoint = createPoint(earthPosition);
+      activeShapePoints.push(earthPosition);
+      const dynamicPositions = new Cesium.CallbackProperty(function () {
+        if (drawingMode === "polygon") {
+          return new Cesium.PolygonHierarchy(activeShapePoints);
+        }
+        return activeShapePoints;
+      }, false);
+      activeShape = drawShape(dynamicPositions);
+    }
+    activeShapePoints.push(earthPosition);
+    createPoint(earthPosition);
+  }
+}, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+        handler.setInputAction(function (event) {
+        if (Cesium.defined(floatingPoint)) {
+            const ray = viewer.camera.getPickRay(event.endPosition);
+            const newPosition = viewer.scene.globe.pick(ray, viewer.scene);
+            if (Cesium.defined(newPosition)) {
+            floatingPoint.position.setValue(newPosition);
+            activeShapePoints.pop();
+            activeShapePoints.push(newPosition);
+            }
+        }
+        }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+        // Redraw the shape so it's not dynamic and remove the dynamic shape.
+        function terminateShape() {
+        activeShapePoints.pop();
+        drawShape(activeShapePoints);
+        viewer.entities.remove(floatingPoint);
+        viewer.entities.remove(activeShape);
+        floatingPoint = undefined;
+        activeShape = undefined;
+        activeShapePoints = [];
+        }
+        handler.setInputAction(function (event) {
+        terminateShape();
+        }, Cesium.ScreenSpaceEventType.RIGHT_CLICK);
+
+        const options = [
+        {
+            text: "Draw Lines",
+            onselect: function () {
+            if (!Cesium.Entity.supportsPolylinesOnTerrain(viewer.scene)) {
+                window.alert("This browser does not support polylines on terrain.");
+            }
+
+            terminateShape();
+            drawingMode = "line";
+            },
+        },
+        {
+            text: "Draw Polygons",
+            onselect: function () {
+            terminateShape();
+            drawingMode = "polygon";
+            },
+        },
+        ];
+
+        Sandcastle.addToolbarMenu(options);
+        // Zoom in to an area with mountains
+        viewer.camera.lookAt(
+        Cesium.Cartesian3.fromDegrees(-122.2058, 46.1955, 1000.0),
+        new Cesium.Cartesian3(5000.0, 5000.0, 5000.0),
+        );
+        viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+
+}
+
 async function addrobModel(){
 
     const coordRob ={"longitude":-76.0316771,"latitude":45.4160587,"height":34.2}
@@ -390,6 +514,84 @@ function removeModels(){
     viewer.entities.removeAll();
 }
 
+function reorderPointsClockwise(coords) {
+    // Calculate the centroid of the points
+    let centerX = 0;
+    let centerY = 0;
+    const numPoints = coords.length / 2;
+
+    for (let i = 0; i < coords.length; i += 2) {
+        centerX += coords[i];
+        centerY += coords[i + 1];
+    }
+    centerX /= numPoints;
+    centerY /= numPoints;
+
+    // Calculate angle for each point and sort by angle
+    const pointsWithAngles = [];
+    for (let i = 0; i < coords.length; i += 2) {
+        const x = coords[i];
+        const y = coords[i + 1];
+        const angle = Math.atan2(y - centerY, x - centerX);
+        pointsWithAngles.push({ x, y, angle });
+    }
+
+    // Sort points by angle in clockwise order
+    pointsWithAngles.sort((a, b) => a.angle - b.angle);
+
+    // Flatten the sorted points back into an array
+    const sortedCoords = [];
+    for (const point of pointsWithAngles) {
+        sortedCoords.push(point.x, point.y);
+    }
+
+    // Ensure the polygon is closed by adding the first point at the end
+    sortedCoords.push(sortedCoords[0], sortedCoords[1]);
+
+    return sortedCoords;
+}
+
+async function drawProperty(array) {
+
+    const arrayTest = [
+        -76.031677, 45.416059,
+        -76.031227, 45.416209,
+        -76.031377, 45.416209,
+        -76.031277, 45.416149,
+        -76.031527, 45.416119,
+        -76.031577, 45.416074,
+        -76.031677, 45.416059 // Closing the polygon by repeating the first point
+    ];
+
+    const orderedCoords = reorderPointsClockwise(arrayTest);
+
+
+
+    try {
+
+        // console.log('This is the array test');
+        // console.log(arrayTest);
+
+        console.log('Ordered coordinates:', orderedCoords);
+        
+        const wyoming = viewer.entities.add({
+            polygon: {
+              hierarchy: Cesium.Cartesian3.fromDegreesArray(orderedCoords),
+              height: 33.53,
+              material: Cesium.Color.RED.withAlpha(0.5),
+              outline: true,
+              outlineColor: Cesium.Color.BLACK,
+            },
+
+          });
+
+
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
+}
+
 document.getElementById('remove').addEventListener("click", () => 
     
     removeModels());
@@ -398,11 +600,21 @@ document.getElementById('addRob').addEventListener("click", () =>
     
     addrobModel());
 
+document.getElementById('drawPolygon').addEventListener("click", () => 
+    
+        drawTerrain());
+
+document.getElementById('drawProperty').addEventListener("click", () => 
+    
+    drawProperty());
+
+    
+
 
 // Main function to load models and move them after loading
 
 
-initialize(-76.0316771,45.4160587);
+// initialize(-76.0316771,45.4160587,100000);
 
 // initialize(-76.03731,45.41632);
 
@@ -478,6 +690,9 @@ document.getElementById('type1').addEventListener("click", () => handleClick("la
 document.getElementById('type2').addEventListener("click", () => handleClick("ask_agent_simple",document.getElementById('type2').checked));
 document.getElementById('type3').addEventListener("click", () => handleClick("sql",document.getElementById('type3').checked));
 document.getElementById('addGeom').addEventListener("click", () => handleClick("geom_agent",document.getElementById('addGeom').checked));
+document.getElementById('SolarGeom').addEventListener("click", () => handleClick("solar_agent",document.getElementById('SolarGeom').checked));
+document.getElementById('SolarTechnical').addEventListener("click", () => handleClick("solar_technical_agent",document.getElementById('SolarTechnical').checked));
+
 
 document.getElementById('move').addEventListener("click", () => 
     
@@ -546,7 +761,8 @@ async function getopenai(prompt) {
 
             console.log(data.message);
 
-            console.log(data.addressObj);
+            console.log("Your power output is");
+            console.log(data.power);
 
             console.log(data.token);
 
@@ -559,9 +775,6 @@ async function getopenai(prompt) {
 
             customItems = customItems.join("");
 
-
-
-
             document.getElementById('gpt_response').innerHTML=customItems;
 
             if(data.token){
@@ -570,7 +783,16 @@ async function getopenai(prompt) {
                 document.getElementById('promptToken').innerHTML=data.token.promptTokens ;
             }
 
-            initialize(data.addressObj.longitude,data.addressObj.latitude);
+            // initialize(data.addressObj.longitude,data.addressObj.latitude);
+
+            initialize(-76.0316771,45.4160587,parseInt(data.power));
+
+            if(data.soilLayer){
+
+                console.log("I am here the calc wizard");
+                modifyPdfCalc(data.soilLayer, data.soilFriction, data.soilDepth);
+
+            }
 
             
 
@@ -589,13 +811,8 @@ async function getopenai(prompt) {
 
 document.querySelector('#fname').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
-    //   console.log(document.querySelector('#fname').value);
-    //   openaiquery(document.querySelector('#fname').value)
-
+ 
     getopenai(document.querySelector('#fname').value);
-
-
-
 
     }
 });
@@ -623,3 +840,434 @@ function uploadFiles(){
   fetch(url, fetchOptions);
 
 }
+
+
+////// 
+
+// async function modifyPdf() {
+//     // Fetch an existing PDF document
+//     const url = './Drawing_1.pdf'
+//     const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer())
+
+// // Load a PDFDocument from the existing PDF bytes
+// const pdfDoc = await PDFDocument.load(existingPdfBytes)
+
+// // Embed the Helvetica font
+// const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
+
+// // Get the first page of the document
+// const pages = pdfDoc.getPages()
+// const firstPage = pages[0]
+
+// // Get the width and height of the first page
+// const { width, height } = firstPage.getSize();
+
+// console.log(firstPage.getSize());
+
+// // Draw a string of text diagonally across the first page
+// // firstPage.drawText('BV AUGMENTED DRAFT!', {
+// //   x: width/2,
+// //   y: height / 2,
+// //   size: 10,
+// //   font: helveticaFont,
+// //   color: rgb(0.95, 0.1, 0.1),
+// //   rotate: degrees(-45),
+// // })
+
+// // Add a table of two columns and two rows 
+
+//     // Define cell width and height
+//     const cellWidth = 150;
+//     const cellHeight = 30;
+  
+//     // Define table's top-left corner position
+//     const startX = width/2;
+//     const startY = height/2;
+
+//     for(let i=0;i<polygonArray.length/2;i++){
+
+//         // Draw table cells as rectangles
+//         firstPage.drawRectangle({
+//         x: startX,
+//         y: startY- cellHeight*i,
+//         width: cellWidth,
+//         height: cellHeight,
+//         borderColor: rgb(0, 0, 0),
+//         borderWidth: 1,
+//         rotate: degrees(90),
+
+//       });
+
+//       firstPage.drawRectangle({
+//         x: startX + cellWidth,
+//         y: startY- cellHeight*i,
+//         width: cellWidth,
+//         height: cellHeight,
+//         borderColor: rgb(0, 0, 0),
+//         borderWidth: 1,
+//         rotate: degrees(90),
+
+//       });
+
+//       firstPage.drawText(polygonArray[2*i].toFixed(5).toString(), {
+//       x: startX + 10,
+//       y: startY - cellHeight*(i+1)+10 ,
+//       size: 10,
+//       color: rgb(0, 0, 0),
+//       rotate: degrees(90),
+
+//     });
+//     firstPage.drawText(polygonArray[2*i+1].toFixed(5).toString(), {
+//       x: startX + cellWidth + 10,
+//       y: startY - cellHeight*(i+1) +10,
+//       size: 10,
+//       color: rgb(0, 0, 0),
+//       rotate: degrees(90),
+
+//     });
+
+
+//     }
+  
+  
+//     // Add text to each cell
+//     firstPage.drawText('Pile Longitude', {
+//       x: startX + 10,
+//       y: startY +10,
+//       size: 10,
+//       color: rgb(0, 0, 0),
+//       rotate: degrees(90),
+
+//     });
+//     firstPage.drawText('Pile Latitude', {
+//       x: startX + cellWidth + 10,
+//       y: startY +10,
+//       size: 10,
+//       color: rgb(0, 0, 0),
+//       rotate: degrees(90),
+
+//     });
+
+// // Serialize the PDFDocument to bytes (a Uint8Array)
+// const pdfBytes = await pdfDoc.save()
+
+//       // Trigger the browser to download the PDF document
+// download(pdfBytes, "pdf-lib_modification_example.pdf", "application/pdf");
+
+
+// }
+
+
+async function modifyPdf() {
+    // Fetch an existing PDF document
+    const url = './Drawing_1.pdf'
+    const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer()) ;
+
+    const pngUrl = './Sketch.png';
+    const pngImageBytes = await fetch(pngUrl).then((res) => res.arrayBuffer());
+
+   
+
+// Load a PDFDocument from the existing PDF bytes
+const pdfDoc = await PDFDocument.load(existingPdfBytes);
+
+// Load an Image 
+
+const pngImage = await pdfDoc.embedPng(pngImageBytes);
+const pngDims = pngImage.scale(1);
+
+// Embed the Helvetica font
+const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
+
+// Get the first page of the document
+const pages = pdfDoc.getPages()
+const firstPage = pages[0]
+
+// Get the width and height of the first page
+const { width, height } = firstPage.getSize();
+
+console.log(firstPage.getSize());
+
+// Draw a string of text diagonally across the first page
+// firstPage.drawText('BV AUGMENTED DRAFT!', {
+//   x: width/2,
+//   y: height / 2,
+//   size: 10,
+//   font: helveticaFont,
+//   color: rgb(0.95, 0.1, 0.1),
+//   rotate: degrees(90),
+// })
+
+// Add a table of two columns and two rows 
+
+    // Define cell width and height
+    const cellWidth = 150;
+    const cellHeight = 30;
+  
+    // Define table's top-left corner position
+    // Higher x is pushing the table to the right
+    // Lower Y is pushing the table to the top 
+
+    const startX = 5*width/6;
+    const startY = height/10;
+
+    for(let i=0;i<polygonArray.length/2;i++){
+
+        // Draw table cells as rectangles
+        firstPage.drawRectangle({
+        y: startX,
+        x: startY+ cellHeight*i,
+        width: cellWidth,
+        height: cellHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 1,
+        rotate: degrees(90),
+
+      });
+
+      firstPage.drawRectangle({
+        y: startX + cellWidth,
+        x: startY+ cellHeight*i,
+        width: cellWidth,
+        height: cellHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 1,
+        rotate: degrees(90),
+
+      });
+
+      firstPage.drawText(polygonArray[2*i].toFixed(5).toString(), {
+      y: startX + 10,
+      x: startY + cellHeight*(i+1)+10 ,
+      size: 10,
+      color: rgb(0, 0, 0),
+      rotate: degrees(90),
+
+    });
+    firstPage.drawText(polygonArray[2*i+1].toFixed(5).toString(), {
+      y: startX + cellWidth + 10,
+      x: startY + cellHeight*(i+1) +10,
+      size: 10,
+      color: rgb(0, 0, 0),
+      rotate: degrees(90),
+
+    });
+
+
+    }
+  
+  
+    // Add text to each cell
+    firstPage.drawText('Pile Longitude', {
+      y: startX + 10,
+      x: startY +10,
+      size: 12,
+      color: rgb(0, 0, 0),
+      rotate: degrees(90),
+
+    });
+    firstPage.drawText('Pile Latitude', {
+      y: startX + cellWidth + 10,
+      x: startY +10,
+      size: 12,
+      color: rgb(0, 0, 0),
+      rotate: degrees(90),
+
+    });
+
+      // })
+   firstPage.drawImage(pngImage, {
+    x: firstPage.getWidth() * 3/6 ,
+    y: firstPage.getHeight() /10 ,
+    width: pngDims.width,
+    height: pngDims.height,
+    rotate: degrees(90)
+  })
+
+// Serialize the PDFDocument to bytes (a Uint8Array)
+const pdfBytes = await pdfDoc.save()
+
+      // Trigger the browser to download the PDF document
+download(pdfBytes, "Layout-Solar.pdf", "application/pdf");
+
+
+}
+
+
+
+
+async function modifyPdfCalc(numsoilLayers, soilFriction, soilDepth) {
+    // Fetch an existing PDF document
+    const url = './Pile_Embedment_Calculation.pdf'
+    const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer())
+
+// Load a PDFDocument from the existing PDF bytes
+const pdfDoc = await PDFDocument.load(existingPdfBytes)
+
+// Embed the Helvetica font
+const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
+
+// Get the first page of the document
+const pages = pdfDoc.getPages()
+const firstPage = pages[0]
+
+// Get the width and height of the first page
+const { width, height } = firstPage.getSize();
+
+console.log(firstPage.getSize());
+
+// Draw a string of text diagonally across the first page
+firstPage.drawText('BV AUGMENTED DRAFT!', {
+  x: width/2,
+  y: height / 2,
+  size: 10,
+  font: helveticaFont,
+  color: rgb(0.95, 0.1, 0.1),
+  rotate: degrees(-45),
+})
+
+// Add a table of two columns and two rows 
+
+    // Define cell width and height
+    const cellWidth = 100;
+    const cellHeight = 20;
+  
+    // Define table's top-left corner position
+    const startX = 0.5*width/6;
+    const startY = 4.5*height/6;
+
+    let upperbound = parseInt(numsoilLayers)+1;
+
+    for(let i=1;i<upperbound;i++){
+
+        // Draw table cells as rectangles
+        firstPage.drawRectangle({
+        x: startX,
+        y: startY- cellHeight*i,
+        width: cellWidth,
+        height: cellHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 1,
+
+      });
+
+      firstPage.drawRectangle({
+        x: startX + cellWidth,
+        y: startY- cellHeight*i,
+        width: cellWidth,
+        height: cellHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 1,
+
+      });
+
+      firstPage.drawRectangle({
+        x: startX + 2*cellWidth,
+        y: startY- cellHeight*i,
+        width: cellWidth,
+        height: cellHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 1,
+
+      });
+
+      firstPage.drawText(`Layer : ${i}`, {
+      x: startX + 10,
+      y: startY - cellHeight*(i)+10 ,
+      size: 8,
+      color: rgb(0, 0, 0),
+
+    });
+    firstPage.drawText(`${soilFriction}`, {
+      x: startX + cellWidth + 10,
+      y: startY - cellHeight*(i) +10,
+      size: 8,
+      color: rgb(0, 0, 0),
+
+    });
+
+    firstPage.drawText(`${soilDepth}`, {
+        x: startX + 2*cellWidth + 10,
+        y: startY - cellHeight*(i) +10,
+        size: 8,
+        color: rgb(0, 0, 0),
+  
+      });
+
+
+    }
+
+    firstPage.drawRectangle({
+        x: startX,
+        y: startY,
+        width: cellWidth,
+        height: cellHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 1,
+
+      });
+
+      firstPage.drawRectangle({
+        x: startX + cellWidth,
+        y: startY,
+        width: cellWidth,
+        height: cellHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 1,
+
+      });
+
+      firstPage.drawRectangle({
+        x: startX + 2*cellWidth,
+        y: startY,
+        width: cellWidth,
+        height: cellHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 1,
+
+      });
+  
+  
+    // Add text to each cell
+    firstPage.drawText('Layer', {
+      x: startX + 10,
+      y: startY +10,
+      size: 8,
+      color: rgb(0, 0, 0),
+
+    });
+    firstPage.drawText('Skin Fricition (psf)', {
+      x: startX + cellWidth + 10,
+      y: startY +10,
+      size: 8,
+      color: rgb(0, 0, 0),
+
+    });
+
+    firstPage.drawText('Layer Depth (ft)', {
+        x: startX + 2*cellWidth + 10,
+        y: startY +10,
+        size: 8,
+        color: rgb(0, 0, 0),
+  
+      });
+
+// Serialize the PDFDocument to bytes (a Uint8Array)
+const pdfBytes = await pdfDoc.save()
+
+      // Trigger the browser to download the PDF document
+download(pdfBytes, "pdf-lib_modification_example.pdf", "application/pdf");
+
+
+}
+
+
+
+
+document.getElementById('PDF').addEventListener("click", () => 
+    
+    modifyPdf());
+
+document.getElementById('PDFCalc').addEventListener("click", () => 
+    
+    modifyPdfCalc());

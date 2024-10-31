@@ -26,6 +26,12 @@
     
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.121/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/map.css" />
+
+    <!-- ========== PDF Files Creator ========= -->
+
+    <script src="https://unpkg.com/pdf-lib@1.4.0"></script>
+    <script src="https://unpkg.com/downloadjs@1.4.7"></script
+    
   </head>
   <body>
     <!-- ======== Preloader =========== -->
@@ -121,9 +127,7 @@
               <li>
                 <a href="Map.html"> Map Platform </a>
               </li>
-              <li>
-                <a href="blank-page.html"> Blank Page </a>
-              </li>
+
             </ul>
           </li>
           <li class="nav-item nav-item-has-children">
@@ -163,7 +167,7 @@
               data-bs-toggle="collapse"
               data-bs-target="#ddmenu_4"
               aria-controls="ddmenu_4"
-              aria-expanded="false"
+              aria-expanded="true"
               aria-label="Toggle navigation"
             >
               <span class="icon">
@@ -194,6 +198,14 @@
                   <input class="form-check-input" type="checkbox" value="" id="SolarGeom" />
                   <label class="form-check-label" for="checkbox-1">
                     Add Solar</label>
+                </div>
+              </li>
+
+              <li>
+                <div class="form-check checkbox-style mb-16">
+                  <input class="form-check-input" type="checkbox" value="" id="SolarTechnical" />
+                  <label class="form-check-label" for="checkbox-1">
+                    Solar Technical Agent</label>
                 </div>
               </li>
 
@@ -424,7 +436,7 @@
             <div class="row align-items-center">
               <div class="col-md-6">
                 <div class="title">
-                  <h2>Geolocalisation</h2>
+                  <h2>GeoSpatial</h2>
                 </div>
               </div>
               <!-- end col -->
@@ -462,8 +474,11 @@
 
                <script src="/main_2.js" type="module"></script>
 
-                <!-- End Chart -->
+                <!-- Script PDF Creator -->
 
+                <script src="/main_PDF.js" type="module"></script>
+                            
+  
             </div>
             <!-- End Col -->
             <div class="col-lg-5">
@@ -558,9 +573,14 @@
                     Move Objects</label>
                 </div>
                 <div class="form-check checkbox-style mb-16">
-                  <input class="form-check-input" type="checkbox" value="" id="move" />
+                  <input class="form-check-input" type="checkbox" value="" id="drawPolygon" />
                   <label class="form-check-label" for="checkbox-1">
                     Draw Polygon BB</label>
+                </div>
+                <div class="form-check checkbox-style mb-16">
+                  <input class="form-check-input" type="checkbox" value="" id="drawProperty" />
+                  <label class="form-check-label" for="checkbox-1">
+                    Create Property Line</label>
                 </div>
                 <div class="form-check checkbox-style mb-16">
                   <input class="form-check-input" type="checkbox" value="" id="addRob" />
@@ -571,6 +591,16 @@
                   <input class="form-check-input" type="checkbox" value="" id="remove" />
                   <label class="form-check-label" for="checkbox-1">
                     Remove Entities</label>
+                </div>
+                <div class="form-check checkbox-style mb-16">
+                  <input class="form-check-input" type="checkbox" value="" id="PDF" />
+                  <label class="form-check-label" for="checkbox-1">
+                    Create PDF</label>
+                </div>
+                <div class="form-check checkbox-style mb-16">
+                  <input class="form-check-input" type="checkbox" value="" id="PDFCalc" />
+                  <label class="form-check-label" for="checkbox-1">
+                    Create PDF Calc</label>
                 </div>
                 <form id="form">
                   <input

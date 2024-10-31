@@ -26,6 +26,7 @@
     "langchain": "^0.0.214",
     "moment-timezone": "^0.5.44",
     "openai": "^4.24.1",
+    "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
     "sqlite3": "^5.1.7",
     "typeorm": "^0.3.20",
