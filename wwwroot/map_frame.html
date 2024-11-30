@@ -22,12 +22,15 @@
     <link rel="stylesheet" href="assets/css/fullcalendar.css" />
     <link rel="stylesheet" href="assets/css/main.css" />
 
+    
+
     <!-- ========== Cesium Files ========= -->
     
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.121/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/map.css" />
 
     <!-- ========== PDF Files Creator ========= -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <script src="https://unpkg.com/pdf-lib@1.4.0"></script>
     <script src="https://unpkg.com/downloadjs@1.4.7"></script
@@ -595,12 +598,22 @@
                 <div class="form-check checkbox-style mb-16">
                   <input class="form-check-input" type="checkbox" value="" id="PDF" />
                   <label class="form-check-label" for="checkbox-1">
-                    Create PDF</label>
+                    Create Drawing</label>
                 </div>
                 <div class="form-check checkbox-style mb-16">
                   <input class="form-check-input" type="checkbox" value="" id="PDFCalc" />
                   <label class="form-check-label" for="checkbox-1">
-                    Create PDF Calc</label>
+                    Create PDF Calc - Embedment Design</label>
+                </div>
+                <div class="form-check checkbox-style mb-16">
+                  <input class="form-check-input" type="checkbox" value="" id="PDFCalcPile" />
+                  <label class="form-check-label" for="checkbox-1">
+                    Create PDF Calc - Pile Design </label>
+                </div>
+                <div class="form-check checkbox-style mb-16">
+                  <input class="form-check-input" type="checkbox" value="" id="LayoutGen" />
+                  <label class="form-check-label" for="checkbox-1">
+                    Generate Layout - Property Line </label>
                 </div>
                 <form id="form">
                   <input

@@ -35,6 +35,9 @@ const openai = new OpenAI({
 let urn = "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6ZnFwdGd0Z2Q2N2dnNGd2dWJhZ2VpdmpweHVzdW9pbXMtYmFzaWMtYXBwL3JzdGJhc2ljc2FtcGxlcHJvamVjdC5ydnQ";
 let guid = "2b8b1cf8-31bf-7e71-dfb5-e1d4342ddb82";
 
+// let urn= "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6ZnFwdGd0Z2Q2N2dnNGd2dWJhZ2VpdmpweHVzdW9pbXMtYmFzaWMtYXBwL1NlYXBvcnQtQ2l2aWMtQ2VudGVyX0FyY2hpdGVjdHVyZS5ydnQ";
+// let guid = "420921dd-e29e-d906-e817-10ac079e4721";
+
 // async function authenticate(){
 
 //     const credentials = `client_id=${APS_CLIENT_ID}&client_secret=${APS_CLIENT_SECRET}&grant_type=client_credentials&scope=data:read`;
@@ -96,7 +99,7 @@ async function getAccessToken() {
 //getmodel metadata
 
 async function getModelMetadata(urn, guid, access_token) {
-    const response = await axios.get(`https://developer.api.autodesk.com/modelderivative/v2/designdata/${urn}/metadata/${guid}/properties`, {
+    const response = await axios.get(`https://developer.api.autodesk.com/modelderivative/v2/designdata/${urn}/metadata/${guid}/properties?forceget=true`, {
         headers: {
             'Authorization': `Bearer ${access_token}`
         }

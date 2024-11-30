@@ -233,6 +233,13 @@ document.querySelector('#fname').addEventListener('keypress', function (e) {
     //   console.log(document.querySelector('#fname').value);
     //   openaiquery(document.querySelector('#fname').value)
 
+    document.getElementById("promptInput").innerHTML +=
+                `<div class="author" id="promptInputMain"><img src="./assets/images/user.svg" alt="" class="fn__svg" /></div>
+                <div>
+                <p id="gpt_input">
+                  ${document.querySelector('#fname').value}
+                </p></div>`;
+
     getopenai(document.querySelector('#fname').value);
 
 

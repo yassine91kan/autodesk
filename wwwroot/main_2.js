@@ -113,11 +113,49 @@ function addPoint (long,lat){
 
 }
 
+// Function to check if a point is inside a polygon // RayCasting Algorithm
+
+function isPointInPolygon(point, polygon) {
+  const [x, y] = point;
+  let isInside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const [xi, yi] = polygon[i];
+      const [xj, yj] = polygon[j];
+      const intersect = ((yi > y) !== (yj > y)) && 
+                        (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      if (intersect) isInside = !isInside;
+  }
+  console.log("The point is not inside");
+  return isInside;
+}
+
 // Function to initialize the viewer and add the solar panels
 async function initialize(long,lat,powerPlant) {
     // Example: Geocode an address and fly to its location
     // const addressData = await geocodeAddress("1251 Thomas A. Dolan Pkwy, Dunrobin, Ontario");
     // console.log("Geocoded Address:", addressData);
+
+  //   const propertyLine = [
+  //     [-76.0317, 45.4160],
+  //     [-76.0318, 45.4165],
+  //     [-76.0320, 45.4162],
+  //     [-76.0317, 45.4160]
+  // ];
+
+//   const propertyLine = [
+//     [-76.031671, 45.4160587],
+//     [-76.0312271, 45.4160587],
+//     [-76.031671, 45.4162387],
+//     [-76.0312271, 45.4162387],
+//     [-76.031671, 45.4160587] // Closing the polygon by repeating the first point
+// ];
+
+const propertyLine=[[-76.031671, 45.4160587], 
+  [-76.031671, 45.4160587], 
+  [-76.0312271, 45.4160587], 
+  [-76.0312271, 45.4162387], 
+  [-76.031671, 45.4162387], 
+  [-76.031671, 45.4160587]];
 
     // const addressData = {"longitude":-76.0316771,"latitude":45.4160587}
     // The corresponding address is : 1251 Thomas Dolan Parkway, Ottawa, Canada
@@ -128,7 +166,7 @@ async function initialize(long,lat,powerPlant) {
         destination: Cesium.Cartesian3.fromDegrees(addressData.longitude, addressData.latitude, 40),
         orientation: {
             heading: Cesium.Math.toRadians(0.0),
-            pitch: Cesium.Math.toRadians(-15.0),
+            pitch: Cesium.Math.toRadians(0.0),
         }
     });
 
@@ -157,6 +195,12 @@ async function initialize(long,lat,powerPlant) {
             const longitude = startLongitude + col * spacingCol;
             const latitude = startLatitude + row * spacingRow;
 
+              // Check if the point is inside the property line polygon
+              // if (!isPointInPolygon([longitude, latitude], propertyLine)) {
+              //     addPoint (longitude,latitude)
+              //     continue; // Skip this panel if it is outside the property line
+              // }
+
             polygonArray.push(longitude);
             polygonArray.push(latitude);
 
@@ -167,8 +211,8 @@ async function initialize(long,lat,powerPlant) {
             // Add each solar panel to the scene
             // addSolarPanel(viewer, longitude, latitude, height);
             // promises.push(addSolarPanel(viewer, longitude, latitude, height));
-            // promises.push(addPoint (longitude,latitude));
-            promises.push(addTurbine(viewer,longitude,latitude,height))
+            promises.push(addPoint (longitude,latitude));
+            promises.push(addTurbine(viewer,longitude,latitude,height));
             document.querySelector('#table_pile').innerHTML += `
             <tr>
                 <td>
@@ -277,7 +321,7 @@ async function moveEntities(number) {
         console.log(bouboxArray);
 
         // drawPolygon(polygonArray);
-        drawPolygon(bouboxArray);
+        // drawPolygon(bouboxArray);
 
    
     } catch (error) {
@@ -553,24 +597,30 @@ function reorderPointsClockwise(coords) {
 
 async function drawProperty(array) {
 
+    // const arrayTest = [
+    //     -76.031677, 45.416059,
+    //     -76.031227, 45.416209,
+    //     -76.031377, 45.416209,
+    //     -76.031277, 45.416149,
+    //     -76.031527, 45.416119,
+    //     -76.031577, 45.416074,
+    //     -76.031677, 45.416059 // Closing the polygon by repeating the first point
+    // ];
+
+
     const arrayTest = [
-        -76.031677, 45.416059,
-        -76.031227, 45.416209,
-        -76.031377, 45.416209,
-        -76.031277, 45.416149,
-        -76.031527, 45.416119,
-        -76.031577, 45.416074,
-        -76.031677, 45.416059 // Closing the polygon by repeating the first point
-    ];
+      -76.031671, 45.4160587,
+      -76.0312271, 45.4160587,
+      -76.031671, 45.4162387,
+      -76.0312271, 45.4162387,
+      -76.031671, 45.4160587 // Closing the polygon by repeating the first point
+  ];
 
     const orderedCoords = reorderPointsClockwise(arrayTest);
 
 
 
     try {
-
-        // console.log('This is the array test');
-        // console.log(arrayTest);
 
         console.log('Ordered coordinates:', orderedCoords);
         
@@ -608,8 +658,115 @@ document.getElementById('drawProperty').addEventListener("click", () =>
     
     drawProperty());
 
-    
+function getPolygonBounds(polygon) {
 
+      let minLon = Number.POSITIVE_INFINITY, minLat = Number.POSITIVE_INFINITY;
+      let maxLon = Number.NEGATIVE_INFINITY, maxLat = Number.NEGATIVE_INFINITY;
+  
+      for (const [lon, lat] of polygon) {
+          if (lon < minLon) minLon = lon;
+          if (lat < minLat) minLat = lat;
+          if (lon > maxLon) maxLon = lon;
+          if (lat > maxLat) maxLat = lat;
+      }
+  
+      return { minLon, minLat, maxLon, maxLat };
+  }
+    
+async function generatePanelsInPolygon(viewer, propertyLine, powerPlant) {
+
+      const numCols = 10;                // Number of columns of panels
+      const powerModule = 450;           // Power per module (Watts)
+      const numRows = Math.round((powerPlant / powerModule) / numCols); // Calculate rows dynamically
+  
+      const spacingRow = 0.000015;       // Spacing between rows (latitude)
+      const spacingCol = 0.00005;        // Spacing between columns (longitude)
+  
+      const bounds = getPolygonBounds(propertyLine); // Function to calculate polygon bounds
+      const panels = [];
+      const promises = [];
+  
+      let pileNumber = 0;
+  
+      // Iterate through the grid within the polygon bounds
+      for (let lat = bounds.minLat; lat <= bounds.maxLat; lat += spacingRow) {
+          for (let lon = bounds.minLon; lon <= bounds.maxLon; lon += spacingCol) {
+              // Check if the point is within the property line polygon
+              const point = [lon, lat];
+
+              if (isPointInPolygon(point, propertyLine)) {
+                  // Add panel data to the array
+                  pileNumber += 1;
+                  panels.push({ longitude: lon, latitude: lat });
+  
+                  // Add a visual representation in CesiumJS
+                  promises.push(addSolarPanel(viewer, lon, lat, 33.53));
+  
+                  // Optionally add the point to a table
+                  document.querySelector('#table_pile').innerHTML += `
+                  <tr>
+                      <td>
+                          <div class="check-input-primary">
+                              <input class="form-check-input" type="checkbox" id="checkbox-${pileNumber}" />
+                          </div>
+                      </td>
+                      <td><p>${pileNumber}</p></td>
+                      <td><p>Steel Pile</p></td>
+                      <td><p>${lon.toFixed(6)}</p></td>
+                      <td><p>${lat.toFixed(6)}</p></td>
+                      <td><p>Some Value</p></td>
+                      <td>
+                          <div class="action">
+                              <button class="text-danger" onclick="removeRow(this)">
+                                  <i class="lni lni-trash-can"></i>
+                              </button>
+                          </div>
+                      </td>
+                  </tr>`;
+              }
+          }
+      }
+  
+      // Wait for all models to load
+      await Promise.all(promises);
+      console.log("Panels generated inside the polygon:", panels);
+      return panels;
+  }
+
+  const propertyLine=[[-76.031671, 45.4160587], 
+  [-76.031671, 45.4160587], 
+  [-76.0314271, 45.4160587], 
+  [-76.0312271, 45.4162387], 
+  [-76.031671, 45.4162387], 
+  [-76.031671, 45.4160587]];
+
+  // [{-76.031671, 45.4160587}, 
+  // {-76.031671, 45.4160587}, 
+  // {-76.0314271, 45.4160587}, 
+  // {-76.0312271, 45.4162387}, 
+  // {-76.031671, 45.4162387}, 
+  // {-76.031671, 45.4160587}];
+
+  // [
+  //   { "longitude": -76.031671, "latitude": 45.4160587 },
+  //   { "longitude": -76.031671, "latitude": 45.4160587 },
+  //   { "longitude": -76.0314271, "latitude": 45.4160587 },
+  //   { "longitude": -76.0312271, "latitude": 45.4162387 },
+  //   { "longitude": -76.031671, "latitude": 45.4162387 },
+  //   { "longitude": -76.031671, "latitude": 45.4160587 }
+  // ]
+
+  
+  // for (let i=0;i<propertyLine.length;i++){
+
+  //   addPoint(propertyLine[i][0],propertyLine[i][1]);
+  // }
+
+  document.getElementById('LayoutGen').addEventListener("click", () => 
+      
+    generatePanelsInPolygon(viewer,propertyLine,100000)
+
+  );
 
 // Main function to load models and move them after loading
 
@@ -785,13 +942,40 @@ async function getopenai(prompt) {
 
             // initialize(data.addressObj.longitude,data.addressObj.latitude);
 
-            initialize(-76.0316771,45.4160587,parseInt(data.power));
+            if(!data.coordinates){
+
+              console.log(data.coordinates);
+              initialize(-76.0316771,45.4160587,parseInt(data.power));
+            }
+
+            
 
             if(data.soilLayer){
 
                 console.log("I am here the calc wizard");
                 modifyPdfCalc(data.soilLayer, data.soilFriction, data.soilDepth);
 
+            }
+
+            
+            if(data.totalCapacity){
+
+                console.log("data.totalCapacity");
+                modifyPdfCalc(data.totalCapacit);
+
+            }
+
+            if(data.coordinates){
+
+              console.log(`These are the coordinates of the plant : ${data.coordinates}`);
+
+              let jsonObject = JSON.parse(data.coordinates);
+
+              const outputArray = jsonObject.map(({ longitude, latitude }) => [longitude, latitude]);
+
+              generatePanelsInPolygon(viewer,outputArray,100000);
+
+              console.log(jsonObject);
             }
 
             
@@ -842,131 +1026,229 @@ function uploadFiles(){
 }
 
 
-////// 
+let finX ;  
+let finY ; 
 
-// async function modifyPdf() {
-//     // Fetch an existing PDF document
-//     const url = './Drawing_1.pdf'
-//     const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer())
+function createTable(numRows,titleLeft,titleRight,width,height,firstPage,arrayLeft,arrayRight){
 
-// // Load a PDFDocument from the existing PDF bytes
-// const pdfDoc = await PDFDocument.load(existingPdfBytes)
+    // Add a table of two columns and two rows 
 
-// // Embed the Helvetica font
-// const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
-
-// // Get the first page of the document
-// const pages = pdfDoc.getPages()
-// const firstPage = pages[0]
-
-// // Get the width and height of the first page
-// const { width, height } = firstPage.getSize();
-
-// console.log(firstPage.getSize());
-
-// // Draw a string of text diagonally across the first page
-// // firstPage.drawText('BV AUGMENTED DRAFT!', {
-// //   x: width/2,
-// //   y: height / 2,
-// //   size: 10,
-// //   font: helveticaFont,
-// //   color: rgb(0.95, 0.1, 0.1),
-// //   rotate: degrees(-45),
-// // })
-
-// // Add a table of two columns and two rows 
-
-//     // Define cell width and height
-//     const cellWidth = 150;
-//     const cellHeight = 30;
+    // Define cell width and height
+    const cellWidth = 100;
+    const cellHeight = 20;
   
-//     // Define table's top-left corner position
-//     const startX = width/2;
-//     const startY = height/2;
+    // Define table's top-left corner position
 
-//     for(let i=0;i<polygonArray.length/2;i++){
+      
+        let startX = 0.5*width/6;
+        let startY = 4.5*height/6;
 
-//         // Draw table cells as rectangles
-//         firstPage.drawRectangle({
-//         x: startX,
-//         y: startY- cellHeight*i,
-//         width: cellWidth,
-//         height: cellHeight,
-//         borderColor: rgb(0, 0, 0),
-//         borderWidth: 1,
-//         rotate: degrees(90),
+        if(finX){
 
-//       });
+            console.log(finY);
+            console.log(finX);
 
-//       firstPage.drawRectangle({
-//         x: startX + cellWidth,
-//         y: startY- cellHeight*i,
-//         width: cellWidth,
-//         height: cellHeight,
-//         borderColor: rgb(0, 0, 0),
-//         borderWidth: 1,
-//         rotate: degrees(90),
+            startX = finY;
+            startY = finX;
 
-//       });
+            console.log("I am checking here 2");
 
-//       firstPage.drawText(polygonArray[2*i].toFixed(5).toString(), {
-//       x: startX + 10,
-//       y: startY - cellHeight*(i+1)+10 ,
-//       size: 10,
-//       color: rgb(0, 0, 0),
-//       rotate: degrees(90),
+        }
 
-//     });
-//     firstPage.drawText(polygonArray[2*i+1].toFixed(5).toString(), {
-//       x: startX + cellWidth + 10,
-//       y: startY - cellHeight*(i+1) +10,
-//       size: 10,
-//       color: rgb(0, 0, 0),
-//       rotate: degrees(90),
+    let loadVar;
+    let loadVal;
 
-//     });
+    // let upperbound = parseInt(numsoilLayers)+1;
+
+    for(let i=1;i<numRows+1;i++){
+
+        // Draw table cells as rectangles
+        firstPage.drawRectangle({
+        x: startX,
+        y: startY- cellHeight*i,
+        width: cellWidth,
+        height: cellHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 1,
+
+      });
+
+      firstPage.drawRectangle({
+        x: startX + cellWidth,
+        y: startY- cellHeight*i,
+        width: cellWidth,
+        height: cellHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 1,
+
+      });
+
+      loadVar= arrayLeft[i-1];
+      loadVal = arrayRight[i-1];
 
 
-//     }
+
+    //   switch(i){
+
+    //     case 1:
+    //         loadVar=array;
+    //         break;
+    //     case 2:
+    //         loadVar="Moment Mx (kips*ft)";
+    //         break;
+    //     case 3:
+    //         loadVar="Moment My (kips*ft)";
+    //         break;
+    //     default:
+    //         loadVar="Axial";
+
+    //   }
+
+
+      firstPage.drawText(`${loadVar}`, {
+      x: startX + 10,
+      y: startY - cellHeight*(i)+10 ,
+      size: 8,
+      color: rgb(0, 0, 0),
+
+    });
+    firstPage.drawText(`${loadVal}`, {
+      x: startX + cellWidth + 10,
+      y: startY - cellHeight*(i) +10,
+      size: 8,
+      color: rgb(0, 0, 0),
+
+    });
+
+
+      finY = startX ;
+      finX = startY - cellHeight*(i+1) -10;
+
+
+}
+
+    firstPage.drawRectangle({
+        x: startX,
+        y: startY,
+        width: cellWidth,
+        height: cellHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 1,
+
+      });
+
+      firstPage.drawRectangle({
+        x: startX + cellWidth,
+        y: startY,
+        width: cellWidth,
+        height: cellHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 1,
+
+      });
+
+
   
   
-//     // Add text to each cell
-//     firstPage.drawText('Pile Longitude', {
-//       x: startX + 10,
-//       y: startY +10,
-//       size: 10,
-//       color: rgb(0, 0, 0),
-//       rotate: degrees(90),
+    // Add text to each cell
+    firstPage.drawText(titleLeft, {
+      x: startX + 10,
+      y: startY +10,
+      size: 8,
+      color: rgb(0, 0, 0),
 
-//     });
-//     firstPage.drawText('Pile Latitude', {
-//       x: startX + cellWidth + 10,
-//       y: startY +10,
-//       size: 10,
-//       color: rgb(0, 0, 0),
-//       rotate: degrees(90),
+    });
+    firstPage.drawText(titleRight, {
+      x: startX + cellWidth + 10,
+      y: startY +10,
+      size: 8,
+      color: rgb(0, 0, 0),
 
-//     });
-
-// // Serialize the PDFDocument to bytes (a Uint8Array)
-// const pdfBytes = await pdfDoc.save()
-
-//       // Trigger the browser to download the PDF document
-// download(pdfBytes, "pdf-lib_modification_example.pdf", "application/pdf");
+    });
 
 
+
+}
+
+function createText(text,gap,firstPage){
+
+ firstPage.drawText(text, {
+  x: finY+gap,
+  y: finX-gap,
+  size: 8,
+  color: rgb(0, 0, 0),
+});
+
+finY = finY ;
+finX = finX - 30  ;
+
+console.log(finY);
+console.log(finX);
+
+}
+
+function addGap(a,b,c){
+
+  a=a+c ;
+  b=b+c;
+
+}
+
+// async function ScreenShot(){
+
+//   const captureElement = document.getElementById("cesiumContainer");
+//   html2canvas(captureElement).then(canvas => {
+//       // Convert canvas to image
+//       const image = canvas.toDataURL("image/png");
+
+//       // Create a download link
+//       const link = document.createElement("a");
+//       link.href = image;
+//       link.download = "screenshot.png";
+
+//       // Trigger download
+//       link.click();
+
+//       return image;
+//   });
+  
 // }
 
+async function ScreenShot() {
+  const cesiumCanvas = document.querySelector("#cesiumContainer canvas");
+  if (!cesiumCanvas) {
+    console.error("WebGL canvas not found!");
+    return;
+  }
 
+  // Wait for the next animation frame to ensure rendering is complete
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+
+  // Capture the canvas as an image
+  const image = cesiumCanvas.toDataURL("image/png");
+
+  // // Optional: Download the screenshot
+  // const link = document.createElement("a");
+  // link.href = image;
+  // link.download = "screenshot.png";
+  // link.click();
+
+  return image; // Return the Base64 image
+}
 async function modifyPdf() {
     // Fetch an existing PDF document
     const url = './Drawing_1.pdf'
     const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer()) ;
 
-    const pngUrl = './Sketch.png';
-    const pngImageBytes = await fetch(pngUrl).then((res) => res.arrayBuffer());
+    // const pngUrl = './Sketch.png';
+    // const pngImageBytes = await fetch(pngUrl).then((res) => res.arrayBuffer());
 
-   
+    // Call the ScreenShot function and use the result in the PDF
+const base64Image = await ScreenShot();
+
+// Convert Base64 to Uint8Array for embedding in PDF-lib
+const pngImageBytes = Uint8Array.from(atob(base64Image.split(",")[1]), (c) => c.charCodeAt(0));
+
 
 // Load a PDFDocument from the existing PDF bytes
 const pdfDoc = await PDFDocument.load(existingPdfBytes);
@@ -980,23 +1262,13 @@ const pngDims = pngImage.scale(1);
 const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
 
 // Get the first page of the document
-const pages = pdfDoc.getPages()
-const firstPage = pages[0]
+const pages = pdfDoc.getPages() ;
+const firstPage = pages[0] ; 
 
 // Get the width and height of the first page
 const { width, height } = firstPage.getSize();
 
 console.log(firstPage.getSize());
-
-// Draw a string of text diagonally across the first page
-// firstPage.drawText('BV AUGMENTED DRAFT!', {
-//   x: width/2,
-//   y: height / 2,
-//   size: 10,
-//   font: helveticaFont,
-//   color: rgb(0.95, 0.1, 0.1),
-//   rotate: degrees(90),
-// })
 
 // Add a table of two columns and two rows 
 
@@ -1053,6 +1325,8 @@ console.log(firstPage.getSize());
 
     });
 
+    // finY = startX + 10;
+    // finX = startY + cellHeight*(i+1) +10;
 
     }
   
@@ -1082,13 +1356,35 @@ console.log(firstPage.getSize());
     width: pngDims.width,
     height: pngDims.height,
     rotate: degrees(90)
-  })
+  });
+
+
+
 
 // Serialize the PDFDocument to bytes (a Uint8Array)
 const pdfBytes = await pdfDoc.save()
 
       // Trigger the browser to download the PDF document
 download(pdfBytes, "Layout-Solar.pdf", "application/pdf");
+
+viewer.scene.render();
+
+  // const captureElement = document.getElementById("cesiumContainer");
+  // html2canvas(captureElement).then(canvas => {
+  //     // Convert canvas to image
+  //     const image = canvas.toDataURL("image/png");
+
+  //     // Create a download link
+  //     const link = document.createElement("a");
+  //     link.href = image;
+  //     link.download = "screenshot.png";
+
+  //     // Trigger download
+  //     link.click();
+  // });
+
+  ScreenShot();
+
 
 
 }
@@ -1194,6 +1490,9 @@ firstPage.drawText('BV AUGMENTED DRAFT!', {
   
       });
 
+      finY = startX + 10;
+      finX = startY - cellHeight*(i+1) -10;
+
 
     }
 
@@ -1252,6 +1551,63 @@ firstPage.drawText('BV AUGMENTED DRAFT!', {
   
       });
 
+
+
+      firstPage.drawText('Embedment Total Force (kips): ', {
+        y: finX,
+        x: finY,
+        size: 8,
+        color: rgb(0, 0, 0),
+    
+      });
+
+// Serialize the PDFDocument to bytes (a Uint8Array)
+const pdfBytes = await pdfDoc.save()
+
+      // Trigger the browser to download the PDF document
+download(pdfBytes, "pdf-lib_modification_example.pdf", "application/pdf");
+
+
+}
+
+async function modifyPdfCalcPile(totalCap) {
+    // Fetch an existing PDF document
+    const url = './Pile_Embedment_Calculation.pdf'
+    const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer())
+
+// Load a PDFDocument from the existing PDF bytes
+const pdfDoc = await PDFDocument.load(existingPdfBytes)
+
+// Embed the Helvetica font
+const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
+
+// Get the first page of the document
+const pages = pdfDoc.getPages();
+const firstPage = pages[0];
+
+// Get the width and height of the first page
+const { width, height } = firstPage.getSize();
+
+const arrayLeft = ["Axial load (kips)","Moment Mx (kips*ft)", "Moment My (kips*ft)"];
+const arrayRight = ["10","20","30"];
+
+console.log(firstPage.getSize());
+
+const arrayLeft_2 = ["Fy (ksi)","Fu (ksi)", "Unbraced Length (ft)", "K Factor"];
+const arrayRight_2 = ["50","65","14","1"];
+
+createTable(4,"Parameter","Value",width,height,firstPage,arrayLeft_2,arrayRight_2);
+
+// createTable(3,"Load","Value",width,height,firstPage,arrayLeft,arrayRight);
+
+createText("Then, we have the loading conditions provided by the user are :",0,firstPage);
+
+createTable(3,"Load","Value",width,height,firstPage,arrayLeft,arrayRight);
+
+
+
+
+
 // Serialize the PDFDocument to bytes (a Uint8Array)
 const pdfBytes = await pdfDoc.save()
 
@@ -1271,3 +1627,7 @@ document.getElementById('PDF').addEventListener("click", () =>
 document.getElementById('PDFCalc').addEventListener("click", () => 
     
     modifyPdfCalc());
+
+document.getElementById('PDFCalcPile').addEventListener("click", () => 
+    
+    modifyPdfCalcPile());

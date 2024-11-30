@@ -96,6 +96,7 @@ async function getModelMetadata(urn, guid, access_token) {
 }
 
 let resultPower ;
+ 
 
 router.get('/solar_agent', async function (req, res, next) {
 
@@ -116,6 +117,8 @@ router.get('/solar_agent', async function (req, res, next) {
  });
 
 router.post('/solar_agent', async function (req, res, next) {
+
+    let polygonCord ;
  
 
     const customTool = new DynamicStructuredTool({
@@ -133,6 +136,8 @@ router.post('/solar_agent', async function (req, res, next) {
                 }
 
                 resultPower= power.power;
+
+                console.log(`I am here the result Power is ${resultPower}`)
                 
                 return power.power;
             } catch (error) {
@@ -142,9 +147,35 @@ router.post('/solar_agent', async function (req, res, next) {
         }
     });
 
+    const customTool_2 = new DynamicStructuredTool({
+        name: "Get_the_Boundary_property_line",
+        description: "Get the Property line polygon based on a set of longitudes and latitudes provided by the user",
+        schema: z.object({
+            coordinates: z.string().describe("The longitudes and latitudes representing the polygon"),
+            // value: z.string().describe("the value to be used for querying the model. Use Tavily search for unusual values"),
+          }),  
+        func: async (coordinates) => {
+            try {
+                if (!coordinates) {
+                    console.log(coordinates);
+                    throw new Error("The coordinates must be provided");
+                }
+
+                polygonCord = coordinates.coordinates;
+
+                console.log(`The coordinates check within the tool are ${polygonCord}`);
+                
+                return polygonCord;
+            } catch (error) {
+                console.error("Error in customTool function:", error);
+                return `Error: ${error.message}`;
+            }
+        }
+    });
+
     
 
-    const tools = [customTool];
+    const tools = [customTool, customTool_2];
 
 
 
@@ -179,7 +210,7 @@ router.post('/solar_agent', async function (req, res, next) {
 
 
       const prompt = ChatPromptTemplate.fromMessages([
-        ["system", "You are a very powerful assistant that can help me add solar panels to the model based on the power requested from the user input. Use the tools."],
+        ["system", "You are a very powerful assistant that can help me add solar panels to the model based on the power requested from the user input and the polygon of the property line made of a series of longitudes and latitudes. The polygon is not mandatory. Use the tools. Do not use the unit in the power. Format the points of the polygon of property line in the tool as an array of objects containing longitudes and latitudes as the keys."],
         ["human", "{input}"],
         new MessagesPlaceholder("agent_scratchpad")
       ]);
@@ -195,7 +226,7 @@ router.post('/solar_agent', async function (req, res, next) {
     const agentExecutor = new AgentExecutor({
         agent,
         tools,
-        verbose:true,
+        // verbose:true,
         // returnIntermediateSteps: true,      
         
     });
@@ -206,7 +237,7 @@ router.post('/solar_agent', async function (req, res, next) {
     })
 
 
-    res.json({success: true, message: results.output, token:token, power:resultPower});
+    res.json({success: true, message: results.output, token:token, power:resultPower, coordinates:polygonCord});
 
     //Stream The response using the Log
 

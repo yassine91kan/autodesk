@@ -122,3 +122,12 @@ margin-top: 50px;
     font-size: 5px;
 }
 
+#gpt_input{
+
+    background-color: #dee0df;
+    padding: 10px;
+    border-radius: 10px;
+    margin-left: 10px;
+
+}
+

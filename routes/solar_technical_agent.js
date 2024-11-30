@@ -32,6 +32,8 @@ let soilLayer;
 let soilDepth;
 let soilFriction;
 
+let totalCapacity;
+
 const openai = new OpenAI({
     apiKey: OPENAIKEY
   });
@@ -131,20 +133,30 @@ router.post('/solar_technical_agent', async function (req, res, next) {
 
     const customTool_2 = new DynamicStructuredTool({
         name: "Design_Pile",
-        description: "Determine the section of piles based on the loading conditions",
+        description: "Calculate the capacity of steel section provided by the user based on loadings provided by the user",
         schema: z.object({
-            load: z.string().describe("load provided by the user"),
+            loadAxial: z.string().describe("Axial load provided by the user, can be provided by the user as Px"),
+            loadBendingStrong: z.string().describe("Bending load Moment for strong axis provided by the user, can be provided by the user as Mx"),
+            loadBendingWeak: z.string().describe("Bending load Moment for weak axis provided by the user, can be provided by the user as My"),
             // value: z.string().describe("the value to be used for querying the model. Use Tavily search for unusual values"),
           }),       
-        func: async (load) => {
+        func: async (loadAxial,loadBendingStrong,loadBendingWeak) => {
             try {
-                if (!load.load) {
-                    console.log(load);
-                    console.log(load.load);
-                    throw new Error("The loading must be provided.");
+                if (!loadAxial) {
+                    console.log(loadAxial);
+                    throw new Error("The loading params must be provided.");
                 }
+
+                console.log("I am here getting the values");
+                console.log(loadAxial);
+
+                let axialCapacity = 1127 ; 
+                let bendingsCapacity= 725 ;
+                let bendingwCapacity = 325 ;
+
+                totalCapacity = parseInt(loadAxial.loadAxial)/axialCapacity + parseInt(loadAxial.loadBendingStrong)/bendingsCapacity + parseInt(loadAxial.loadBendingWeak)/bendingwCapacity ; 
               
-                return load.load;
+                return `The total capacity ratio of this design section is : ${totalCapacity.toString()}`;;
             } catch (error) {
                 console.error("Error in customTool function:", error);
                 return `Error: ${error.message}`;
@@ -152,9 +164,8 @@ router.post('/solar_technical_agent', async function (req, res, next) {
         }
     });
 
-    
 
-    const tools = [customTool];
+    const tools = [customTool, customTool_2];
 
 
 
@@ -189,7 +200,7 @@ router.post('/solar_technical_agent', async function (req, res, next) {
 
 
       const prompt = ChatPromptTemplate.fromMessages([
-        ["system", "You are a very powerful assistant that can help me determine the embedment resistive force of piles based on loadings on the foundations, number of soild layers, depth of soil layers and value of skin friction. Use the tools. Also use numbers only without units in the tools"],
+        ["system", "You are a very powerful assistant that can help me determine the embedment resistive force of piles based on loadings on the foundations, number of soild layers, depth of soil layers and value of skin friction. Also, you can help me determine the capacity of seel sections based on loadings provided by the user. Use the tools. Also use numbers only without units in the tools"],
         ["human", "{input}"],
         new MessagesPlaceholder("agent_scratchpad")
       ]);
@@ -216,7 +227,7 @@ router.post('/solar_technical_agent', async function (req, res, next) {
     })
 
 
-    res.json({success: true, message: results.output, token:token, soilLayer:soilLayer, soilDepth: soilDepth, soilFriction:soilFriction});
+    res.json({success: true, message: results.output, token:token, soilLayer:soilLayer, soilDepth: soilDepth, soilFriction:soilFriction, totalCapacity:totalCapacity.toString()});
 
     //Stream The response using the Log
 

@@ -6060,8 +6060,20 @@ margin-top: 50px;
   background-color: #dee0df;
   /* padding:13px; */
   border-radius: 10px;
-  margin-left: 10px;
+  margin-top: 5px;
   padding:10px;
+
+}
+
+#gpt_input{
+
+  background-color: #dee0df;
+  /* padding:13px; */
+  border-radius: 10px;
+  margin-top: 5px;
+  padding:10px;
+  /* text-align: right; */
+  width: fit-content;
 
 }
 
@@ -6120,4 +6132,20 @@ margin-right: -10px;
 
 }
 
+#promptInputMain{
 
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: flex-end;
+
+}
+
+#promptInput{
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  /* justify-content: flex-end; */
+
+}
