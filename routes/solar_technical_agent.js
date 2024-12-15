@@ -31,8 +31,14 @@ let geomType ;
 let soilLayer;
 let soilDepth;
 let soilFriction;
+let resultString ;
 
 let totalCapacity;
+let totalCapacityOutput;
+
+let loadAx ; 
+let MomentX ; 
+let MomentY;
 
 const openai = new OpenAI({
     apiKey: OPENAIKEY
@@ -120,7 +126,7 @@ router.post('/solar_technical_agent', async function (req, res, next) {
 
                 console.log({ load, soillayerNum, soillayerDepth, soilskinFriction });            
 
-                let resultString = resultCalc.toString();
+                resultString = resultCalc.toFixed(2).toString();
               
                 return `The available embedment resistive force is : ${resultString} kip`;
 
@@ -154,8 +160,14 @@ router.post('/solar_technical_agent', async function (req, res, next) {
                 let bendingsCapacity= 725 ;
                 let bendingwCapacity = 325 ;
 
-                totalCapacity = parseInt(loadAxial.loadAxial)/axialCapacity + parseInt(loadAxial.loadBendingStrong)/bendingsCapacity + parseInt(loadAxial.loadBendingWeak)/bendingwCapacity ; 
+                totalCapacity = parseInt(loadAxial.loadAxial)/axialCapacity + 8/9 * (parseInt(loadAxial.loadBendingStrong)/bendingsCapacity + parseInt(loadAxial.loadBendingWeak)/bendingwCapacity) ; 
               
+                loadAx= loadAxial.loadAxial;
+                MomentX = loadAxial.loadBendingStrong; 
+                MomentY = loadAxial.loadBendingWeak;
+
+                totalCapacityOutput = totalCapacity.toFixed(2).toString();
+
                 return `The total capacity ratio of this design section is : ${totalCapacity.toString()}`;;
             } catch (error) {
                 console.error("Error in customTool function:", error);
@@ -227,7 +239,7 @@ router.post('/solar_technical_agent', async function (req, res, next) {
     })
 
 
-    res.json({success: true, message: results.output, token:token, soilLayer:soilLayer, soilDepth: soilDepth, soilFriction:soilFriction, totalCapacity:totalCapacity.toString()});
+    res.json({success: true, message: results.output, token:token, soilLayer:soilLayer, soilDepth: soilDepth, soilFriction:soilFriction, embedment:resultString,totalCapacity:totalCapacityOutput, loadAx: loadAx, MomentX:MomentX, MomentY:MomentY});
 
     //Stream The response using the Log
 

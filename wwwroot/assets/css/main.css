@@ -6043,7 +6043,7 @@ max-height:400px;
   }
 
 
-#fname{
+/* #fname{
 
 padding:15px;
 
@@ -6053,7 +6053,7 @@ border-radius: 5px;
 width:70%;
 margin-top: 50px;
 
-}
+} */
 
 #gpt_response{
 
@@ -6062,6 +6062,7 @@ margin-top: 50px;
   border-radius: 10px;
   margin-top: 5px;
   padding:10px;
+  font-size:14px;
 
 }
 
@@ -6074,6 +6075,7 @@ margin-top: 50px;
   padding:10px;
   /* text-align: right; */
   width: fit-content;
+  font-size:14px;
 
 }
 
@@ -6084,6 +6086,7 @@ margin-top: 50px;
 
 .prompt_output{
   height:60%;
+  font-size:14px;
 }
 
 .col-lg-5{
@@ -6117,6 +6120,10 @@ margin-top: 50px;
   border-radius:20px;
 }
 
+#roboticContainer{
+  margin-top:15px;
+}
+
 #buttonForm{
 
 
@@ -6138,6 +6145,17 @@ margin-right: -10px;
   flex-direction: row;
   align-items: flex-end;
   justify-content: flex-end;
+  font-size:14px;
+
+}
+
+#promptOutputMain{
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  font-size:14px;
 
 }
 
@@ -6145,7 +6163,78 @@ margin-right: -10px;
 
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  /* align-items: flex-end; */
   /* justify-content: flex-end; */
+  transition:200ms;
+  font-size:14px;
 
 }
+
+.textarea-container {
+  position: relative;
+}
+.textarea-container textarea {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: rgba(239, 239, 239, 0.5);
+  border-color: white;
+  margin-top:10px;
+  padding:10px;
+  font-size: 14px;
+  color: #5d657b;
+  padding-right: 50px;
+}
+.textarea-container button {
+  position: absolute;
+  top: 20px;
+  right: 10px;
+  border-color: transparent;
+  background: rgba(239, 239, 239, 0.5);
+  width:20px;
+  height:20px;
+  transition:20ms;
+}
+
+.textarea-container button:hover {
+  background: black;
+}
+
+#input_contain{
+
+  display:flex;
+  justify-content: flex-end;
+
+}
+
+#prompting_block{
+  min-height: 400px;
+  
+}
+
+/* HTML: <div class="loader"></div> */
+/* HTML: <div class="loader"></div> */
+.loader {
+  display:none;
+  width: 30px;
+  aspect-ratio: 2;
+  --_g: no-repeat radial-gradient(circle closest-side,#000 90%,#0000);
+  background: 
+    var(--_g) 0%   50%,
+    var(--_g) 50%  50%,
+    var(--_g) 100% 50%;
+  background-size: calc(100%/3) 50%;
+  animation: l3 1s infinite linear;
+}
+@keyframes l3 {
+    20%{background-position:0%   0%, 50%  50%,100%  50%}
+    40%{background-position:0% 100%, 50%   0%,100%  50%}
+    60%{background-position:0%  50%, 50% 100%,100%   0%}
+    80%{background-position:0%  50%, 50%  50%,100% 100%}
+}
+
+/* #rowHide{
+  display:none;
+} */
+

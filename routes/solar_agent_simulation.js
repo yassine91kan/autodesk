@@ -96,15 +96,16 @@ async function getModelMetadata(urn, guid, access_token) {
 }
 
 let resultPower ;
+let resultConfiguration ;
  
 
-router.get('/solar_agent', async function (req, res, next) {
+router.get('/solar_agent_simulation', async function (req, res, next) {
 
     // res.json({success: true, message: objid_coord,geomtype:geomType});
  
  });
 
- router.put('/solar_agent', async function (req, res, next) {
+ router.put('/solar_agent_simulation', async function (req, res, next) {
 
     // console.log(req.body);
 
@@ -116,31 +117,30 @@ router.get('/solar_agent', async function (req, res, next) {
  
  });
 
-router.post('/solar_agent', async function (req, res, next) {
+router.post('/solar_agent_simulation', async function (req, res, next) {
 
     let polygonCord ;
     let robotic;
  
 
     const customTool = new DynamicStructuredTool({
-        name: "Add_Solar_Elements",
-        description: "Add Solar Elements in the model based on the required power",
+        name: "Calculate_Optimized_Path_Solar",
+        description: "Calculates an optimized path for solar piling based on a series of longitudes and latitudes for the piles",
         schema: z.object({
-            power: z.string().describe("The power requested by the user"),
-            // value: z.string().describe("the value to be used for querying the model. Use Tavily search for unusual values"),
+            configuration: z.string().describe("Configuration name. if default, use configuration name default"),
           }),       
-        func: async (power) => {
+        func: async (configuration) => {
             try {
-                if (!power.power) {
-                    console.log(power.power);
+                if (!configuration) {
+                    console.log(configuration.configuration);
                     throw new Error("The power must be provided.");
                 }
 
-                resultPower= power.power;
+                resultConfiguration= configuration.configuration;
 
-                console.log(`I am here the result Power is ${resultPower}`)
+                console.log(`I am here the result Power is ${resultConfiguration}`)
                 
-                return power.power;
+                return "The path has been successfully addded.";
             } catch (error) {
                 console.error("Error in customTool function:", error);
                 return `Error: ${error.message}`;
@@ -236,7 +236,7 @@ router.post('/solar_agent', async function (req, res, next) {
 
 
       const prompt = ChatPromptTemplate.fromMessages([
-        ["system", "You are a very powerful assistant that can help me add solar panels to the model based on the power requested from the user input or the property line made of a series of longitudes and latitudes. Use the tools. Do not use the unit in the power. Format the points of the polygon of property line in the tool as an array of objects containing longitudes and latitudes as the keys. "],
+        ["system", "You are a very powerful assistant that can help me create a robotic piling simulation by calculating the optimized path from a series of predefined points of longitude and latitudes. Use the tools. "],
         ["human", "{input}"],
         new MessagesPlaceholder("agent_scratchpad")
       ]);
@@ -263,7 +263,7 @@ router.post('/solar_agent', async function (req, res, next) {
     })
 
 
-    res.json({success: true, message: results.output, token:token, power:resultPower, coordinates:polygonCord, robotic:robotic});
+    res.json({success: true, message: results.output, token:token, power:resultPower, coordinates:polygonCord, robotic:robotic,resultConfiguration:resultConfiguration});
 
     //Stream The response using the Log
 

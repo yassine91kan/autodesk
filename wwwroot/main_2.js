@@ -61,12 +61,15 @@ function addSolarPanel(viewer, longitude, latitude, height) {
     });
 }
 
+let entityNumber =0 ; 
+
 function addTurbine(viewer,longitude,latitude,height){
 
-    const entity = viewer.entities.add({
+    // const entity = viewer.entities.add({
+      loadedEntities[entityNumber] = viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(longitude, latitude,height),
         model: {
-          uri: './assets/glTf/solar_panel/scene.gltf',
+          uri: './assets/glTf/solar_panel_new/solar_panel_compressed/scene.gltf',
         },
         // label: {
         //     text: "P01",
@@ -76,12 +79,17 @@ function addTurbine(viewer,longitude,latitude,height){
         //     verticalOrigin: Cesium.VerticalOrigin.TOP,
         //     pixelOffset: new Cesium.Cartesian2(0, 32),
         //   },
+        // show: false, // Initially hidden
       });
 
-      loadedEntities.push(entity);
+      entityNumber++;
+
+      // loadedEntities.push(entity);
 }
 
 let i=0;
+let citizensBankPark=[];
+let pointArrayNew ;
 
 function addPoint (long,lat){
 
@@ -91,22 +99,23 @@ function addPoint (long,lat){
 
     i++;
 
-    let citizensBankPark=[];
+
 
     citizensBankPark[i] = viewer.entities.add({
-        position : Cesium.Cartesian3.fromDegrees(long, lat, 40),
+        position : Cesium.Cartesian3.fromDegrees(long, lat, 33),
         point : {
           color : Cesium.Color.YELLOW,
-          pixelSize : 6
+          pixelSize : 8
         },
-        // label: {
-        //     text: "Citizens Bank Park",
-        //     font: "14pt monospace",
-        //     style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        //     outlineWidth: 2,
-        //     verticalOrigin: Cesium.VerticalOrigin.TOP,
-        //     pixelOffset: new Cesium.Cartesian2(0, 32),
-        //   },
+        show: true, // Initially hidden
+        clampToGround: true,
+        label: {
+            text: `P${i}`,
+            font: "12pt monospace",
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            outlineWidth: 12,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          },
       });
 
       console.log(citizensBankPark);
@@ -129,25 +138,15 @@ function isPointInPolygon(point, polygon) {
   return isInside;
 }
 
+let powerModule =450 ;        // Each Module provides 450 w
+let powerReq = 1 ;
+let powerNum = 1;
+
 // Function to initialize the viewer and add the solar panels
 async function initialize(long,lat,powerPlant) {
     // Example: Geocode an address and fly to its location
     // const addressData = await geocodeAddress("1251 Thomas A. Dolan Pkwy, Dunrobin, Ontario");
     // console.log("Geocoded Address:", addressData);
-
-  //   const propertyLine = [
-  //     [-76.0317, 45.4160],
-  //     [-76.0318, 45.4165],
-  //     [-76.0320, 45.4162],
-  //     [-76.0317, 45.4160]
-  // ];
-
-//   const propertyLine = [
-//     [-76.031671, 45.4160587],
-//     [-76.0312271, 45.4160587],
-//     [-76.031671, 45.4162387],
-//     [-76.0312271, 45.4162387],
-//     [-76.031671, 45.4160587] // Closing the polygon by repeating the first point
 // ];
 
 const propertyLine=[[-76.031671, 45.4160587], 
@@ -173,7 +172,6 @@ const propertyLine=[[-76.031671, 45.4160587],
     // Add a grid of solar panels near the geocoded location
     
     const numCols = 10;            // Number of columns of panels
-    const powerModule =450 ;        // Each Module provides 450 w
     const numRows = Math.round((powerPlant/powerModule)/numCols);            // Number of rows of panels
 
     console.log(numRows);
@@ -190,6 +188,9 @@ const propertyLine=[[-76.031671, 45.4160587],
     // Use Promise.all to wait for all solar panels to load before moving objects
     const promises = [];
 
+    powerReq = powerPlant;
+    powerNum = powerReq/ powerModule;
+
     for (let row = 0; row < numRows; row++) {
         for (let col = 0; col < numCols; col++) {
             const longitude = startLongitude + col * spacingCol;
@@ -204,16 +205,22 @@ const propertyLine=[[-76.031671, 45.4160587],
             polygonArray.push(longitude);
             polygonArray.push(latitude);
 
-            const height = 33.53;  // You can adjust the height
+            const height = 33.00;  // You can adjust the height
             const rowNumber ="0100";
             pileNumber +=1;
 
-            // Add each solar panel to the scene
-            // addSolarPanel(viewer, longitude, latitude, height);
-            // promises.push(addSolarPanel(viewer, longitude, latitude, height));
-            promises.push(addPoint (longitude,latitude));
-            promises.push(addTurbine(viewer,longitude,latitude,height));
-            document.querySelector('#table_pile').innerHTML += `
+            if (row === 0 || row % 4 === 0) {
+
+              pointArray.push({"longitude":longitude,"latitude":latitude});
+
+              // pointArrayNew.push(longitude);
+              // pointArrayNew.push(latitude);
+
+              addPoint(longitude,latitude);
+
+
+
+              document.querySelector('#table_pile').innerHTML += `
             <tr>
                 <td>
                 <div class="check-input-primary">
@@ -227,23 +234,28 @@ const propertyLine=[[-76.031671, 45.4160587],
                 <p>Steel Pile</p> <!-- You can replace 'Some Value 1' with actual dynamic values -->
                 </td>
                 <td>
-                <p>${longitude.toFixed(6).toString()}<</p>
+                <p>${longitude.toFixed(5)}<</p>
                 </td>
                 <td>
-                <p>${latitude.toFixed(6)}<</p>
-                </td>
-                <td>
-                <p>Some Value 4</p>
-                </td>
-                <td>
-                <div class="action">
-                    <button class="text-danger" onclick="removeRow(this)">
-                    <i class="lni lni-trash-can"></i>
-                    </button>
-                </div>
+                <p>${latitude.toFixed(5)}<</p>
                 </td>
             </tr>
             `
+
+            }
+
+            
+
+
+
+            // Add each solar panel to the scene
+            // addSolarPanel(viewer, longitude, latitude, height);
+            // promises.push(addSolarPanel(viewer, longitude, latitude, height));
+            // promises.push(addPoint (longitude,latitude));
+
+
+            // promises.push(addTurbine(viewer,longitude,latitude,height));
+            
         
     }
 }
@@ -280,6 +292,7 @@ async function moveEntities(number) {
             return;
         }
 
+        console.log("These are the loaded entities");
         console.log(loadedEntities);
 
         loadedEntities.forEach(function(entity) {
@@ -313,7 +326,7 @@ async function moveEntities(number) {
 
         console.log(targetLongitude);
         console.log(targetLatitude);
-
+        console.log("This is the new point array");
         console.log(pointArray);
 
         let bouboxArray = await BoundaryBox(pointArray);
@@ -353,6 +366,95 @@ async function drawPolygon(array) {
         console.error(error);
         throw error;
     }
+}
+
+async function addInstancing(long,lat,powerPlant){
+
+
+const propertyLine=[[-76.031671, 45.4160587], 
+[-76.031671, 45.4160587], 
+[-76.0312271, 45.4160587], 
+[-76.0312271, 45.4162387], 
+[-76.031671, 45.4162387], 
+[-76.031671, 45.4160587]];
+
+  const addressData = {"longitude":long,"latitude":lat}
+  console.log(addressData);
+
+  viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(addressData.longitude, addressData.latitude, 40),
+      orientation: {
+          heading: Cesium.Math.toRadians(0.0),
+          pitch: Cesium.Math.toRadians(0.0),
+      }
+  });
+
+
+  // Add a grid of solar panels near the geocoded location
+  
+  const numCols = 10;            // Number of columns of panels
+  const powerModule =450 ;        // Each Module provides 450 w
+  const numRows = Math.round((powerPlant/powerModule)/numCols);            // Number of rows of panels
+
+  console.log(numRows);
+
+  const panelSpacing = 0.0001;   // Approx. 11 meters spacing
+
+  const spacingRow = 0.000015; // 
+  const spacingCol = 0.00005; // This the spacing between the rows of panels or the pitch.
+
+  const startLongitude = addressData.longitude;
+  const startLatitude = addressData.latitude;
+  let pileNumber=0;
+
+  // Use Promise.all to wait for all solar panels to load before moving objects
+  const promises = [];
+
+  const instances = [];
+
+  for (let row = 0; row < numRows; row++) {
+      for (let col = 0; col < numCols; col++) {
+          const longitude = startLongitude + col * spacingCol;
+          const latitude = startLatitude + row * spacingRow;
+
+          polygonArray.push(longitude);
+          polygonArray.push(latitude);
+
+          const height = 33.53;  // You can adjust the height
+          const rowNumber ="0100";
+          pileNumber +=1;
+
+          // Add each solar panel to the scene
+          // addSolarPanel(viewer, longitude, latitude, height);
+          // promises.push(addSolarPanel(viewer, longitude, latitude, height));
+          instances.push({
+            modelMatrix: Cesium.Transforms.eastNorthUpToFixedFrame(
+                Cesium.Cartesian3.fromDegrees(longitude, latitude, height)
+            )
+        });
+          // promises.push(addPoint (longitude,latitude));
+          promises.push(addTurbine(viewer,longitude,latitude,height));
+      
+  }
+}
+
+    const instancedModel = Cesium.ModelInstanceCollection.fromGltf({
+      uri: './assets/glTf/solar_panel_new/solar_panel_compressed/scene.gltf',
+      instances: instances
+    });
+
+    viewer.scene.primitives.add(instancedModel);
+
+
+      // Wait for all models to load before moving them
+      // await Promise.all(promises);
+      console.log("All solar panels have been loaded.");
+ 
+
+
+
+
+
 }
 
 async function BoundaryBox(points){
@@ -524,24 +626,74 @@ handler.setInputAction(function (event) {
 
 async function addrobModel(){
 
-    const coordRob ={"longitude":-76.0316771,"latitude":45.4160587,"height":34.2}
+    const coordRob ={"longitude":-76.0316771,"latitude":45.4160587,"height":34.2};
+
+      //   [[-76.031671, 45.4160587], 
+      // [-76.031671, 45.4160587], 
+      // [-76.0314271, 45.4160587], 
+      // [-76.0312271, 45.4162387], 
+      // [-76.031671, 45.4162387], 
+      // [-76.031671, 45.4160587]];
 
     try {
 
-        const entityRob = viewer.entities.add({
-            position: Cesium.Cartesian3.fromDegrees(coordRob.longitude, coordRob.latitude,coordRob.height),
-            model: {
-              uri: './assets/glTf/excavator_robo/scene.gltf',
-            },
-            label: {
-                text: "Robotic Pile",
-                font: "10pt monospace",
-                style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-                outlineWidth: 2,
-                verticalOrigin: Cesium.VerticalOrigin.TOP,
-                pixelOffset: new Cesium.Cartesian2(0, 32),
+
+          const pilePositions = [
+            Cesium.Cartesian3.fromDegrees(-76.031671, 45.4160587, 34.2),
+            Cesium.Cartesian3.fromDegrees(-76.0314271, 45.4160587, 34.2),
+            Cesium.Cartesian3.fromDegrees(-76.031671, 45.4162387, 34.2),
+            // Add more pile positions
+        ];
+
+        const driverPath = new Cesium.SampledPositionProperty();
+
+        const startTime = Cesium.JulianDate.now();
+        let timeOffset = 0; // Time offset for each waypoint (in seconds)
+
+        pilePositions.forEach((position) => {
+            const time = Cesium.JulianDate.addSeconds(startTime, timeOffset, new Cesium.JulianDate());
+            driverPath.addSample(time, position);
+            timeOffset += 5; // 5 seconds between each waypoint
+
+        const pileDriver  = viewer.entities.add({
+              position: driverPath,
+              model: {
+                uri: './assets/glTf/excavator_robo_enlarged/scene.gltf',
+              },
+              label: {
+                  text: "Robotic Pile",
+                  font: "10pt monospace",
+                  style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                  outlineWidth: 2,
+                  verticalOrigin: Cesium.VerticalOrigin.TOP,
+                  pixelOffset: new Cesium.Cartesian2(0, 32),
+                },
+                scale: 100,
+                orientation: new Cesium.VelocityOrientationProperty(driverPath), // Makes it face the direction of movement
+            });
+        
+        viewer.entities.add({
+              polyline: {
+                  positions: pilePositions,
+                  width: 2,
+                  material: Cesium.Color.YELLOW,
+                  clampToGround: true,
               },
           });
+
+          viewer.clock.startTime = startTime;
+          viewer.clock.stopTime = Cesium.JulianDate.addSeconds(startTime, timeOffset, new Cesium.JulianDate());
+          viewer.clock.currentTime = startTime;
+          viewer.clock.clockRange = Cesium.ClockRange.LOOP_STOP; // Loop the simulation
+          viewer.clock.multiplier = 1; // Adjust speed multiplier
+
+          viewer.clock.onTick.addEventListener(() => {
+            const currentPosition = driverPath.getValue(viewer.clock.currentTime);
+            if (currentPosition) {
+                console.log('Current Position:', Cesium.Cartographic.fromCartesian(currentPosition));
+            }
+        });
+});
 
     } catch (error) {
         console.error(error);
@@ -552,6 +704,9 @@ async function addrobModel(){
 
 
 }
+
+
+
 
 function removeModels(){
     console.log("I am removing the models");
@@ -646,9 +801,7 @@ document.getElementById('remove').addEventListener("click", () =>
     
     removeModels());
 
-document.getElementById('addRob').addEventListener("click", () => 
-    
-    addrobModel());
+
 
 document.getElementById('drawPolygon').addEventListener("click", () => 
     
@@ -846,9 +999,10 @@ document.getElementById('type0').addEventListener("click", () => handleClick("gi
 document.getElementById('type1').addEventListener("click", () => handleClick("langchain_great",document.getElementById('type1').checked));
 document.getElementById('type2').addEventListener("click", () => handleClick("ask_agent_simple",document.getElementById('type2').checked));
 document.getElementById('type3').addEventListener("click", () => handleClick("sql",document.getElementById('type3').checked));
-document.getElementById('addGeom').addEventListener("click", () => handleClick("geom_agent",document.getElementById('addGeom').checked));
+// document.getElementById('addGeom').addEventListener("click", () => handleClick("geom_agent",document.getElementById('addGeom').checked));
 document.getElementById('SolarGeom').addEventListener("click", () => handleClick("solar_agent",document.getElementById('SolarGeom').checked));
 document.getElementById('SolarTechnical').addEventListener("click", () => handleClick("solar_technical_agent",document.getElementById('SolarTechnical').checked));
+document.getElementById('SolarSim').addEventListener("click", () => handleClick("solar_agent_simulation",document.getElementById('SolarSim').checked));
 
 
 document.getElementById('move').addEventListener("click", () => 
@@ -898,7 +1052,16 @@ async function getopenai(prompt) {
             console.log(done);
             const text = new TextDecoder().decode(value);
             console.log(text);
-            document.getElementById('gpt_response').innerHTML+=text;
+            // document.getElementById('gpt_response').innerHTML+=text;
+
+            document.getElementById("loader").style.display="none";
+
+            document.getElementById("promptInput").innerHTML +=
+            `<div class="author" id="promptOutputMain"><img src="./assets/images/robot.svg" alt="" class="fn__svg" /></div>
+            <div>
+            <p id="gpt_response">
+              ${text}
+            </p></div>`;
           }
 
 
@@ -916,12 +1079,12 @@ async function getopenai(prompt) {
         .then(response => response.json())
         .then(data => {
 
-            console.log(data.message);
+            // console.log(data.message);
 
-            console.log("Your power output is");
-            console.log(data.power);
+            // console.log("Your power output is");
+            // console.log(data.power);
 
-            console.log(data.token);
+            // console.log(data.token);
 
             let customItems = data.message;
             customItems = customItems.split("\n");
@@ -932,7 +1095,16 @@ async function getopenai(prompt) {
 
             customItems = customItems.join("");
 
-            document.getElementById('gpt_response').innerHTML=customItems;
+            // document.getElementById('gpt_response').innerHTML=customItems;
+
+            document.getElementById("loader").style.display="none";
+
+            document.getElementById("promptInput").innerHTML +=
+            `<div class="author" id="promptOutputMain"><img src="./assets/images/robot.svg" alt="" class="fn__svg" /></div>
+            <div>
+            <p id="gpt_response">
+              ${customItems}
+            </p></div>`;
 
             if(data.token){
 
@@ -942,10 +1114,21 @@ async function getopenai(prompt) {
 
             // initialize(data.addressObj.longitude,data.addressObj.latitude);
 
-            if(!data.coordinates){
+            if(!data.coordinates && !data.resultConfiguration){
 
               console.log(data.coordinates);
-              initialize(-76.0316771,45.4160587,parseInt(data.power));
+              // initialize(-76.0316771,45.4160587,parseInt(data.power));
+
+              initialize(-76.03116520703031,45.41641802447001,parseInt(data.power));
+
+              // addInstancing(-76.0316771,45.4160587,parseInt(data.power));
+            }
+
+            if(data.resultConfiguration){
+
+              calculateOptimizedPath(pointArray);
+
+              animatePileDriver(optimizedPath, pileDriver, 1);
             }
 
             
@@ -953,7 +1136,7 @@ async function getopenai(prompt) {
             if(data.soilLayer){
 
                 console.log("I am here the calc wizard");
-                modifyPdfCalc(data.soilLayer, data.soilFriction, data.soilDepth);
+                modifyPdfCalc(data.soilLayer, data.soilFriction, data.soilDepth,data.embedment);
 
             }
 
@@ -961,7 +1144,7 @@ async function getopenai(prompt) {
             if(data.totalCapacity){
 
                 console.log("data.totalCapacity");
-                modifyPdfCalc(data.totalCapacit);
+                modifyPdfCalcPile(data.totalCapacity.toString("0.00"), data.loadAx, data.MomentX, data.MomentY);
 
             }
 
@@ -995,8 +1178,19 @@ async function getopenai(prompt) {
 
 document.querySelector('#fname').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
+
+      document.getElementById("loader").style.display="block";
+
+      document.getElementById("promptInput").innerHTML +=
+      `<div class="author" id="promptInputMain"><img src="./assets/images/user.svg" alt="" class="fn__svg" /></div>
+      <div id="input_contain">
+      <p id="gpt_input">
+        ${document.querySelector('#fname').value}
+      </p></div>`;
  
     getopenai(document.querySelector('#fname').value);
+
+    document.getElementById("fname").value="";
 
     }
 });
@@ -1034,7 +1228,7 @@ function createTable(numRows,titleLeft,titleRight,width,height,firstPage,arrayLe
     // Add a table of two columns and two rows 
 
     // Define cell width and height
-    const cellWidth = 100;
+    const cellWidth = 120;
     const cellHeight = 20;
   
     // Define table's top-left corner position
@@ -1172,10 +1366,15 @@ function createTable(numRows,titleLeft,titleRight,width,height,firstPage,arrayLe
 
 function createText(text,gap,firstPage){
 
+  if(!finY){
+    let finY = 0.5*612/6;
+    let finX = 4.5*792/6;
+  }
+
  firstPage.drawText(text, {
   x: finY+gap,
   y: finX-gap,
-  size: 8,
+  size: 10,
   color: rgb(0, 0, 0),
 });
 
@@ -1240,10 +1439,6 @@ async function modifyPdf() {
     const url = './Drawing_1.pdf'
     const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer()) ;
 
-    // const pngUrl = './Sketch.png';
-    // const pngImageBytes = await fetch(pngUrl).then((res) => res.arrayBuffer());
-
-    // Call the ScreenShot function and use the result in the PDF
 const base64Image = await ScreenShot();
 
 // Convert Base64 to Uint8Array for embedding in PDF-lib
@@ -1283,7 +1478,7 @@ console.log(firstPage.getSize());
     const startX = 5*width/6;
     const startY = height/10;
 
-    for(let i=0;i<polygonArray.length/2;i++){
+    for(let i=1;i<40;i++){
 
         // Draw table cells as rectangles
         firstPage.drawRectangle({
@@ -1310,25 +1505,45 @@ console.log(firstPage.getSize());
 
       firstPage.drawText(polygonArray[2*i].toFixed(5).toString(), {
       y: startX + 10,
-      x: startY + cellHeight*(i+1)+10 ,
-      size: 10,
+      x: startY + cellHeight*(i)+13 ,
+      size: 12,
       color: rgb(0, 0, 0),
       rotate: degrees(90),
 
     });
     firstPage.drawText(polygonArray[2*i+1].toFixed(5).toString(), {
       y: startX + cellWidth + 10,
-      x: startY + cellHeight*(i+1) +10,
-      size: 10,
+      x: startY + cellHeight*(i) +13,
+      size: 12,
       color: rgb(0, 0, 0),
       rotate: degrees(90),
 
     });
 
-    // finY = startX + 10;
-    // finX = startY + cellHeight*(i+1) +10;
-
     }
+
+            // Draw table cells as rectangles
+            firstPage.drawRectangle({
+              y: startX,
+              x: startY+ cellHeight*40,
+              width: cellWidth,
+              height: cellHeight,
+              borderColor: rgb(0, 0, 0),
+              borderWidth: 1,
+              rotate: degrees(90),
+      
+            });
+      
+            firstPage.drawRectangle({
+              y: startX + cellWidth,
+              x: startY+ cellHeight*40,
+              width: cellWidth,
+              height: cellHeight,
+              borderColor: rgb(0, 0, 0),
+              borderWidth: 1,
+              rotate: degrees(90),
+      
+            });
   
   
     // Add text to each cell
@@ -1359,6 +1574,70 @@ console.log(firstPage.getSize());
   });
 
 
+  firstPage.drawText('Plan View - Solar Layout', {
+    x: firstPage.getWidth() * 3.1/6,
+    y: firstPage.getHeight() /10,
+    size: 16,   
+    color: rgb(0, 0, 0),
+    rotate: degrees(90),
+
+  });
+
+
+
+  let startXN = firstPage.getWidth() * 3.5/6; 
+  let startYN =firstPage.getHeight() /10 ; 
+
+  let parameterArray = ["Site","Characteristics","Longitude","11","Latitude","5.2555","Module Power",`${powerModule.toString()}`,"Number of Panels",`${powerNum.toFixed(0)}`,"Panel Manufacturer","TBD","Type","SAT"]
+
+
+  for(let i=0;i<7;i++){
+
+
+
+    // Draw table cells as rectangles
+    firstPage.drawRectangle({
+    y: startYN,
+    x: startXN + cellHeight*i,
+    width: cellWidth,
+    height: cellHeight,
+    borderColor: rgb(0, 0, 0),
+    borderWidth: 1,
+    rotate: degrees(90),
+
+  });
+
+  firstPage.drawRectangle({
+    y: startYN + cellWidth,
+    x: startXN+ cellHeight*i,
+    width: cellWidth,
+    height: cellHeight,
+    borderColor: rgb(0, 0, 0),
+    borderWidth: 1,
+    rotate: degrees(90),
+
+  });
+
+  firstPage.drawText(parameterArray[2*i], {
+  y: startYN + 14,
+  x: startXN + cellHeight*(i) -5,
+  size: 14,
+  color: rgb(0, 0, 0),
+  rotate: degrees(90),
+
+});
+firstPage.drawText(parameterArray[2*i+1], {
+  y: startYN + cellWidth + 10,
+  x: startXN + cellHeight*(i)-5,
+  size: 14,
+  color: rgb(0, 0, 0),
+  rotate: degrees(90),
+
+});
+
+}
+
+
 
 
 // Serialize the PDFDocument to bytes (a Uint8Array)
@@ -1369,20 +1648,6 @@ download(pdfBytes, "Layout-Solar.pdf", "application/pdf");
 
 viewer.scene.render();
 
-  // const captureElement = document.getElementById("cesiumContainer");
-  // html2canvas(captureElement).then(canvas => {
-  //     // Convert canvas to image
-  //     const image = canvas.toDataURL("image/png");
-
-  //     // Create a download link
-  //     const link = document.createElement("a");
-  //     link.href = image;
-  //     link.download = "screenshot.png";
-
-  //     // Trigger download
-  //     link.click();
-  // });
-
   ScreenShot();
 
 
@@ -1392,9 +1657,9 @@ viewer.scene.render();
 
 
 
-async function modifyPdfCalc(numsoilLayers, soilFriction, soilDepth) {
+async function modifyPdfCalc(numsoilLayers, soilFriction, soilDepth, embedment) {
     // Fetch an existing PDF document
-    const url = './Pile_Embedment_Calculation.pdf'
+    const url = './Solar_Pile_Design.pdf'
     const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer())
 
 // Load a PDFDocument from the existing PDF bytes
@@ -1405,7 +1670,7 @@ const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
 
 // Get the first page of the document
 const pages = pdfDoc.getPages()
-const firstPage = pages[0]
+const firstPage = pages[1]
 
 // Get the width and height of the first page
 const { width, height } = firstPage.getSize();
@@ -1413,14 +1678,6 @@ const { width, height } = firstPage.getSize();
 console.log(firstPage.getSize());
 
 // Draw a string of text diagonally across the first page
-firstPage.drawText('BV AUGMENTED DRAFT!', {
-  x: width/2,
-  y: height / 2,
-  size: 10,
-  font: helveticaFont,
-  color: rgb(0.95, 0.1, 0.1),
-  rotate: degrees(-45),
-})
 
 // Add a table of two columns and two rows 
 
@@ -1431,6 +1688,9 @@ firstPage.drawText('BV AUGMENTED DRAFT!', {
     // Define table's top-left corner position
     const startX = 0.5*width/6;
     const startY = 4.5*height/6;
+
+    console.log(`The width is : ${width}`);
+    console.log(`The height is : ${height}`);
 
     let upperbound = parseInt(numsoilLayers)+1;
 
@@ -1553,7 +1813,7 @@ firstPage.drawText('BV AUGMENTED DRAFT!', {
 
 
 
-      firstPage.drawText('Embedment Total Force (kips): ', {
+      firstPage.drawText(`Embedment Total Force (kips) is ${embedment} `, {
         y: finX,
         x: finY,
         size: 8,
@@ -1570,9 +1830,9 @@ download(pdfBytes, "pdf-lib_modification_example.pdf", "application/pdf");
 
 }
 
-async function modifyPdfCalcPile(totalCap) {
+async function modifyPdfCalcPile(totalCap, loadAx, MomentX, MomentY) {
     // Fetch an existing PDF document
-    const url = './Pile_Embedment_Calculation.pdf'
+    const url = './Solar_Pile_Design.pdf'
     const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer())
 
 // Load a PDFDocument from the existing PDF bytes
@@ -1588,21 +1848,34 @@ const firstPage = pages[0];
 // Get the width and height of the first page
 const { width, height } = firstPage.getSize();
 
-const arrayLeft = ["Axial load (kips)","Moment Mx (kips*ft)", "Moment My (kips*ft)"];
-const arrayRight = ["10","20","30"];
+const arrayLeft = ["Axial load Px (kips)","Moment Mx (kips*ft)", "Moment My (kips*ft)"];
+const arrayRight = [loadAx,MomentX,MomentY];
+
+const arrayLeft_1 = ["Axial Resistance Px (kips)","Mx Resistance (kips*ft)", "My Resistance (kips*ft)"];
+const arrayRight_1 = [loadAx,MomentX,MomentY];
 
 console.log(firstPage.getSize());
 
 const arrayLeft_2 = ["Fy (ksi)","Fu (ksi)", "Unbraced Length (ft)", "K Factor"];
 const arrayRight_2 = ["50","65","14","1"];
 
+// createText("The resistance values for this specific section are :",0,firstPage);
+
 createTable(4,"Parameter","Value",width,height,firstPage,arrayLeft_2,arrayRight_2);
 
-// createTable(3,"Load","Value",width,height,firstPage,arrayLeft,arrayRight);
+createText("The resistance values for this specific section are :",0,firstPage);
+
+createTable(3,"Load","Value",width,height,firstPage,arrayLeft_1,arrayRight_1);
 
 createText("Then, we have the loading conditions provided by the user are :",0,firstPage);
 
 createTable(3,"Load","Value",width,height,firstPage,arrayLeft,arrayRight);
+
+createText("The following equation is checked per Code requirements:",0,firstPage);
+
+createText("UR = Px/Pr + 8/9* (Mx/Mrx + My/Mry)  <= 1       (AISC 360, Eq H1-1a)",0,firstPage);
+
+createText(`UR = ${totalCap} `,0,firstPage);
 
 
 
@@ -1617,6 +1890,178 @@ download(pdfBytes, "pdf-lib_modification_example.pdf", "application/pdf");
 
 }
 
+let currentPileIndex = 1;
+
+// function showNextPile(pileEntities) {
+//     if (currentPileIndex < pileEntities.length) {
+//         pileEntities[currentPileIndex+1].show = true;
+//         currentPileIndex++;
+
+//         // Schedule the next pile to appear after a delay
+        
+//     }
+//     setTimeout(showNextPile(pileEntities) , 50000); // Adjust delay (1000ms = 1 second)
+// }
+
+function showNextPile(){
+
+  let startTime = Cesium.JulianDate.now();
+  let interval = 0.1; // Seconds between pile visibility
+
+viewer.clock.onTick.addEventListener(() => {
+    const currentTime = Cesium.JulianDate.now();
+    const elapsedSeconds = Cesium.JulianDate.secondsDifference(currentTime, startTime);
+
+    // if (currentPileIndex < citizensBankPark.length && elapsedSeconds > currentPileIndex * interval) {
+      if (currentPileIndex < loadedEntities.length && elapsedSeconds > currentPileIndex * interval) {
+      // citizensBankPark[currentPileIndex].show = true;
+      loadedEntities[currentPileIndex].show = true;
+        currentPileIndex++;
+    }
+});
+
+}
+
+let optimizedPath = [];
+
+function calculateOptimizedPath(piles) {
+
+  console.log("I am trying man");
+  console.log(piles);
+  if (piles.length === 0) return [];
+
+  
+  let unvisited = [...piles]; // Copy the piles array
+  let current = unvisited.shift(); // Start with the first pile (you can customize the starting point)
+
+  optimizedPath.push(current);
+
+  while (unvisited.length > 0) {
+      // Find the closest pile to the current position
+      let closestIndex = 0;
+      let closestDistance = Infinity;
+
+      for (let i = 0; i < unvisited.length; i++) {
+          const pile = unvisited[i];
+
+          console.log(pile);
+
+          // Compute the distance between the current pile and this unvisited pile
+          const distance = Cesium.Cartesian3.distance(
+              Cesium.Cartesian3.fromDegrees(current.lon, current.lat),
+              Cesium.Cartesian3.fromDegrees(pile.lon, pile.lat)
+          );
+
+          // Keep track of the closest pile
+          if (distance < closestDistance) {
+              closestDistance = distance;
+              closestIndex = i;
+          }
+      }
+
+      // Move to the closest pile
+      current = unvisited.splice(closestIndex, 1)[0];
+      optimizedPath.push(current);
+  }
+
+  console.log(optimizedPath);
+
+    const pathPositions = optimizedPath.map(loc =>
+      Cesium.Cartesian3.fromDegrees(loc.longitude, loc.latitude)
+  );
+
+  viewer.entities.add({
+      polyline: {
+          positions: pathPositions,
+          width: 3,
+          material: Cesium.Color.YELLOW,
+          clampToGround: true,
+      },
+  });
+
+  return optimizedPath;
+}
+
+const pileDriver = viewer.entities.add({
+  position: Cesium.Cartesian3.fromDegrees(-76.03116520703031,45.41641802447001, 33.5),
+  model: {
+      uri: './assets/glTf/excavator_robo_enlarged/scene.gltf', // Path to the pile driver model
+      scale: 1.0,
+  },
+});
+
+function updateOrientation(currentPile, nextPile, model) {
+  const heading = Cesium.Math.toDegrees(
+      Math.atan2(
+          nextPile.longitude - currentPile.longitude,
+          nextPile.latitude - currentPile.latitude
+      )
+  );
+
+  // Update model orientation
+  model.orientation = Cesium.Transforms.headingPitchRollQuaternion(
+      Cesium.Cartesian3.fromDegrees(currentPile.longitude, currentPile.latitude),
+      new Cesium.HeadingPitchRoll(
+          Cesium.Math.toRadians(heading), // Heading
+          0, // Pitch
+          0  // Roll
+      )
+  );
+}
+
+// Function to move the pile driver
+function animatePileDriver(path, entity, duration) {
+  let index = 0;
+  let distanceTotal=0 ;
+
+  console.log("This is the path length");
+  console.log(path.length);
+
+  function moveNextStep() {
+      if (index >= path.length - 1) return;
+
+      const start = Cesium.Cartesian3.fromDegrees(path[index].longitude, path[index].latitude, 33);
+      const end = Cesium.Cartesian3.fromDegrees(path[index + 1].longitude, path[index + 1].latitude, 33);
+
+      const startTime = viewer.clock.currentTime;
+      const stopTime = Cesium.JulianDate.addSeconds(startTime, duration, new Cesium.JulianDate());
+
+      const distance = Cesium.Cartesian3.distance(start, end)*3.6;
+
+      const distanceMetric=distance.toFixed(2) ;
+
+      distanceTotal+=distance;
+
+      const distanceFinal = distanceTotal.toFixed(1);
+
+      document.getElementById('speedRobo').innerText=` ${distanceMetric} m/s`;
+      document.getElementById('pileNumber').innerText=` ${index+1}`;
+      document.getElementById('totalDistance').innerText=` ${distanceFinal} m`;
+      // Create position property for animation
+      const position = new Cesium.SampledPositionProperty();
+      position.addSample(startTime, start);
+      position.addSample(stopTime, end);
+
+      entity.position = position;
+
+      const currentPile = optimizedPath[i];
+      const nextPile = optimizedPath[i + 1];
+  
+  
+      // Update its orientation to face the next pile
+      updateOrientation(path[index], path[index + 1], pileDriver);
+
+      // Schedule the next movement after the current one completes
+      setTimeout(() => {
+          index++;
+          moveNextStep();
+      }, duration * 1000);
+  }
+
+  moveNextStep();
+}
+
+// Start the animation (e.g., 5 seconds per step)
 
 
 
@@ -1631,3 +2076,15 @@ document.getElementById('PDFCalc').addEventListener("click", () =>
 document.getElementById('PDFCalcPile').addEventListener("click", () => 
     
     modifyPdfCalcPile());
+
+document.getElementById('ShowPlan').addEventListener("click", () => 
+
+
+    
+//  showNextPile()
+calculateOptimizedPath(pointArray)
+);
+
+document.getElementById('addRob').addEventListener("click", () => 
+    
+  animatePileDriver(optimizedPath, pileDriver, 1));

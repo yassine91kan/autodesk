@@ -173,7 +173,14 @@ async function getopenai(prompt) {
             console.log(done);
             const text = new TextDecoder().decode(value);
             console.log(text);
-            document.getElementById('gpt_response').innerHTML+=text;
+            // document.getElementById('gpt_response').innerHTML+=text;
+
+            document.getElementById("promptInput").innerHTML +=
+            `<div class="author" id="promptOutputMain"><img src="./assets/images/robot.svg" alt="" class="fn__svg" /></div>
+            <div>
+            <p id="gpt_response">
+              ${text}
+            </p></div>`;
           }
 
 
@@ -207,7 +214,14 @@ async function getopenai(prompt) {
 
 
 
-            document.getElementById('gpt_response').innerHTML=customItems;
+            // document.getElementById('gpt_response').innerHTML=customItems;
+
+            document.getElementById("promptInput").innerHTML +=
+            `<div class="author" id="promptOutputMain"><img src="./assets/images/robot.svg" alt="" class="fn__svg" /></div>
+            <div>
+            <p id="gpt_response">
+              ${customItems}
+            </p></div>`;
 
             if(data.token){
 
@@ -235,13 +249,13 @@ document.querySelector('#fname').addEventListener('keypress', function (e) {
 
     document.getElementById("promptInput").innerHTML +=
                 `<div class="author" id="promptInputMain"><img src="./assets/images/user.svg" alt="" class="fn__svg" /></div>
-                <div>
+                <div id="input_contain">
                 <p id="gpt_input">
                   ${document.querySelector('#fname').value}
                 </p></div>`;
 
     getopenai(document.querySelector('#fname').value);
-
+    document.querySelector('#fname').value="";
 
 
 

@@ -20,5 +20,6 @@ app.use(require('./routes/geom_agent.js'));
 app.use(require('./routes/gis_agent.js'));
 app.use(require('./routes/solar_agent.js'));
 app.use(require('./routes/solar_technical_agent.js'));
+app.use(require('./routes/solar_agent_simulation.js'));
 // app.listen(PORT, function () { console.log(`Server listening on port ${PORT}...`); });
 app.listen(process.env.PORT || 8080, function () { console.log(`Server listening on port ...`); });
