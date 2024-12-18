@@ -141,6 +141,8 @@ function isPointInPolygon(point, polygon) {
 let powerModule =450 ;        // Each Module provides 450 w
 let powerReq = 1 ;
 let powerNum = 1;
+let longPDF;
+let latPDF;
 
 // Function to initialize the viewer and add the solar panels
 async function initialize(long,lat,powerPlant) {
@@ -1114,12 +1116,21 @@ async function getopenai(prompt) {
 
             // initialize(data.addressObj.longitude,data.addressObj.latitude);
 
-            if(!data.coordinates && !data.resultConfiguration){
+            if(!data.coordinates && !data.resultConfiguration && !data.axialCapacity){
+
+              console.log(data);
 
               console.log(data.coordinates);
+
+              console.log(data.longitude);
+              console.log(data.latitude);
+
+              longPDF=data.long;
+              latPDF=data.lat;
               // initialize(-76.0316771,45.4160587,parseInt(data.power));
 
-              initialize(-76.03116520703031,45.41641802447001,parseInt(data.power));
+              // initialize(-76.03116520703031,45.41641802447001,parseInt(data.power));
+              initialize(parseFloat(data.long),parseFloat(data.lat),parseInt(data.power));
 
               // addInstancing(-76.0316771,45.4160587,parseInt(data.power));
             }
@@ -1144,7 +1155,10 @@ async function getopenai(prompt) {
             if(data.totalCapacity){
 
                 console.log("data.totalCapacity");
-                modifyPdfCalcPile(data.totalCapacity.toString("0.00"), data.loadAx, data.MomentX, data.MomentY);
+                console.log(data.axialCapacity);
+                console.log(data.bendingsCapacity);
+                console.log(data.bendingwCapacity);
+                modifyPdfCalcPile(data.totalCapacity.toString("0.00"), data.loadAx, data.MomentX, data.MomentY,data.axialCapacity, data.bendingsCapacity,data.bendingwCapacity);
 
             }
 
@@ -1588,7 +1602,7 @@ console.log(firstPage.getSize());
   let startXN = firstPage.getWidth() * 3.5/6; 
   let startYN =firstPage.getHeight() /10 ; 
 
-  let parameterArray = ["Site","Characteristics","Longitude","11","Latitude","5.2555","Module Power",`${powerModule.toString()}`,"Number of Panels",`${powerNum.toFixed(0)}`,"Panel Manufacturer","TBD","Type","SAT"]
+  let parameterArray = ["Site","Characteristics","Longitude",`${longPDF}`,"Latitude",`${latPDF}`,"Module Power",`${powerModule.toString()} W`,"Number of Panels",`${powerNum.toFixed(0)}`,"Panel Manufacturer","TBD","Type","SAT"]
 
 
   for(let i=0;i<7;i++){
@@ -1830,7 +1844,7 @@ download(pdfBytes, "pdf-lib_modification_example.pdf", "application/pdf");
 
 }
 
-async function modifyPdfCalcPile(totalCap, loadAx, MomentX, MomentY) {
+async function modifyPdfCalcPile(totalCap, loadAx, MomentX, MomentY,axialCapacity, bendingsCapacity,bendingwCapacity) {
     // Fetch an existing PDF document
     const url = './Solar_Pile_Design.pdf'
     const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer())
@@ -1848,16 +1862,19 @@ const firstPage = pages[0];
 // Get the width and height of the first page
 const { width, height } = firstPage.getSize();
 
+console.log("Jamie Bro");
 const arrayLeft = ["Axial load Px (kips)","Moment Mx (kips*ft)", "Moment My (kips*ft)"];
 const arrayRight = [loadAx,MomentX,MomentY];
 
+console.log(`This is the axial capacity ${axialCapacity}`);
+
 const arrayLeft_1 = ["Axial Resistance Px (kips)","Mx Resistance (kips*ft)", "My Resistance (kips*ft)"];
-const arrayRight_1 = [loadAx,MomentX,MomentY];
+const arrayRight_1 = [`${axialCapacity.toString()}`,`${bendingsCapacity.toString()}`,`${bendingwCapacity.toString()}`];
 
 console.log(firstPage.getSize());
 
 const arrayLeft_2 = ["Fy (ksi)","Fu (ksi)", "Unbraced Length (ft)", "K Factor"];
-const arrayRight_2 = ["50","65","14","1"];
+const arrayRight_2 = ["50","65","6","1"];
 
 // createText("The resistance values for this specific section are :",0,firstPage);
 
@@ -2026,7 +2043,7 @@ function animatePileDriver(path, entity, duration) {
       const startTime = viewer.clock.currentTime;
       const stopTime = Cesium.JulianDate.addSeconds(startTime, duration, new Cesium.JulianDate());
 
-      const distance = Cesium.Cartesian3.distance(start, end)*3.6;
+      const distance = Cesium.Cartesian3.distance(start, end)*3.6/10;
 
       const distanceMetric=distance.toFixed(2) ;
 
@@ -2034,9 +2051,17 @@ function animatePileDriver(path, entity, duration) {
 
       const distanceFinal = distanceTotal.toFixed(1);
 
+      const ptgpile = 100*(index/60);
+      const ptgdist = 100*(distanceTotal/140);
+
+
       document.getElementById('speedRobo').innerText=` ${distanceMetric} m/s`;
       document.getElementById('pileNumber').innerText=` ${index+1}`;
       document.getElementById('totalDistance').innerText=` ${distanceFinal} m`;
+
+      document.getElementById('pileptg').innerText=`+${ptgpile.toFixed(2)}%`;
+      document.getElementById('distptg').innerText=`+${ptgdist.toFixed(2)}%`;
+
       // Create position property for animation
       const position = new Cesium.SampledPositionProperty();
       position.addSample(startTime, start);

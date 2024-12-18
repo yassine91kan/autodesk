@@ -96,6 +96,8 @@ async function getModelMetadata(urn, guid, access_token) {
 }
 
 let resultPower ;
+let longitude ;
+let latitude;
  
 
 router.get('/solar_agent', async function (req, res, next) {
@@ -120,25 +122,41 @@ router.post('/solar_agent', async function (req, res, next) {
 
     let polygonCord ;
     let robotic;
+
  
 
     const customTool = new DynamicStructuredTool({
         name: "Add_Solar_Elements",
-        description: "Add Solar Elements in the model based on the required power",
+        description: "Add Solar Elements in the model based on the required power and single longitude and latitude value of the location",
         schema: z.object({
             power: z.string().describe("The power requested by the user"),
+            long: z.string().describe("The longitude of the site"),
+            lat:z.string().describe("The latitude of the site")
             // value: z.string().describe("the value to be used for querying the model. Use Tavily search for unusual values"),
           }),       
-        func: async (power) => {
+        func: async (power,long,lat) => {
             try {
                 if (!power.power) {
                     console.log(power.power);
                     throw new Error("The power must be provided.");
                 }
 
+                console.log(power);
+
                 resultPower= power.power;
 
-                console.log(`I am here the result Power is ${resultPower}`)
+                console.log(`I am here the result Power is ${resultPower}`);
+
+                console.log(power.long);
+                console.log(power.lat);
+
+
+
+                longitude = power.long;
+                latitude = power.lat;
+
+                console.log(longitude);
+                console.log(latitude);
                 
                 return power.power;
             } catch (error) {
@@ -174,30 +192,6 @@ router.post('/solar_agent', async function (req, res, next) {
         }
     });
 
-    // const customTool_3 = new DynamicStructuredTool({
-    //     name: "Generate_Path_Robotic_Driver",
-    //     description: "Generate the path for the robotic pile driver",
-    //     schema: z.object({
-    //         robotico: z.string().describe("A binary number representing whether a robotic pile driver is requested 1 or 0."),
-    //       }),  
-    //     func: async (robotico) => {
-    //         try {
-    //             if (!robotico) {
-    //                 console.log(robotico);
-    //                 throw new Error("The coordinates must be provided");
-    //             }
-
-    //             robotic=robotico;
-
-    //             console.log(`The robotic variable is ${robotic}`);
-                
-    //             return robotic;
-    //         } catch (error) {
-    //             console.error("Error in customTool function:", error);
-    //             return `Error: ${error.message}`;
-    //         }
-    //     }
-    // });
 
     
 
@@ -236,7 +230,7 @@ router.post('/solar_agent', async function (req, res, next) {
 
 
       const prompt = ChatPromptTemplate.fromMessages([
-        ["system", "You are a very powerful assistant that can help me add solar panels to the model based on the power requested from the user input or the property line made of a series of longitudes and latitudes. Use the tools. Do not use the unit in the power. Format the points of the polygon of property line in the tool as an array of objects containing longitudes and latitudes as the keys. "],
+        ["system", "You are a very powerful assistant that can help me add solar panels to the model based on the power requested from the user input and a longitude latitude of the site or the property line made of a series of longitudes and latitudes. Use the tools. Do not use the unit in the power. Format the points of the polygon of property line in the tool as an array of objects containing longitudes and latitudes as the keys. "],
         ["human", "{input}"],
         new MessagesPlaceholder("agent_scratchpad")
       ]);
@@ -262,8 +256,12 @@ router.post('/solar_agent', async function (req, res, next) {
         input:req.body.prompt
     })
 
+    console.log(typeof(longitude));
 
-    res.json({success: true, message: results.output, token:token, power:resultPower, coordinates:polygonCord, robotic:robotic});
+    console.log(`This is the longitude ${longitude}and ${latitude}`);
+
+
+    res.json({success: true, message: results.output, token:token, power:resultPower,long:longitude, lat:latitude, coordinates:polygonCord });
 
     //Stream The response using the Log
 

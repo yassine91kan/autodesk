@@ -40,6 +40,10 @@ let loadAx ;
 let MomentX ; 
 let MomentY;
 
+let axialCapacity  ; 
+let bendingsCapacity ;
+let bendingwCapacity  ;
+
 const openai = new OpenAI({
     apiKey: OPENAIKEY
   });
@@ -156,9 +160,9 @@ router.post('/solar_technical_agent', async function (req, res, next) {
                 console.log("I am here getting the values");
                 console.log(loadAxial);
 
-                let axialCapacity = 1127 ; 
-                let bendingsCapacity= 725 ;
-                let bendingwCapacity = 325 ;
+                axialCapacity = 91 ; 
+                bendingsCapacity= 20 ;
+                bendingwCapacity = 8.66 ;
 
                 totalCapacity = parseInt(loadAxial.loadAxial)/axialCapacity + 8/9 * (parseInt(loadAxial.loadBendingStrong)/bendingsCapacity + parseInt(loadAxial.loadBendingWeak)/bendingwCapacity) ; 
               
@@ -239,7 +243,7 @@ router.post('/solar_technical_agent', async function (req, res, next) {
     })
 
 
-    res.json({success: true, message: results.output, token:token, soilLayer:soilLayer, soilDepth: soilDepth, soilFriction:soilFriction, embedment:resultString,totalCapacity:totalCapacityOutput, loadAx: loadAx, MomentX:MomentX, MomentY:MomentY});
+    res.json({success: true, message: results.output, token:token, soilLayer:soilLayer, soilDepth: soilDepth, soilFriction:soilFriction, embedment:resultString,totalCapacity:totalCapacityOutput, loadAx: loadAx, MomentX:MomentX, MomentY:MomentY, axialCapacity:axialCapacity, bendingsCapacity:bendingsCapacity, bendingwCapacity:bendingwCapacity});
 
     //Stream The response using the Log
 

@@ -6122,6 +6122,11 @@ margin-top: 50px;
 
 #roboticContainer{
   margin-top:15px;
+  /* display:none; */
+}
+
+#rowHide{
+  margin-top:20px;
 }
 
 #buttonForm{

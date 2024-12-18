@@ -125,9 +125,9 @@ router.post('/solar_agent_simulation', async function (req, res, next) {
 
     const customTool = new DynamicStructuredTool({
         name: "Calculate_Optimized_Path_Solar",
-        description: "Calculates an optimized path for solar piling based on a series of longitudes and latitudes for the piles",
+        description: "Calculates an optimized path for solar piling based on a configuration for the piles for RPD35 Robotic",
         schema: z.object({
-            configuration: z.string().describe("Configuration name. if default, use configuration name default"),
+            configuration: z.string().describe("Configuration name. if none, use configuration name default"),
           }),       
         func: async (configuration) => {
             try {
@@ -148,31 +148,31 @@ router.post('/solar_agent_simulation', async function (req, res, next) {
         }
     });
 
-    const customTool_2 = new DynamicStructuredTool({
-        name: "Add_Panel_property_line",
-        description: "Add the panels based on the Property line polygon consisting of a set of longitudes and latitudes provided by the user",
-        schema: z.object({
-            coordinates: z.string().describe("The longitudes and latitudes representing the polygon"),
-            // value: z.string().describe("the value to be used for querying the model. Use Tavily search for unusual values"),
-          }),  
-        func: async (coordinates) => {
-            try {
-                if (!coordinates) {
-                    console.log(coordinates);
-                    throw new Error("The coordinates must be provided");
-                }
+    // const customTool_2 = new DynamicStructuredTool({
+    //     name: "Add_Panel_property_line",
+    //     description: "Add the panels based on the Property line polygon consisting of a set of longitudes and latitudes provided by the user",
+    //     schema: z.object({
+    //         coordinates: z.string().describe("The longitudes and latitudes representing the polygon"),
+    //         // value: z.string().describe("the value to be used for querying the model. Use Tavily search for unusual values"),
+    //       }),  
+    //     func: async (coordinates) => {
+    //         try {
+    //             if (!coordinates) {
+    //                 console.log(coordinates);
+    //                 throw new Error("The coordinates must be provided");
+    //             }
 
-                polygonCord = coordinates.coordinates;
+    //             polygonCord = coordinates.coordinates;
 
-                console.log(`The coordinates check within the tool are ${polygonCord}`);
+    //             console.log(`The coordinates check within the tool are ${polygonCord}`);
                 
-                return polygonCord;
-            } catch (error) {
-                console.error("Error in customTool function:", error);
-                return `Error: ${error.message}`;
-            }
-        }
-    });
+    //             return polygonCord;
+    //         } catch (error) {
+    //             console.error("Error in customTool function:", error);
+    //             return `Error: ${error.message}`;
+    //         }
+    //     }
+    // });
 
     // const customTool_3 = new DynamicStructuredTool({
     //     name: "Generate_Path_Robotic_Driver",
@@ -201,7 +201,7 @@ router.post('/solar_agent_simulation', async function (req, res, next) {
 
     
 
-    const tools = [customTool, customTool_2];
+    const tools = [customTool];
 
 
 
