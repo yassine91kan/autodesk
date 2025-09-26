@@ -10,12 +10,10 @@ const { pull } = require("langchain/hub");
 const { ChatPromptTemplate, MessagesPlaceholder } = require ("@langchain/core/prompts");
 const { DynamicTool } = require("@langchain/core/tools");
 const { DynamicStructuredTool } = require("@langchain/core/tools") ;
-const { ChatMessageHistory } = require ("langchain/stores/message/in_memory");
-const{ RunnableWithMessageHistory} = require ("@langchain/core/runnables");
-const { HumanMessage, AIMessage } =require("@langchain/core/messages") ;
-
 const axios = require("axios");
 const { z } = require('zod');
+
+
 
 let router = express.Router();
 
@@ -35,67 +33,67 @@ const openai = new OpenAI({
   });
 
 // Proceed to query the model's metadata
-// let urn = "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6ZnFwdGd0Z2Q2N2dnNGd2dWJhZ2VpdmpweHVzdW9pbXMtYmFzaWMtYXBwL3JzdGJhc2ljc2FtcGxlcHJvamVjdC5ydnQ";
-// let guid = "2b8b1cf8-31bf-7e71-dfb5-e1d4342ddb82";
+let urn = "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6ZnFwdGd0Z2Q2N2dnNGd2dWJhZ2VpdmpweHVzdW9pbXMtYmFzaWMtYXBwL3JzdGJhc2ljc2FtcGxlcHJvamVjdC5ydnQ";
+let guid = "2b8b1cf8-31bf-7e71-dfb5-e1d4342ddb82";
 
 
-// async function authenticate(){
+async function authenticate(){
 
-//     const body = new URLSearchParams();
-//     body.append('grant_type', 'client_credentials');
-//     body.append('scope', 'data:read');
+    const body = new URLSearchParams();
+    body.append('grant_type', 'client_credentials');
+    body.append('scope', 'data:read');
 
-//     const concatword = APS_CLIENT_ID + ":" + APS_CLIENT_SECRET;
-//     const cred_encod = btoa(concatword);
+    const concatword = APS_CLIENT_ID + ":" + APS_CLIENT_SECRET;
+    const cred_encod = btoa(concatword);
 
-//     try {
-//         const response = await fetch('https://developer.api.autodesk.com/authentication/v2/token', {
-//             method: 'POST',
-//             headers: {
-//                 'Content-Type': 'application/x-www-form-urlencoded',
-//                 'Authorization': 'Basic ' + cred_encod
-//             },
-//             body: body
-//         });
+    try {
+        const response = await fetch('https://developer.api.autodesk.com/authentication/v2/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': 'Basic ' + cred_encod
+            },
+            body: body
+        });
 
-//         if (!response.ok) {
-//             throw new Error(`HTTP error! status: ${response.status}`);
-//         }
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-//         const data = await response.json();
-//         console.log('Basic ' + cred_encod);
-//         console.log(data);
-//         tokenExpirationTime = Date.now() + data.expires_in * 1000;
+        const data = await response.json();
+        console.log('Basic ' + cred_encod);
+        console.log(data);
+        tokenExpirationTime = Date.now() + data.expires_in * 1000;
 
-//         return data.access_token;
-//     } catch (error) {
-//         console.error('Error:', error);
-//         throw error; // rethrow the error if needed
-//     }
+        return data.access_token;
+    } catch (error) {
+        console.error('Error:', error);
+        throw error; // rethrow the error if needed
+    }
 
-// }
+}
 
-// async function getAccessToken() {
-//     if (!access_token || Date.now() >= tokenExpirationTime) {
-//         return await authenticate();
-//     }
+async function getAccessToken() {
+    if (!access_token || Date.now() >= tokenExpirationTime) {
+        return await authenticate();
+    }
 
-//     console.log("access Token is the same");
+    console.log("access Token is the same");
 
-//     return access_token;
-// }
+    return access_token;
+}
 
-// //getmodel metadata
+//getmodel metadata
 
-// async function getModelMetadata(urn, guid, access_token) {
-//     const response = await axios.get(`https://developer.api.autodesk.com/modelderivative/v2/designdata/${urn}/metadata/${guid}/properties`, {
-//         headers: {
-//             'Authorization': `Bearer ${access_token}`
-//         }
-//     });
-//     return response.data;
+async function getModelMetadata(urn, guid, access_token) {
+    const response = await axios.get(`https://developer.api.autodesk.com/modelderivative/v2/designdata/${urn}/metadata/${guid}/properties`, {
+        headers: {
+            'Authorization': `Bearer ${access_token}`
+        }
+    });
+    return response.data;
 
-// }
+}
 
 let resultPower ;
 let longitude ;
@@ -124,7 +122,6 @@ router.post('/solar_agent', async function (req, res, next) {
 
     let polygonCord ;
     let robotic;
-    let pitch ;
 
  
 
@@ -134,11 +131,10 @@ router.post('/solar_agent', async function (req, res, next) {
         schema: z.object({
             power: z.string().describe("The power requested by the user"),
             long: z.string().describe("The longitude of the site"),
-            lat:z.string().describe("The latitude of the site"),
-            pit: z.string().describe("This is the pitch ot the distance between panels rows, use 5 for default meaning 5 m"),
+            lat:z.string().describe("The latitude of the site")
             // value: z.string().describe("the value to be used for querying the model. Use Tavily search for unusual values"),
           }),       
-        func: async (power,long,lat,pit) => {
+        func: async (power,long,lat) => {
             try {
                 if (!power.power) {
                     console.log(power.power);
@@ -158,11 +154,9 @@ router.post('/solar_agent', async function (req, res, next) {
 
                 longitude = power.long;
                 latitude = power.lat;
-                pitch = power.pit ;
 
                 console.log(longitude);
                 console.log(latitude);
-                console.log(pitch);
                 
                 return power.power;
             } catch (error) {
@@ -235,26 +229,10 @@ router.post('/solar_agent', async function (req, res, next) {
       });
 
 
-    //   const prompt = ChatPromptTemplate.fromMessages([
-    //     ["system", "You are a very powerful assistant that can help me add solar panels to the model based on the power requested from the user input and a longitude latitude of the site or the property line made of a series of longitudes and latitudes. Do not use the unit in the power. Format the points of the polygon of property line in the tool as an array of objects containing longitudes and latitudes as the keys. Use the chat history for questions about previous prompts or requests and do not use the tools "],
-    //     ["human", "{input}"],
-    //     new MessagesPlaceholder("agent_scratchpad"),
-    //     new MessagesPlaceholder("chat_history")
-    //   ]);
-
-
       const prompt = ChatPromptTemplate.fromMessages([
-        ["system", 
-          `
-        You are a powerful assistant designed to:
-        1. Help me add solar panels to the model based on the power requested from the user input and a longitude latitude of the site or the property line made of a series of longitudes and latitudes. Do not use the unit in the power. Format the points of the polygon of property line in the tool as an array of objects containing longitudes and latitudes as the keys.
-        OR 2. Answer user questions about prior inputs or the conversation history. Do not invoke Tools for these.
-        OR 3. Respond conversationally when the question is not related to generating solar panels, using the provided chat history. Do not invoke Tools for these.
-        Use chat history to answer questions and not to generate layouts.
-        `],
+        ["system", "You are a very powerful assistant that can help me add solar panels to the model based on the power requested from the user input and a longitude latitude of the site or the property line made of a series of longitudes and latitudes. Use the tools. Do not use the unit in the power. Format the points of the polygon of property line in the tool as an array of objects containing longitudes and latitudes as the keys. "],
         ["human", "{input}"],
-        new MessagesPlaceholder("agent_scratchpad"),
-        new MessagesPlaceholder("chat_history")
+        new MessagesPlaceholder("agent_scratchpad")
       ]);
  
 
@@ -268,50 +246,22 @@ router.post('/solar_agent', async function (req, res, next) {
     const agentExecutor = new AgentExecutor({
         agent,
         tools,
-        verbose:true,
+        // verbose:true,
         // returnIntermediateSteps: true,      
         
     });
 
-    // const messageHistory = new ChatMessageHistory();
-    // const agentWithChatHistory = new RunnableWithMessageHistory({
-    //     runnable:agentExecutor,
-    //     getMessageHistory:(_sessionId) => messageHistory,
-    //     inputMessagesKey:"input",
-    //     historyMessagesKey:"chat_history"
-
-    // })
-
 
     const results = await agentExecutor.invoke({
-        input:req.body.prompt,
-        chat_history: [
-            // new HumanMessage("hi! Can you generate 40000 W."),
-            // new AIMessage("Yes, 40000 W has been successfully generated"),
-          ],
+        input:req.body.prompt
     })
 
-        // const results = await agentWithChatHistory.invoke(
-        //     {input:req.body.prompt},
-        //     {
-        //         configurable:{
-        //             sessionId:"foo"
-        //         }
-        //     }
-        // );
+    console.log(typeof(longitude));
 
-        console.log(results);
+    console.log(`This is the longitude ${longitude}and ${latitude}`);
 
-    res.json({
-        success: true, 
-        message: results.output, 
-        token:token, 
-        power:resultPower,
-        long:longitude, 
-        lat:latitude, 
-        pit:pitch,
-        coordinates:polygonCord,
-        });
+
+    res.json({success: true, message: results.output, token:token, power:resultPower,long:longitude, lat:latitude, coordinates:polygonCord });
 
     //Stream The response using the Log
 

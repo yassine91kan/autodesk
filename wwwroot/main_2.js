@@ -63,7 +63,7 @@ function addSolarPanel(viewer, longitude, latitude, height) {
 
 let entityNumber =0 ; 
 
-function addTurbine(viewer,longitude,latitude,height){
+function addSol(viewer,longitude,latitude,height){
 
     // const entity = viewer.entities.add({
       loadedEntities[entityNumber] = viewer.entities.add({
@@ -93,16 +93,16 @@ let pointArrayNew ;
 
 function addPoint (long,lat){
 
-    console.log("I am adding this point");
-    console.log(long);
-    console.log(lat);
+    // console.log("I am adding this point");
+    // console.log(long);
+    // console.log(lat);
 
     i++;
 
 
 
     citizensBankPark[i] = viewer.entities.add({
-        position : Cesium.Cartesian3.fromDegrees(long, lat, 33),
+        position : Cesium.Cartesian3.fromDegrees(long, lat,33),
         point : {
           color : Cesium.Color.YELLOW,
           pixelSize : 8
@@ -143,9 +143,10 @@ let powerReq = 1 ;
 let powerNum = 1;
 let longPDF;
 let latPDF;
+let layHeight ;
 
 // Function to initialize the viewer and add the solar panels
-async function initialize(long,lat,powerPlant) {
+async function initialize(long,lat,powerPlant,spacingCol = 0.00005, heightPanel) {
     // Example: Geocode an address and fly to its location
     // const addressData = await geocodeAddress("1251 Thomas A. Dolan Pkwy, Dunrobin, Ontario");
     // console.log("Geocoded Address:", addressData);
@@ -164,7 +165,7 @@ const propertyLine=[[-76.031671, 45.4160587],
     console.log(addressData);
 
     viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(addressData.longitude, addressData.latitude, 40),
+        destination: Cesium.Cartesian3.fromDegrees(addressData.longitude, addressData.latitude, heightPanel),
         orientation: {
             heading: Cesium.Math.toRadians(0.0),
             pitch: Cesium.Math.toRadians(0.0),
@@ -176,12 +177,9 @@ const propertyLine=[[-76.031671, 45.4160587],
     const numCols = 10;            // Number of columns of panels
     const numRows = Math.round((powerPlant/powerModule)/numCols);            // Number of rows of panels
 
-    console.log(numRows);
-
-    const panelSpacing = 0.0001;   // Approx. 11 meters spacing
-
-    const spacingRow = 0.000015; // 
-    const spacingCol = 0.00005; // This the spacing between the rows of panels or the pitch.
+    // const spacingRow = 0.000015; // 
+    // const ; // This the spacing between the rows of panels or the pitch.
+    const spacingRow = 0.000015; // This the spacing between the columsn of the panels.
 
     const startLongitude = addressData.longitude;
     const startLatitude = addressData.latitude;
@@ -207,7 +205,9 @@ const propertyLine=[[-76.031671, 45.4160587],
             polygonArray.push(longitude);
             polygonArray.push(latitude);
 
-            const height = 33.00;  // You can adjust the height
+            const height = heightPanel;  // You can adjust the height
+
+            console.log(`The height of the panle is ${height}`);
             const rowNumber ="0100";
             pileNumber +=1;
 
@@ -256,7 +256,7 @@ const propertyLine=[[-76.031671, 45.4160587],
             // promises.push(addPoint (longitude,latitude));
 
 
-            // promises.push(addTurbine(viewer,longitude,latitude,height));
+            promises.push(addSol(viewer,longitude,latitude,height));
             
         
     }
@@ -435,7 +435,7 @@ const propertyLine=[[-76.031671, 45.4160587],
             )
         });
           // promises.push(addPoint (longitude,latitude));
-          promises.push(addTurbine(viewer,longitude,latitude,height));
+          promises.push(addSol(viewer,longitude,latitude,height));
       
   }
 }
@@ -943,21 +943,40 @@ async function generatePanelsInPolygon(viewer, propertyLine, powerPlant) {
 // Callback function for handling terrain sampling success
 function terrainsuccess(positions) {
 console.log('Sampled positions:', positions);
+
+console.log(positions[0].height);
+
+return positions ;
+
 }
 
 // Function to sample the terrain
 
-function terrain() {
+async function terrain(longitude,latitude) {
 // Define terrain sample positions (as an array)
 const terrainSamplePositions = [
-    Cesium.Cartographic.fromDegrees(-76.0316771, 45.4160587)
+    Cesium.Cartographic.fromDegrees(longitude, latitude)
 ];
 
-// Sample the terrain at zoom level 9
-Cesium.sampleTerrain(viewer.terrainProvider, 12, terrainSamplePositions)
-    .then(terrainsuccess)  // Pass callback correctly
-    .catch(error => console.error('Error sampling terrain:', error));  // Handle errors
-    }
+console.log("I am here sampling terrain");
+
+try {
+  // Sample the terrain at zoom level 12
+  const sampledTerrain = await Cesium.sampleTerrain(viewer.terrainProvider, 12, terrainSamplePositions);
+  terrainsuccess(sampledTerrain); // Call your success callback with the result
+  return sampledTerrain; // Optionally return the result for further use
+
+} catch (error){
+    console.error('Error sampling terrain:', error); // Handle errors
+}
+
+
+
+// // Sample the terrain at zoom level 9
+// Cesium.sampleTerrain(viewer.terrainProvider, 12, terrainSamplePositions)
+//     .then(terrainsuccess)  // Pass callback correctly
+//     .catch(error => console.error('Error sampling terrain:', error));  // Handle errors
+}
 
 // Add Cesium OSM buildings to the scene as our example 3D Tileset.
 const osmBuildingsTileset = await Cesium.createOsmBuildingsAsync();
@@ -1001,10 +1020,16 @@ document.getElementById('type0').addEventListener("click", () => handleClick("gi
 document.getElementById('type1').addEventListener("click", () => handleClick("langchain_great",document.getElementById('type1').checked));
 document.getElementById('type2').addEventListener("click", () => handleClick("ask_agent_simple",document.getElementById('type2').checked));
 document.getElementById('type3').addEventListener("click", () => handleClick("sql",document.getElementById('type3').checked));
-// document.getElementById('addGeom').addEventListener("click", () => handleClick("geom_agent",document.getElementById('addGeom').checked));
 document.getElementById('SolarGeom').addEventListener("click", () => handleClick("solar_agent",document.getElementById('SolarGeom').checked));
+//This is the agent to generate a solar layout
 document.getElementById('SolarTechnical').addEventListener("click", () => handleClick("solar_technical_agent",document.getElementById('SolarTechnical').checked));
 document.getElementById('SolarSim').addEventListener("click", () => handleClick("solar_agent_simulation",document.getElementById('SolarSim').checked));
+
+// THIS IS THE AGENT FOR RAG QUERIES
+
+document.getElementById('Rag').addEventListener("click", () => handleClick("rag_agent",document.getElementById('Rag').checked));
+
+document.getElementById('RagLanggraph').addEventListener("click", () => handleClick("rag_agent_langgraph",document.getElementById('RagLanggraph').checked));
 
 
 document.getElementById('move').addEventListener("click", () => 
@@ -1022,7 +1047,7 @@ async function getopenai(prompt) {
     //     console.error(err);
     // }
 
-    if (routeselect=="openaifunc"){
+    if (routeselect=="openaifunc"||"rag_agent"||"rag_agent_langgraph"){
 
         const response = await fetch(`/${routeselect}`, {
 
@@ -1041,7 +1066,7 @@ async function getopenai(prompt) {
         const reader = response.body.getReader();
 
         console.log(reader);
-        document.getElementById('gpt_response').innerHTML="";
+        document.getElementById('fname').innerHTML="";
 
         while (true) {
             const { done, value } = await reader.read();
@@ -1130,7 +1155,18 @@ async function getopenai(prompt) {
               // initialize(-76.0316771,45.4160587,parseInt(data.power));
 
               // initialize(-76.03116520703031,45.41641802447001,parseInt(data.power));
-              initialize(parseFloat(data.long),parseFloat(data.lat),parseInt(data.power));
+              // initialize(parseFloat(data.long),parseFloat(data.lat),parseInt(data.power),parseInt(data.pit)/100000);
+
+              terrain(parseFloat(data.long), parseFloat(data.lat))
+              .then(layHeight => {
+                  console.log('Height:', layHeight[0].height); // Access the height value
+
+                  initialize(parseFloat(data.long),parseFloat(data.lat),parseInt(data.power),parseInt(data.pit)/100000,layHeight[0].height);
+              })
+              .catch(error => {
+                  console.error('Error fetching terrain height:', error);
+              });
+
 
               // addInstancing(-76.0316771,45.4160587,parseInt(data.power));
             }

@@ -57,7 +57,7 @@ async function loadAndPrepareData() {
 // Call the loadAndPrepareData when server starts
 loadAndPrepareData();
 
-router.post('/langchain_great', async function (req, res, next) {
+router.post('/rag_agent', async function (req, res, next) {
 
 
 
@@ -183,17 +183,6 @@ router.post('/langchain_great', async function (req, res, next) {
             historyMessagesKey: "history",
             inputMessagesKey: "question",
             });
-
-
-            // const originalQuestion = "What are the prerequisites for this course?";
-
-            // const originalAnswer = await finalRetrievalChain.invoke({
-            // question: originalQuestion,
-            // }, {
-            // configurable: { sessionId: "test" }
-            // });
-
-            // console.log(originalAnswer);
 
             const finalResult = await finalRetrievalChain.invoke({
             question: req.body.prompt
