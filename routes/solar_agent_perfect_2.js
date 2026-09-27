@@ -13,7 +13,6 @@ const { DynamicStructuredTool } = require("@langchain/core/tools") ;
 const { ChatMessageHistory } = require ("langchain/stores/message/in_memory");
 const{ RunnableWithMessageHistory} = require ("@langchain/core/runnables");
 const { HumanMessage, AIMessage } =require("@langchain/core/messages") ;
-const { initializeAgentExecutorWithOptions } = require("langchain/agents");
 
 const axios = require("axios");
 const { z } = require('zod');
@@ -35,7 +34,68 @@ const openai = new OpenAI({
     apiKey: OPENAIKEY
   });
 
-// Global variables to hold the results from the tool
+// Proceed to query the model's metadata
+// let urn = "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6ZnFwdGd0Z2Q2N2dnNGd2dWJhZ2VpdmpweHVzdW9pbXMtYmFzaWMtYXBwL3JzdGJhc2ljc2FtcGxlcHJvamVjdC5ydnQ";
+// let guid = "2b8b1cf8-31bf-7e71-dfb5-e1d4342ddb82";
+
+
+// async function authenticate(){
+
+//     const body = new URLSearchParams();
+//     body.append('grant_type', 'client_credentials');
+//     body.append('scope', 'data:read');
+
+//     const concatword = APS_CLIENT_ID + ":" + APS_CLIENT_SECRET;
+//     const cred_encod = btoa(concatword);
+
+//     try {
+//         const response = await fetch('https://developer.api.autodesk.com/authentication/v2/token', {
+//             method: 'POST',
+//             headers: {
+//                 'Content-Type': 'application/x-www-form-urlencoded',
+//                 'Authorization': 'Basic ' + cred_encod
+//             },
+//             body: body
+//         });
+
+//         if (!response.ok) {
+//             throw new Error(`HTTP error! status: ${response.status}`);
+//         }
+
+//         const data = await response.json();
+//         console.log('Basic ' + cred_encod);
+//         console.log(data);
+//         tokenExpirationTime = Date.now() + data.expires_in * 1000;
+
+//         return data.access_token;
+//     } catch (error) {
+//         console.error('Error:', error);
+//         throw error; // rethrow the error if needed
+//     }
+
+// }
+
+// async function getAccessToken() {
+//     if (!access_token || Date.now() >= tokenExpirationTime) {
+//         return await authenticate();
+//     }
+
+//     console.log("access Token is the same");
+
+//     return access_token;
+// }
+
+// //getmodel metadata
+
+// async function getModelMetadata(urn, guid, access_token) {
+//     const response = await axios.get(`https://developer.api.autodesk.com/modelderivative/v2/designdata/${urn}/metadata/${guid}/properties`, {
+//         headers: {
+//             'Authorization': `Bearer ${access_token}`
+//         }
+//     });
+//     return response.data;
+
+// }
 
 let resultPower ;
 let longitude ;
@@ -78,63 +138,37 @@ router.post('/solar_agent', async function (req, res, next) {
             pit: z.string().describe("This is the pitch ot the distance between panels rows, use 5 for default meaning 5 m"),
             // value: z.string().describe("the value to be used for querying the model. Use Tavily search for unusual values"),
           }),       
-        // func: async (power,long,lat,pit) => {
-        //     try {
-        //         if (!power) {
-        //             console.log(power);
-        //             throw new Error("The power must be provided.");
-        //         }
-
-        //         console.log(power);
-
-        //         resultPower= power;
-
-        //         console.log(`I am here the result Power is ${resultPower}`);
-
-        //         console.log(power.long);
-        //         console.log(power.lat);
-
-
-        //         longitude = long;
-        //         latitude = lat;
-        //         pitch = pit ;
-
-        //         console.log("I AM HERE COCOOOO");
-
-        //         console.log(longitude);
-        //         console.log(latitude);
-        //         console.log(pitch);
-                
-        //         return power;
-        //     } catch (error) {
-        //         console.error("Error in customTool function:", error);
-        //         return `Error: ${error.message}`;
-        //     }
-        // }
-
-        func: async (input) => {
-                try {
-                    // if (!power) throw new Error("The power must be provided.");
-
-                    console.log("Tool invoked with input:", input);
-                    const { power, long, lat, pit } = input;
-
-                    resultPower = power;
-                    longitude = long;
-                    latitude = lat;
-                    pitch = pit;
-
-                    console.log("Power:", resultPower);
-                    console.log("Longitude:", longitude);
-                    console.log("Latitude:", latitude);
-                    console.log("Pitch:", pitch);
-
-                    return `Solar system of ${power} W configured at (${lat}, ${long}) with pitch ${pit} m.`;
-                } catch (error) {
-                    console.error("Error in customTool function:", error);
-                    return `Error: ${error.message}`;
+        func: async (power,long,lat,pit) => {
+            try {
+                if (!power.power) {
+                    console.log(power.power);
+                    throw new Error("The power must be provided.");
                 }
+
+                console.log(power);
+
+                resultPower= power.power;
+
+                console.log(`I am here the result Power is ${resultPower}`);
+
+                console.log(power.long);
+                console.log(power.lat);
+
+
+                longitude = power.long;
+                latitude = power.lat;
+                pitch = power.pit ;
+
+                console.log(longitude);
+                console.log(latitude);
+                console.log(pitch);
+                
+                return power.power;
+            } catch (error) {
+                console.error("Error in customTool function:", error);
+                return `Error: ${error.message}`;
             }
+        }
     });
 
     const customTool_2 = new DynamicStructuredTool({
@@ -230,18 +264,25 @@ router.post('/solar_agent', async function (req, res, next) {
 
     });
 
+    const agentExecutor = new AgentExecutor({
+        agent,
+        tools,
+        verbose:true,
+        // returnIntermediateSteps: true,      
+        
+    });
 
-    const executor = await initializeAgentExecutorWithOptions(
-        [customTool,customTool_2], // ✅ must include your DynamicStructuredTool here
-        llm,
-        {
-            agentType: "openai-functions",
-            verbose: true
-        }
-        );
+    // const messageHistory = new ChatMessageHistory();
+    // const agentWithChatHistory = new RunnableWithMessageHistory({
+    //     runnable:agentExecutor,
+    //     getMessageHistory:(_sessionId) => messageHistory,
+    //     inputMessagesKey:"input",
+    //     historyMessagesKey:"chat_history"
+
+    // })
 
 
-    const results = await executor.invoke({
+    const results = await agentExecutor.invoke({
         input:req.body.prompt,
         chat_history: [
             // new HumanMessage("hi! Can you generate 40000 W."),
@@ -249,6 +290,14 @@ router.post('/solar_agent', async function (req, res, next) {
           ],
     })
 
+        // const results = await agentWithChatHistory.invoke(
+        //     {input:req.body.prompt},
+        //     {
+        //         configurable:{
+        //             sessionId:"foo"
+        //         }
+        //     }
+        // );
 
         console.log(results);
 

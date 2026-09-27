@@ -1,0 +1,114 @@
+[33mWARNING[0m:  [27-09-2025 10:49:19] chroma_server_nofile is not supported on Windows. chroma_server_nofile will not be set.
+[32mINFO[0m:     [27-09-2025 10:49:19] Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+[36mDEBUG[0m:    [27-09-2025 10:49:19] Starting component System
+[36mDEBUG[0m:    [27-09-2025 10:49:19] Starting component OpenTelemetryClient
+[36mDEBUG[0m:    [27-09-2025 10:49:19] Starting component SimpleAssignmentPolicy
+[36mDEBUG[0m:    [27-09-2025 10:49:19] Starting component SqliteDB
+[36mDEBUG[0m:    [27-09-2025 10:49:19] Starting component Posthog
+[36mDEBUG[0m:    [27-09-2025 10:49:19] Starting component LocalSegmentManager
+[36mDEBUG[0m:    [27-09-2025 10:49:19] Starting component SegmentAPI
+[32mINFO[0m:     [27-09-2025 10:49:19] Started server process [[36m23944[0m]
+[32mINFO[0m:     [27-09-2025 10:49:19] Waiting for application startup.
+[32mINFO[0m:     [27-09-2025 10:49:19] Application startup complete.
+[32mINFO[0m:     [27-09-2025 10:49:19] Uvicorn running on [1mhttp://localhost:8000[0m (Press CTRL+C to quit)
+[32mINFO[0m:     [27-09-2025 10:50:41] ::1:52562 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 404
+[32mINFO[0m:     [27-09-2025 10:55:37] ::1:64185 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 404
+[32mINFO[0m:     [27-09-2025 10:57:13] Shutting down
+[32mINFO[0m:     [27-09-2025 10:57:14] Waiting for application shutdown.
+[32mINFO[0m:     [27-09-2025 10:57:14] Application shutdown complete.
+[32mINFO[0m:     [27-09-2025 10:57:14] Finished server process [[36m23944[0m]
+[33mWARNING[0m:  [27-09-2025 10:59:36] chroma_server_nofile is not supported on Windows. chroma_server_nofile will not be set.
+[32mINFO[0m:     [27-09-2025 10:59:36] Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+[36mDEBUG[0m:    [27-09-2025 10:59:36] Starting component System
+[36mDEBUG[0m:    [27-09-2025 10:59:36] Starting component OpenTelemetryClient
+[36mDEBUG[0m:    [27-09-2025 10:59:36] Starting component SimpleAssignmentPolicy
+[36mDEBUG[0m:    [27-09-2025 10:59:36] Starting component SqliteDB
+[36mDEBUG[0m:    [27-09-2025 10:59:36] Starting component Posthog
+[36mDEBUG[0m:    [27-09-2025 10:59:36] Starting component LocalSegmentManager
+[36mDEBUG[0m:    [27-09-2025 10:59:36] Starting component SegmentAPI
+[32mINFO[0m:     [27-09-2025 10:59:36] Started server process [[36m20276[0m]
+[32mINFO[0m:     [27-09-2025 10:59:36] Waiting for application startup.
+[32mINFO[0m:     [27-09-2025 10:59:36] Application startup complete.
+[32mINFO[0m:     [27-09-2025 10:59:36] Uvicorn running on [1mhttp://localhost:8000[0m (Press CTRL+C to quit)
+[32mINFO[0m:     [27-09-2025 11:00:15] ::1:55739 - "GET /api/v1/heartbeat HTTP/1.1" 200
+[32mINFO[0m:     [27-09-2025 11:00:15] ::1:55739 - "GET /favicon.ico HTTP/1.1" 404
+[32mINFO[0m:     [27-09-2025 11:00:27] ::1:64217 - "GET /api/v1/heartbeat HTTP/1.1" 200
+[32mINFO[0m:     [27-09-2025 11:02:00] ::1:59959 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 404
+[32mINFO[0m:     [27-09-2025 11:02:50] ::1:54483 - "GET /api/v1/collections HTTP/1.1" 200
+[32mINFO[0m:     [27-09-2025 11:04:16] ::1:60230 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 404
+[32mINFO[0m:     [27-09-2025 11:05:49] ::1:51177 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 404
+[32mINFO[0m:     [27-09-2025 11:06:47] Shutting down
+[32mINFO[0m:     [27-09-2025 11:06:47] Waiting for application shutdown.
+[32mINFO[0m:     [27-09-2025 11:06:47] Application shutdown complete.
+[32mINFO[0m:     [27-09-2025 11:06:47] Finished server process [[36m20276[0m]
+[33mWARNING[0m:  [27-09-2025 11:29:52] chroma_server_nofile is not supported on Windows. chroma_server_nofile will not be set.
+[32mINFO[0m:     [27-09-2025 11:29:52] Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+[36mDEBUG[0m:    [27-09-2025 11:29:52] Starting component System
+[36mDEBUG[0m:    [27-09-2025 11:29:52] Starting component OpenTelemetryClient
+[36mDEBUG[0m:    [27-09-2025 11:29:52] Starting component SimpleAssignmentPolicy
+[36mDEBUG[0m:    [27-09-2025 11:29:52] Starting component SqliteDB
+[36mDEBUG[0m:    [27-09-2025 11:29:52] Starting component Posthog
+[36mDEBUG[0m:    [27-09-2025 11:29:52] Starting component LocalSegmentManager
+[36mDEBUG[0m:    [27-09-2025 11:29:52] Starting component SegmentAPI
+[32mINFO[0m:     [27-09-2025 11:29:52] Started server process [[36m28612[0m]
+[32mINFO[0m:     [27-09-2025 11:29:52] Waiting for application startup.
+[32mINFO[0m:     [27-09-2025 11:29:52] Application startup complete.
+[32mINFO[0m:     [27-09-2025 11:29:52] Uvicorn running on [1mhttp://localhost:8000[0m (Press CTRL+C to quit)
+[32mINFO[0m:     [27-09-2025 11:30:35] ::1:56058 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 404
+[32mINFO[0m:     [27-09-2025 11:36:24] ::1:52989 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 404
+[32mINFO[0m:     [27-09-2025 11:37:27] ::1:60976 - "GET /api/v1/heartbeat HTTP/1.1" 200
+[32mINFO[0m:     [27-09-2025 11:38:47] ::1:51757 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 404
+[32mINFO[0m:     [27-09-2025 11:43:41] ::1:59008 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 404
+[32mINFO[0m:     [30-09-2025 22:56:21] ::1:58867 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 404
+[32mINFO[0m:     [30-09-2025 23:03:44] Shutting down
+[32mINFO[0m:     [30-09-2025 23:03:44] Waiting for application shutdown.
+[32mINFO[0m:     [30-09-2025 23:03:44] Application shutdown complete.
+[32mINFO[0m:     [30-09-2025 23:03:44] Finished server process [[36m28612[0m]
+[33mWARNING[0m:  [30-09-2025 23:05:40] chroma_server_nofile is not supported on Windows. chroma_server_nofile will not be set.
+[32mINFO[0m:     [30-09-2025 23:05:40] Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+[36mDEBUG[0m:    [30-09-2025 23:05:40] Starting component System
+[36mDEBUG[0m:    [30-09-2025 23:05:40] Starting component OpenTelemetryClient
+[36mDEBUG[0m:    [30-09-2025 23:05:40] Starting component SimpleAssignmentPolicy
+[36mDEBUG[0m:    [30-09-2025 23:05:40] Starting component SqliteDB
+[36mDEBUG[0m:    [30-09-2025 23:05:40] Starting component Posthog
+[36mDEBUG[0m:    [30-09-2025 23:05:40] Starting component LocalSegmentManager
+[36mDEBUG[0m:    [30-09-2025 23:05:40] Starting component SegmentAPI
+[32mINFO[0m:     [30-09-2025 23:05:40] Started server process [[36m10336[0m]
+[32mINFO[0m:     [30-09-2025 23:05:40] Waiting for application startup.
+[32mINFO[0m:     [30-09-2025 23:05:40] Application startup complete.
+[32mINFO[0m:     [30-09-2025 23:05:40] Uvicorn running on [1mhttp://localhost:8000[0m (Press CTRL+C to quit)
+[32mINFO[0m:     [30-09-2025 23:06:40] ::1:61898 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 404
+[32mINFO[0m:     [30-09-2025 23:12:15] Shutting down
+[32mINFO[0m:     [30-09-2025 23:12:15] Waiting for application shutdown.
+[32mINFO[0m:     [30-09-2025 23:12:15] Application shutdown complete.
+[32mINFO[0m:     [30-09-2025 23:12:15] Finished server process [[36m10336[0m]
+[33mWARNING[0m:  [30-09-2025 23:14:29] chroma_server_nofile is not supported on Windows. chroma_server_nofile will not be set.
+[32mINFO[0m:     [30-09-2025 23:14:29] Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+[36mDEBUG[0m:    [30-09-2025 23:14:29] Starting component System
+[36mDEBUG[0m:    [30-09-2025 23:14:29] Starting component OpenTelemetryClient
+[36mDEBUG[0m:    [30-09-2025 23:14:29] Starting component SimpleAssignmentPolicy
+[36mDEBUG[0m:    [30-09-2025 23:14:29] Starting component SqliteDB
+[36mDEBUG[0m:    [30-09-2025 23:14:29] Starting component QuotaEnforcer
+[36mDEBUG[0m:    [30-09-2025 23:14:29] Starting component Posthog
+[36mDEBUG[0m:    [30-09-2025 23:14:29] Starting component LocalSegmentManager
+[36mDEBUG[0m:    [30-09-2025 23:14:29] Starting component SegmentAPI
+[32mINFO[0m:     [30-09-2025 23:14:29] Started server process [[36m23076[0m]
+[32mINFO[0m:     [30-09-2025 23:14:29] Waiting for application startup.
+[32mINFO[0m:     [30-09-2025 23:14:29] Application startup complete.
+[32mINFO[0m:     [30-09-2025 23:14:30] Uvicorn running on [1mhttp://localhost:8000[0m (Press CTRL+C to quit)
+[32mINFO[0m:     [30-09-2025 23:15:02] ::1:51610 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 404
+[32mINFO[0m:     [30-09-2025 23:23:19] ::1:64733 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 404
+[32mINFO[0m:     [30-09-2025 23:26:18] ::1:56214 - "POST /api/v2/tenants/default_tenant/databases/my-db/collections HTTP/1.1" 404
+[32mINFO[0m:     [30-09-2025 23:28:47] ::1:56627 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 404
+[32mINFO[0m:     [30-09-2025 23:31:46] Shutting down
+[32mINFO[0m:     [30-09-2025 23:31:46] Waiting for application shutdown.
+[36mDEBUG[0m:    [30-09-2025 23:31:46] Stopping component System
+[36mDEBUG[0m:    [30-09-2025 23:31:46] Stopping component SegmentAPI
+[36mDEBUG[0m:    [30-09-2025 23:31:46] Stopping component LocalSegmentManager
+[36mDEBUG[0m:    [30-09-2025 23:31:46] Stopping component Posthog
+[36mDEBUG[0m:    [30-09-2025 23:31:46] Stopping component QuotaEnforcer
+[36mDEBUG[0m:    [30-09-2025 23:31:46] Stopping component SqliteDB
+[36mDEBUG[0m:    [30-09-2025 23:31:46] Stopping component SimpleAssignmentPolicy
+[36mDEBUG[0m:    [30-09-2025 23:31:46] Stopping component OpenTelemetryClient
+[32mINFO[0m:     [30-09-2025 23:31:46] Application shutdown complete.
+[32mINFO[0m:     [30-09-2025 23:31:46] Finished server process [[36m23076[0m]

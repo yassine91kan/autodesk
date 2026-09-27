@@ -4,10 +4,8 @@ import { initViewer, loadModel } from './viewer.js';
 // import { OPENAIKEY } from '../config.js';
 
 let routeselect = "langchain";
-let currentViewer = null;
 
 initViewer(document.getElementById('preview')).then(viewer => {
-    currentViewer = viewer;
     const urn = window.location.hash?.substring(1);
     setupModelSelection(viewer, urn);
     setupModelUpload(viewer);
@@ -177,12 +175,12 @@ async function getopenai(prompt) {
             console.log(text);
             // document.getElementById('gpt_response').innerHTML+=text;
 
-            // document.getElementById("promptInput").innerHTML +=
-            // `<div class="author" id="promptOutputMain"><img src="./assets/images/robot.svg" alt="" class="fn__svg" /></div>
-            // <div>
-            // <p id="gpt_response">
-            //   ${text}
-            // </p></div>`;
+            document.getElementById("promptInput").innerHTML +=
+            `<div class="author" id="promptOutputMain"><img src="./assets/images/robot.svg" alt="" class="fn__svg" /></div>
+            <div>
+            <p id="gpt_response">
+              ${text}
+            </p></div>`;
           }
 
 
@@ -200,61 +198,11 @@ async function getopenai(prompt) {
         .then(response => response.json())
         .then(data => {
 
-            let customItems = "";
-
-            if (typeof data.message !== "string") {
-                console.log("This is NOT a string");
-                
-
-                // console.log(data.message);
-                                
-                // const lines = data.message.elements
-                //     .slice(0, 20)
-                //     .map(el => `• ${el.name} — ID ${el.id}`);
-
-                // customItems = `${data.message.elements.length} elements found<br><br>${lines.join("<br>")}`;
-
-                const lines = data.message.elements
-                    .slice(0, 20)
-                    .map(el => `
-                        <div class="result-item" data-id="${el.id}">
-                            • ${el.name} — ID ${el.id}
-                        </div>
-                    `);
-
-                customItems = `
-                <div class="result-summary">
-                    ${data.message.elements.length} elements found
-                </div>
-
-                <div class="result-list">
-                    ${lines.join("")}
-                </div>
-            `;
-
-                console.log("this is the lines",lines);
-
-                // customItems = `${data.message.count}\n\n${lines.join("\n")}`;
-
-                console.log("this the custom items",customItems);
-
-                const dbIds = data.message.elements.map(el => el.id);
-
-                if (currentViewer && dbIds.length > 0) {
-                    currentViewer.clearSelection();
-                    currentViewer.select(dbIds);
-                    currentViewer.fitToView(dbIds);
-                }
-                                
-            }
-
-            else {
-
             console.log(data.message);
 
             console.log(data.token);
 
-            customItems = data.message;
+            let customItems = data.message;
             customItems = customItems.split("\n");
 
             for (let i = 0; i < customItems.length; i++) {
@@ -263,50 +211,23 @@ async function getopenai(prompt) {
 
             customItems = customItems.join("");
 
-            }
-
 
 
 
             // document.getElementById('gpt_response').innerHTML=customItems;
 
-            // document.getElementById("promptInput").innerHTML +=
-            // `<div class="author" id="promptOutputMain"><img src="./assets/images/robot.svg" alt="" class="fn__svg" /></div>
-            // <div>
-            // <p id="gpt_response">
-            //   ${customItems}
-            // </p></div>`;
-
             document.getElementById("promptInput").innerHTML +=
-            `<div class="author" id="promptOutputMain">
-                <img src="./assets/images/robot.svg" alt="" class="fn__svg" />
-            </div>
+            `<div class="author" id="promptOutputMain"><img src="./assets/images/robot.svg" alt="" class="fn__svg" /></div>
             <div>
-                <div class="gpt_response" id="gpt_response_style">
-                    ${customItems}
-                </div>
-            </div>`;
+            <p id="gpt_response">
+              ${customItems}
+            </p></div>`;
 
-            
-            
+            if(data.token){
 
-            if (data.token && data.token.currentRequest) {
-                document.getElementById('compToken').innerHTML = data.token.currentRequest.completionTokens ?? 0;
-                document.getElementById('promptToken').innerHTML = data.token.currentRequest.promptTokens ?? 0;
-            } else {
-                document.getElementById('compToken').innerHTML = 0;
-                document.getElementById('promptToken').innerHTML = 0;
+                document.getElementById('compToken').innerHTML=data.token.completionTokens;
+                document.getElementById('promptToken').innerHTML=data.token.promptTokens ;
             }
-
-            document.querySelectorAll(".result-item").forEach(item => {
-            item.addEventListener("click", () => {
-                const id = parseInt(item.dataset.id);
-
-                currentViewer.clearSelection();
-                currentViewer.select([id]);
-                currentViewer.fitToView([id]);
-            });
-            });
 
         })
         .catch(error => {

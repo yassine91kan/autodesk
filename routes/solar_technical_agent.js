@@ -172,6 +172,8 @@ router.post('/solar_technical_agent', async function (req, res, next) {
 
                 totalCapacityOutput = totalCapacity.toFixed(2).toString();
 
+                console.log(`The total capacity ratio of this design section is : ${totalCapacity.toString()}`)
+
                 return `The total capacity ratio of this design section is : ${totalCapacity.toString()}`;;
             } catch (error) {
                 console.error("Error in customTool function:", error);
@@ -232,7 +234,7 @@ router.post('/solar_technical_agent', async function (req, res, next) {
     const agentExecutor = new AgentExecutor({
         agent,
         tools,
-        verbose:true,
+        // verbose:true,
         // returnIntermediateSteps: true,      
         
     });

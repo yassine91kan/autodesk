@@ -174,14 +174,6 @@ async function getModelMetadata(model, accessToken) {
     return response.data;
 }
 
-async function getModelTree(model, accessToken) {
-    const response = await axios.get(
-        `${APS_BASE_URL}/${model.urn}/metadata/${model.guid}`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-    return response.data;
-}
-
 function addPropertyPath(index, path, label) {
     if (index.pathSet.has(path)) {
         return;
@@ -259,10 +251,7 @@ async function ensureModelContext(model) {
         const metadata = await getModelMetadata(model, accessToken);
         const collection = metadata?.data?.collection || [];
         const propertyIndex = indexPropertyPaths(collection);
-        const modelTree = await getModelTree(model, accessToken);
 
-        console.log(JSON.stringify(modelTree, null, 2));
-        
         const context = {
             key,
             urn: model.urn,
@@ -277,11 +266,11 @@ async function ensureModelContext(model) {
 
         modelCache.set(key, context);
         const raw = JSON.stringify(metadata);
-        // console.log(raw.includes('__category__')); // true/false
-        // console.log(raw.includes('Category'));     // check non-underscore variant too
+        console.log(raw.includes('__category__')); // true/false
+        console.log(raw.includes('Category'));     // check non-underscore variant too
         const collectionTrial = metadata?.data?.collection || [];
         const columnElement = collectionTrial.find(item => item.objectid === 3493); // the ambiguous "UB Universal Beams Column"
-        // console.log(JSON.stringify(columnElement, null, 2));    
+        console.log(JSON.stringify(columnElement, null, 2));    
         return context;
     })();
 
@@ -607,154 +596,6 @@ async function executeIntent(model, context, intent) {
     }
 }
 
-// Add tools to the agent for complex queries. These tools can be called by the LLM to perform
-
-const tools = [
-    {
-        type: "function",
-        function: {
-            name: "search_by_type",
-            description: "Find elements by their type, e.g. beam, wall, door, column, floor.",
-            parameters: {
-                type: "object",
-                properties: {
-                    type: { type: "string", description: "The element type to search for" }
-                },
-                required: ["type"]
-            }
-        }
-    },
-    {
-        type: "function",
-        function: {
-            name: "search_by_property",
-            description: "Find elements filtered by a property value, e.g. material=steel. Optionally scope to a type.",
-            parameters: {
-                type: "object",
-                properties: {
-                    property: { type: "string" },
-                    value: { type: "string" },
-                    type: { type: "string" }
-                },
-                required: ["property", "value"]
-            }
-        }
-    },
-    {
-        type: "function",
-        function: {
-            name: "count_elements",
-            description: "Count elements matching an optional type and/or property filter. Use this whenever the user asks 'how many', not search_by_type/search_by_property.",
-            parameters: {
-                type: "object",
-                properties: {
-                    type: { type: "string" },
-                    property: { type: "string" },
-                    value: { type: "string" }
-                }
-            }
-        }
-    },
-    {
-        type: "function",
-        function: {
-            name: "get_coordinates",
-            description: "Get the 3D coordinates of one specific element by its objectId.",
-            parameters: {
-                type: "object",
-                properties: {
-                    id: { type: "string" }
-                },
-                required: ["id"]
-            }
-        }
-    }
-];
-
-async function executeTool(name, args, context, model) {
-    switch (name) {
-        case 'search_by_type': {
-            const items = findElementsByType(context, args.type);
-            return formatElementResults(items);
-        }
-
-        case 'search_by_property': {
-            const { items } = findElementsByProperty(context, args.property, args.value, args.type);
-            return formatElementResults(items);
-        }
-
-        case 'count_elements': {
-            let items;
-            if (args.property) {
-                ({ items } = findElementsByProperty(context, args.property, args.value, args.type));
-            } else if (args.type) {
-                items = findElementsByType(context, args.type);
-            } else {
-                items = [];
-            }
-            return { count: items.length };
-        }
-
-        case 'get_coordinates': {
-            const coordinates = getCoordinates(model, args.id);
-            return coordinates
-                ? { coordinates }
-                : { error: `No coordinates found for object ${args.id}` };
-        }
-
-        default:
-            return { error: `Unknown tool "${name}"` };
-    }
-}
-
-const MAX_STEPS = 6;
-
-async function runAgent(prompt, context, model) {
-    const messages = [
-        {
-            role: "system",
-            content: `You are an assistant answering questions about a BIM model.
-Use the available tools to look up information. If the user asks about your
-own capabilities (not the model), answer directly without calling a tool.
-Be concise in your final answer.`
-        },
-        { role: "user", content: prompt }
-    ];
-
-    for (let step = 0; step < MAX_STEPS; step++) {
-        const response = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            messages,
-            tools,
-            tool_choice: 'auto'
-        });
-
-        const message = response.choices[0].message;
-        messages.push(message);
-
-        // If the model didn't ask for a tool, it's giving its final answer — stop.
-        if (!message.tool_calls) {
-            return { finalAnswer: message.content, messages };
-        }
-
-        // The model can ask for multiple tool calls in one step — handle all of them.
-        for (const call of message.tool_calls) {
-            const args = JSON.parse(call.function.arguments);
-            const result = await executeTool(call.function.name, args, context, model);
-
-            messages.push({
-                role: "tool",
-                tool_call_id: call.id,
-                content: JSON.stringify(result)
-            });
-        }
-        // Loop continues: next iteration sends the tool results back to the model,
-        // which decides whether it needs another tool call or can now answer.
-    }
-
-    return { finalAnswer: "Sorry, I couldn't resolve that within the allowed steps.", messages };
-}
-
 // Returns the latest raw result for the selected/default model. Existing viewer
 // extensions use this to inspect or reuse the last query result.
 router.get('/ask_agent_simple', async function (req, res) {
@@ -808,18 +649,7 @@ router.post('/ask_agent_simple', async function (req, res) {
         const model = getModelFromInput(req.body);
         const context = await ensureModelContext(model);
         const { intent, usage } = await extractIntent(prompt);
-        let result;
-        if (intent.intent === 'COMPLEX') {
-            const { finalAnswer, messages } = await runAgent(prompt, context, model);
-            result = {
-                success: true,
-                handler: 'agent_loop',
-                message: finalAnswer,
-                steps: messages.length
-            };
-        } else {
-            result = await executeIntent(model, context, intent); // your existing fast path
-        }
+        const result = await executeIntent(model, context, intent);
 
         resultCache.set(modelKey(model), result.raw);
 

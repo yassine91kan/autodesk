@@ -131,3 +131,25 @@ margin-top: 50px;
 
 }
 
+.cesium-widget-credits{
+    margin-left:500px;
+}
+
+#gpt_response_style {
+    background: #7b7979;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.result-summary {
+    margin-bottom: 12px;
+}
+
+.result-item {
+    cursor: pointer;
+    padding: 2px 0;
+}
+
+.result-item:hover {
+    text-decoration: underline;
+}

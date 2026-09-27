@@ -962,7 +962,8 @@ console.log("I am here sampling terrain");
 
 try {
   // Sample the terrain at zoom level 12
-  const sampledTerrain = await Cesium.sampleTerrain(viewer.terrainProvider, 12, terrainSamplePositions);
+  // const sampledTerrain = await Cesium.sampleTerrain(viewer.terrainProvider, 12, terrainSamplePositions);
+  const sampledTerrain = await Cesium.sampleTerrainMostDetailed(viewer.terrainProvider, terrainSamplePositions);
   terrainsuccess(sampledTerrain); // Call your success callback with the result
   return sampledTerrain; // Optionally return the result for further use
 
@@ -1031,6 +1032,15 @@ document.getElementById('Rag').addEventListener("click", () => handleClick("rag_
 
 document.getElementById('RagLanggraph').addEventListener("click", () => handleClick("rag_agent_langgraph",document.getElementById('RagLanggraph').checked));
 
+document.getElementById('RagLlamaindex').addEventListener("click", () => handleClick("rag_llamaindex",document.getElementById('RagLlamaindex').checked));
+
+document.getElementById('RagChroma').addEventListener("click", () => handleClick("rag_agent_langgraph_Chroma",document.getElementById('RagChroma').checked));
+
+document.getElementById('TechLanggraph').addEventListener("click", () => handleClick("technical_agent_langgraph",document.getElementById('TechLanggraph').checked));
+
+document.getElementById('LanggraphSup').addEventListener("click", () => handleClick("technical_agent_langgraph_supervisor",document.getElementById('LanggraphSup').checked));
+
+
 
 document.getElementById('move').addEventListener("click", () => 
     
@@ -1038,16 +1048,18 @@ document.getElementById('move').addEventListener("click", () =>
 
 
 async function getopenai(prompt) {
-    // try {
-    //     const resp = await fetch('/openai');
-    //     console.log(resp);
-    //     console.log(resp.json());
-    // } catch (err) {
-    //     alert('Could not obtain access token. See the console for more details.');
-    //     console.error(err);
-    // }
 
-    if (routeselect=="openaifunc"||"rag_agent"||"rag_agent_langgraph"){
+
+    console.log(`The selected route is ${routeselect}`);
+
+      if (
+      routeselect === "openaifunc" ||
+      routeselect === "rag_agent" ||
+      routeselect === "rag_agent_langgraph" ||
+      routeselect === "rag_llamaindex" || 
+      routeselect === "rag_agent_langgraph_Chroma"
+      
+    ) {
 
         const response = await fetch(`/${routeselect}`, {
 
@@ -1079,6 +1091,7 @@ async function getopenai(prompt) {
             console.log(done);
             const text = new TextDecoder().decode(value);
             console.log(text);
+            const parsedReply = (JSON.parse(text).message);
             // document.getElementById('gpt_response').innerHTML+=text;
 
             document.getElementById("loader").style.display="none";
@@ -1087,7 +1100,7 @@ async function getopenai(prompt) {
             `<div class="author" id="promptOutputMain"><img src="./assets/images/robot.svg" alt="" class="fn__svg" /></div>
             <div>
             <p id="gpt_response">
-              ${text}
+              ${parsedReply}
             </p></div>`;
           }
 
@@ -1112,6 +1125,11 @@ async function getopenai(prompt) {
             // console.log(data.power);
 
             // console.log(data.token);
+            console.log("HERE YEAH YEAH");
+
+            console.log(data.message);
+
+            console.log(data.technical);
 
             let customItems = data.message;
             customItems = customItems.split("\n");
@@ -1141,7 +1159,7 @@ async function getopenai(prompt) {
 
             // initialize(data.addressObj.longitude,data.addressObj.latitude);
 
-            if(!data.coordinates && !data.resultConfiguration && !data.axialCapacity){
+            if(!data.coordinates && !data.resultConfiguration && !data.axialCapacity && !data.technical){
 
               console.log(data);
 
