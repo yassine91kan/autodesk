@@ -1,6 +1,7 @@
 const express = require('express');
 const OpenAI = require('openai');
 const axios = require('axios');
+const Database = require('better-sqlite3');
 const { OPENAIKEY, APS_CLIENT_ID, APS_CLIENT_SECRET } = require('../config.js');
 
 const router = express.Router();
@@ -256,32 +257,27 @@ async function ensureModelContext(model) {
 
     const loadPromise = (async () => {
         const accessToken = await getAccessToken();
-        const metadata = await getModelMetadata(model, accessToken);
-        const collection = metadata?.data?.collection || [];
-        const propertyIndex = indexPropertyPaths(collection);
-        const modelTree = await getModelTree(model, accessToken);
 
-        console.log(JSON.stringify(modelTree, null, 2));
-        
+        // Fetch BOTH the flat properties dump (as before) AND the tree (new).
+        const metadata = await getModelMetadata(model, accessToken);
+        const tree = await getModelTree(model, accessToken);
+
+        const collection = metadata?.data?.collection || [];
+        const coordinates = coordinateCache.get(key) || {};
+
+        // Build the SQLite database from both data sources.
+        const db = buildModelDatabase(collection, tree, coordinates);
+
         const context = {
             key,
             urn: model.urn,
             guid: model.guid,
             loadedAt: new Date().toISOString(),
-            collection,
-            propertyPaths: propertyIndex.paths,
-            propertyLabels: propertyIndex.labels,
-            propertyPathSet: propertyIndex.pathSet,
-            uniqueNames: getUniqueNames(collection)
+            elementCount: collection.length,
+            db // <-- this is the new thing your query functions will use next stage
         };
 
         modelCache.set(key, context);
-        const raw = JSON.stringify(metadata);
-        // console.log(raw.includes('__category__')); // true/false
-        // console.log(raw.includes('Category'));     // check non-underscore variant too
-        const collectionTrial = metadata?.data?.collection || [];
-        const columnElement = collectionTrial.find(item => item.objectid === 3493); // the ambiguous "UB Universal Beams Column"
-        // console.log(JSON.stringify(columnElement, null, 2));    
         return context;
     })();
 
@@ -377,94 +373,228 @@ function resolvePropertyPath(context, property) {
     const normalizedProperty = normalizeText(property);
     const aliasCandidates = PROPERTY_ALIASES[normalizedProperty] || [];
 
+    // 1. Try hand-curated aliases first — these are trusted, exact matches.
     for (const candidate of aliasCandidates) {
-        if (context.propertyPathSet.has(candidate)) {
-            return candidate;
+        const [category, key] = candidate.split('.');
+        const exists = context.db.prepare(
+            'SELECT 1 FROM properties WHERE category = ? AND key = ? LIMIT 1'
+        ).get(category, key);
+        if (exists) {
+            return { category, key };
         }
     }
 
-    const exactLabelMatch = context.propertyLabels.find(
-        item => normalizeText(item.label) === normalizedProperty
-    );
-
-    if (exactLabelMatch) {
-        return exactLabelMatch.path;
+    // 2. Exact key match, anywhere — still trusted, no ambiguity.
+    const exactMatch = context.db.prepare(
+        'SELECT category, key FROM properties WHERE key = ? LIMIT 1'
+    ).get(property);
+    if (exactMatch) {
+        return exactMatch;
     }
 
-    const exactPathMatch = context.propertyPaths.find(
-        path => normalizeText(path) === normalizedProperty
-    );
+    // 3. Fuzzy FTS fallback — this is the dangerous path, so we log every
+    // time it fires and ONLY trust it if there's exactly one distinct match.
+    // Multiple matches means genuine ambiguity (e.g. "level" could mean
+    // "Base Level" or "Top Level") — safer to report failure than guess.
+    const fuzzyMatches = context.db.prepare(`
+        SELECT DISTINCT category, key FROM property_keys_fts WHERE property_keys_fts MATCH ? LIMIT 5
+    `).all(normalizedProperty);
 
-    if (exactPathMatch) {
-        return exactPathMatch;
+    if (fuzzyMatches.length === 0) {
+        console.log(`PROPERTY RESOLUTION: "${property}" — no match found at all`);
+        return null;
     }
 
-    const partialLabelMatch = context.propertyLabels.find(
-        item => normalizeText(item.label).includes(normalizedProperty)
-    );
-
-    if (partialLabelMatch) {
-        return partialLabelMatch.path;
+    if (fuzzyMatches.length > 1) {
+        console.log(`PROPERTY RESOLUTION: "${property}" — AMBIGUOUS, ${fuzzyMatches.length} candidates:`,
+            fuzzyMatches.map(m => `${m.category}.${m.key}`));
+        return null; // refuse to guess — better to fail honestly than pick wrong
     }
 
-    return context.propertyPaths.find(
-        path => normalizeText(path).includes(normalizedProperty)
-    ) || null;
+    console.log(`PROPERTY RESOLUTION: "${property}" — fuzzy matched to ${fuzzyMatches[0].category}.${fuzzyMatches[0].key}`);
+    return fuzzyMatches[0];
 }
+
+const TYPE_CATEGORY_ALIASES = {
+    beam: ['structural framing'],
+    column: ['structural columns'],
+    wall: ['walls'],
+    floor: ['floors'],
+    stair: ['stairs'],
+    rebar: ['structural rebar'],
+    foundation: ['structural foundations'],
+    pile: ['structural foundations']
+};
 
 // Local type search avoids an APS network call after metadata is cached.
 function findElementsByType(context, type) {
     const searchType = normalizeText(type);
+    const categoryTargets = TYPE_CATEGORY_ALIASES[searchType];
 
-    if (!searchType) {
-        return [];
+    let rows = [];
+
+    if (categoryTargets && categoryTargets.length > 0) {
+        const placeholders = categoryTargets.map(() => '?').join(',');
+        rows = context.db.prepare(`
+            SELECT e.objectid, e.name FROM elements e
+            JOIN hierarchy h ON h.objectid = e.objectid
+            WHERE h.is_real_element = 1 AND LOWER(h.category) IN (${placeholders})
+        `).all(...categoryTargets);
     }
 
-    return context.collection
-        .filter(item => {
-            const name = normalizeText(item.name || '');
-            const cleanName = normalizeText(cleanElementName(item.name || ''));
-            return name.includes(searchType) || cleanName.includes(searchType);
-        })
-        .map(item => toResultItem(item, { type }));
+    if (rows.length === 0) {
+        // NEW: no hardcoded alias for this word — search the categories that
+        // actually EXIST in this specific model for a substring match, so an
+        // untested word ("ceiling") still works if the model has "Ceilings".
+        rows = context.db.prepare(`
+            SELECT e.objectid, e.name FROM elements e
+            JOIN hierarchy h ON h.objectid = e.objectid
+            WHERE h.is_real_element = 1 AND LOWER(h.category) LIKE '%' || ? || '%'
+        `).all(searchType);
+    }
+
+    if (rows.length === 0) {
+        // Final fallback: plain name matching, same safety net as before.
+        rows = context.db.prepare(`
+            SELECT e.objectid, e.name FROM elements e
+            JOIN hierarchy h ON h.objectid = e.objectid
+            WHERE h.is_real_element = 1
+              AND (e.clean_name LIKE '%' || ? || '%' OR e.name LIKE '%' || ? || '%')
+        `).all(searchType, searchType);
+    }
+
+    return rows.map(row => toResultItem(row, { type }));
 }
 
 // Local property search handles prompts like "steel beams" after intent
 // extraction turns them into { property: "material", value: "steel" }.
 function findElementsByProperty(context, property, value, type) {
-    const propertyPath = resolvePropertyPath(context, property);
+    console.log('>>> NEW findElementsByProperty IS RUNNING <<<');
+    const normalizedProperty = normalizeText(property);
+    const aliasCandidates = PROPERTY_ALIASES[normalizedProperty] || [];
 
-    if (!propertyPath) {
-        return {
-            propertyPath: null,
-            items: []
-        };
+    // Find every alias candidate that actually exists in this model.
+    const realCandidates = [];
+    for (const candidate of aliasCandidates) {
+        const [category, key] = candidate.split('.');
+        const exists = context.db.prepare(
+            'SELECT 1 FROM properties WHERE category = ? AND key = ? LIMIT 1'
+        ).get(category, key);
+        if (exists) {
+            realCandidates.push({ category, key });
+        }
     }
 
-    const items = context.collection
-        .filter(item => {
-            if (type) {
-                const name = normalizeText(item.name || '');
-                const cleanName = normalizeText(cleanElementName(item.name || ''));
+    if (realCandidates.length === 0) {
+        return { propertyPath: null, items: [] };
+    }
 
-                if (!name.includes(normalizeText(type)) && !cleanName.includes(normalizeText(type))) {
-                    return false;
-                }
-            }
+    // Build the OR clause EXACTLY like the hand-verified query: each
+    // condition is "(p.category = ? AND p.key = ?)", joined with OR.
+    const orClause = realCandidates
+        .map(() => '(p.category = ? AND p.key = ?)')
+        .join(' OR ');
 
-            const propertyValue = getPropertyValue(item.properties, propertyPath);
-            return valueContains(propertyValue, value);
-        })
-        .map(item => toResultItem(item, {
-            property,
-            propertyPath,
-            value: getPropertyValue(item.properties, propertyPath)
-        }));
+    // CRITICAL: params must be built in the SAME ORDER the ?s appear in
+    // the query string. The OR-clause ?s come first (category, key pairs),
+    // THEN the value placeholder, THEN the type placeholders if any.
+    const params = [];
+    for (const c of realCandidates) {
+        params.push(c.category, c.key);
+    }
+
+    let query = `
+        SELECT DISTINCT e.objectid, e.name, p.category, p.key, p.value
+        FROM elements e
+        JOIN hierarchy h ON h.objectid = e.objectid
+        JOIN properties p ON p.objectid = e.objectid
+        WHERE h.is_real_element = 1
+          AND (${orClause})
+          AND p.value LIKE '%' || ? || '%'
+    `;
+    params.push(value); // this MUST come right after the OR-clause params, matching query order
+
+    if (type) {
+        const searchType = normalizeText(type);
+        const categoryTargets = TYPE_CATEGORY_ALIASES[searchType];
+        if (categoryTargets && categoryTargets.length > 0) {
+            const placeholders = categoryTargets.map(() => '?').join(',');
+            query += ` AND LOWER(h.category) IN (${placeholders})`;
+            params.push(...categoryTargets); // added LAST, matching query order
+        }
+    }
+
+    const rows = context.db.prepare(query).all(...params);
+    const items = rows.map(row => toResultItem(row, {
+        property,
+        matchedPath: `${row.category}.${row.key}`,
+        value: row.value
+    }));
 
     return {
-        propertyPath,
+        propertyPath: realCandidates.map(c => `${c.category}.${c.key}`).join(' OR '),
         items
     };
+}
+
+// Returns every distinct (category, key) pair in this model, with how many
+// elements have it and one real sample value — this is what grounds the
+// agent in REAL data instead of letting it guess property names.
+function getPropertyCatalog(context, concept) {
+    const normalized = normalizeText(concept);
+    return context.db.prepare(`
+        SELECT p1.category, p1.key, COUNT(DISTINCT p1.objectid) as coverage,
+               (SELECT value FROM properties p2
+                WHERE p2.category = p1.category AND p2.key = p1.key LIMIT 1) as sample
+        FROM properties p1
+        WHERE LOWER(p1.key) LIKE '%' || ? || '%'
+        GROUP BY p1.category, p1.key
+        ORDER BY coverage DESC
+        LIMIT 10
+    `).all(normalized);
+}
+
+function findElementsByExactProperty(context, category, key, value, type) {
+    let query = `
+        SELECT DISTINCT e.objectid, e.name, p.value
+        FROM elements e
+        JOIN hierarchy h ON h.objectid = e.objectid
+        JOIN properties p ON p.objectid = e.objectid
+        WHERE h.is_real_element = 1
+          AND p.category = ? AND p.key = ?
+          AND p.value LIKE '%' || ? || '%'
+    `;
+    const params = [category, key, value];
+
+    if (type) {
+        const categoryTargets = TYPE_CATEGORY_ALIASES[normalizeText(type)];
+        if (categoryTargets && categoryTargets.length > 0) {
+            query += ` AND LOWER(h.category) IN (${categoryTargets.map(() => '?').join(',')})`;
+            params.push(...categoryTargets);
+        }
+    }
+
+    const rows = context.db.prepare(query).all(...params);
+    return rows.map(row => toResultItem(row, { category, key, value: row.value }));
+}
+
+function countByExactProperty(context, category, key, value, type) {
+    return findElementsByExactProperty(context, category, key, value, type).length;
+}
+
+// Shared by SIMPLE_PROPERTY and COUNT — the one place that resolves a
+// user-given property word against the real catalog and picks the best match.
+function resolvePropertyAndFind(context, property, value, type) {
+    const catalog = getPropertyCatalog(context, property);
+
+    if (catalog.length === 0) {
+        return { found: false, items: [] };
+    }
+
+    const best = catalog.find(c => valueContains(c.sample, value)) || catalog[0];
+    const items = findElementsByExactProperty(context, best.category, best.key, value, type);
+
+    return { found: true, propertyPath: `${best.category}.${best.key}`, items };
 }
 
 function getCoordinates(model, id) {
@@ -518,6 +648,10 @@ Rules:
     intentTokenUsage.completionTokens += usage.completion_tokens || 0;
     intentTokenUsage.totalTokens += usage.total_tokens || 0;
 
+    const parsedIntent = JSON.parse(extraction.choices[0].message.content);
+    console.log('CLASSIFIER RESULT:', JSON.stringify(parsedIntent, null, 2)); // <-- temporary debug line
+
+
     return {
         intent: JSON.parse(extraction.choices[0].message.content),
         usage: {
@@ -544,29 +678,28 @@ async function executeIntent(model, context, intent) {
         }
 
         case 'SIMPLE_PROPERTY': {
-            const { propertyPath, items } = findElementsByProperty(
-                context,
-                intent.property,
-                intent.value,
-                intent.type
-            );
+            const resolved = resolvePropertyAndFind(context, intent.property, intent.value, intent.type);
+        if (!resolved.found) {
+            return { success: false, handler: 'local_property_search', message: `No property matching "${intent.property}" found in this model.`, raw: [] };
+        }
+        return { success: true, handler: 'local_property_search', propertyPath: resolved.propertyPath, message: formatElementResults(resolved.items), raw: resolved.items };
 
-            if (!propertyPath) {
-                return {
-                    success: false,
-                    handler: 'local_property_search',
-                    message: `No matching property path found for "${intent.property}".`,
-                    raw: []
-                };
+        }
+
+        case 'COUNT': {
+            let items;
+            if (intent.property) {
+                const resolved = resolvePropertyAndFind(context, intent.property, intent.value, intent.type);
+                if (!resolved.found) {
+                    return { success: false, handler: 'count', message: `No property matching "${intent.property}" found.`, raw: [] };
+                }
+                items = resolved.items;
+            } else if (intent.type) {
+                items = findElementsByType(context, intent.type);
+            } else {
+                items = [];
             }
-
-            return {
-                success: true,
-                handler: 'local_property_search',
-                propertyPath,
-                message: formatElementResults(items),
-                raw: items
-            };
+            return { success: true, handler: 'count', message: { count: items.length }, raw: items };
         }
 
         case 'COORDINATE': {
@@ -624,22 +757,23 @@ const tools = [
             }
         }
     },
-    {
-        type: "function",
-        function: {
-            name: "search_by_property",
-            description: "Find elements filtered by a property value, e.g. material=steel. Optionally scope to a type.",
-            parameters: {
-                type: "object",
-                properties: {
-                    property: { type: "string" },
-                    value: { type: "string" },
-                    type: { type: "string" }
-                },
-                required: ["property", "value"]
-            }
-        }
-    },
+    // {
+    //     type: "function",
+    //     function: {
+    //         name: "search_by_property",
+    //         description: "Find elements filtered by a property value, e.g. material=steel. Optionally scope to a type.",
+    //         parameters: {
+    //             type: "object",
+    //             properties: {
+    //                 property: { type: "string" },
+    //                 value: { type: "string" },
+    //                 type: { type: "string" }
+    //             },
+    //             required: ["property", "value"]
+    //         }
+    //     }
+    // },
+    
     {
         type: "function",
         function: {
@@ -655,6 +789,52 @@ const tools = [
             }
         }
     },
+        {
+        type: "function",
+        function: {
+            name: "list_properties",
+            description: "Search for the EXACT property names available in THIS model, matching a general concept (e.g. 'level', 'weight', 'material'). Returns real (category, key) pairs with sample values. ALWAYS call this BEFORE search_by_property or count_elements_by_property, to get the real property name instead of guessing — guessing causes wrong answers.",
+            parameters: {
+                type: "object",
+                properties: { concept: { type: "string", description: "The general concept the user is asking about, e.g. 'level', 'weight'" } },
+                required: ["concept"]
+            }
+        }
+    },
+        {
+        type: "function",
+        function: {
+            name: "search_by_property",
+            description: "Find elements with an EXACT property category and key (get these from list_properties first, never guess them) matching a value. Optionally scope by type.",
+            parameters: {
+                type: "object",
+                properties: {
+                    category: { type: "string", description: "Exact category from list_properties, e.g. 'Constraints'" },
+                    key: { type: "string", description: "Exact key from list_properties, e.g. 'Base Level'" },
+                    value: { type: "string" },
+                    type: { type: "string" }
+                },
+                required: ["category", "key", "value"]
+            }
+        }
+    },
+    {
+    type: "function",
+    function: {
+        name: "count_elements_by_property",
+        description: "Count elements with an EXACT property category and key (get these from list_properties first) matching a value. Use for 'how many' questions.",
+        parameters: {
+            type: "object",
+            properties: {
+                category: { type: "string" },
+                key: { type: "string" },
+                value: { type: "string" },
+                type: { type: "string" }
+            },
+            required: ["category", "key", "value"]
+        }
+    }
+},
     {
         type: "function",
         function: {
@@ -671,40 +851,89 @@ const tools = [
     }
 ];
 
+function toolError(code, message) {
+    return { success: false, code, error: message };
+}
+
+function toolSuccess(data) {
+    return { success: true, ...data };
+}
+
 async function executeTool(name, args, context, model) {
+    console.log('TOOL CALL:', name, JSON.stringify(args));
+
+    let result;
+
     switch (name) {
         case 'search_by_type': {
             const items = findElementsByType(context, args.type);
-            return formatElementResults(items);
+            result = toolSuccess(formatElementResults(items));
+            break;
+        }
+
+        // case 'search_by_property': {
+        //     const { propertyPath, items } = findElementsByProperty(context, args.property, args.value, args.type);
+        //     if (!propertyPath) {
+        //         result = toolError('PROPERTY_NOT_FOUND', `Could not find a property called "${args.property}". Try "material", "level", "type", or "category".`);
+        //         break;
+        //     }
+        //     result = toolSuccess(formatElementResults(items));
+        //     break;
+        // }
+        case 'list_properties': {
+            const matches = getPropertyCatalog(context, args.concept);
+            result = toolSuccess({ matches });
+            break;
         }
 
         case 'search_by_property': {
-            const { items } = findElementsByProperty(context, args.property, args.value, args.type);
-            return formatElementResults(items);
+            // NOTE: if this name collides with your OLD fuzzy-based tool,
+            // rename the old one (e.g. 'search_by_property_fuzzy') or remove
+            // it entirely now that this exact-match version replaces it.
+            const items = findElementsByExactProperty(context, args.category, args.key, args.value, args.type);
+            result = toolSuccess(formatElementResults(items));
+            break;
         }
 
+        case 'count_elements_by_property': {
+            const count = countByExactProperty(context, args.category, args.key, args.value, args.type);
+            result = toolSuccess({ count });
+            break;
+        }
+
+        
         case 'count_elements': {
             let items;
             if (args.property) {
-                ({ items } = findElementsByProperty(context, args.property, args.value, args.type));
+                const { propertyPath, items: found } = findElementsByProperty(context, args.property, args.value, args.type);
+                if (!propertyPath) {
+                    result = toolError('PROPERTY_NOT_FOUND', `Could not find a property called "${args.property}". Try "material", "level", "type", or "category".`);
+                    break;
+                }
+                items = found;
             } else if (args.type) {
                 items = findElementsByType(context, args.type);
             } else {
                 items = [];
             }
-            return { count: items.length };
+            result = toolSuccess({ count: items.length });
+            break;
         }
 
         case 'get_coordinates': {
-            const coordinates = getCoordinates(model, args.id);
-            return coordinates
-                ? { coordinates }
-                : { error: `No coordinates found for object ${args.id}` };
+            const coordinates = getCoordinates(context, args.id);
+            result = coordinates
+                ? toolSuccess({ coordinates })
+                : toolError('COORDINATES_NOT_FOUND', `No coordinates found for object ${args.id}`);
+            break;
         }
 
         default:
-            return { error: `Unknown tool "${name}"` };
+            result = toolError('UNKNOWN_TOOL', `Unknown tool "${name}"`);
     }
+
+    console.log('TOOL RESULT:', JSON.stringify(result).slice(0, 500));
+    return result;
 }
 
 const MAX_STEPS = 6;
@@ -714,9 +943,22 @@ async function runAgent(prompt, context, model) {
         {
             role: "system",
             content: `You are an assistant answering questions about a BIM model.
-Use the available tools to look up information. If the user asks about your
-own capabilities (not the model), answer directly without calling a tool.
-Be concise in your final answer.`
+
+CRITICAL: When the user asks about a property (level, weight, material, etc.),
+you MUST call list_properties first to find the exact (category, key) pair
+that exists in this specific model. NEVER guess a property name — different
+models use different property names, and guessing produces wrong answers.
+
+After list_properties returns matches, pick the one whose sample value and
+key name best fit what the user is asking (e.g. for "level 2", prefer a key
+whose sample looks like "Level 1" or "Level 2" over a key like "End Level
+Offset" whose sample is a number with "mm").
+
+Use count_elements_by_property for "how many" questions, search_by_property
+for "list/show" questions.
+
+If the user asks about your own capabilities, answer directly without tools.`
+
         },
         { role: "user", content: prompt }
     ];
@@ -755,6 +997,174 @@ Be concise in your final answer.`
     return { finalAnswer: "Sorry, I couldn't resolve that within the allowed steps.", messages };
 }
 
+// ============================================================================
+// Splits a raw value like "25.400 kgf/m" into { numericValue: 25.4, unit: "kgf/m" }
+// ============================================================================
+function parseValueAndUnit(value) {
+    if (value === null || value === undefined) {
+        return { numericValue: null, unit: null };
+    }
+
+    const str = String(value);
+    const match = str.match(/^(-?\d+(?:\.\d+)?)\s*(.*)$/);
+
+    if (!match) {
+        return { numericValue: null, unit: null };
+    }
+
+    return {
+        numericValue: parseFloat(match[1]),
+        unit: match[2].trim() || null
+    };
+}
+
+// ============================================================================
+// Real category names confirmed from your actual model tree dump.
+// ============================================================================
+const KNOWN_CATEGORY_NAMES = new Set([
+    'walls', 'floors', 'structural foundations', 'stairs', 'runs',
+    'structural columns', 'structural framing', 'lines',
+    'structural area reinforcement', 'structural rebar', 'supports',
+    'doors', 'windows', 'roofs', 'ceilings', 'railings',
+    'pipes', 'ducts', 'mechanical equipment', 'electrical equipment'
+]);
+
+function isCategoryNode(name) {
+    return KNOWN_CATEGORY_NAMES.has(normalizeText(name));
+}
+
+// ============================================================================
+// Walks the model tree once, recording each node's inherited category and
+// whether it's a leaf (real element) or a container (grouping node).
+// ============================================================================
+function buildHierarchyRows(tree) {
+    const rows = [];
+
+    // depth 0 = root's direct children = ALWAYS category nodes, regardless
+    // of what they're named. This removes any need to maintain a list of
+    // known category names — new categories in new models just work.
+    function walk(node, parentId, currentCategory, depth) {
+        const categoryHere = depth === 0 ? node.name : currentCategory;
+        const hasChildren = Array.isArray(node.objects) && node.objects.length > 0;
+
+        rows.push({
+            objectid: node.objectid,
+            parentId,
+            category: categoryHere || null,
+            isLeaf: hasChildren ? 0 : 1,
+            isRealElement: isRealElementName(node.name) ? 1 : 0
+        });
+
+        if (hasChildren) {
+            for (const child of node.objects) {
+                walk(child, node.objectid, categoryHere, depth + 1);
+            }
+        }
+    }
+
+    const root = tree?.data?.objects?.[0];
+    if (root && Array.isArray(root.objects)) {
+        for (const child of root.objects) {
+            walk(child, root.objectid, null, 0); // depth 0 = this IS a category
+        }
+    }
+
+    return rows;
+}
+
+// ============================================================================
+// Builds one SQLite database in memory for one model, from its flat
+// properties collection + its tree + any cached coordinates.
+// ============================================================================
+function buildModelDatabase(collection, tree, coordinates = {}) {
+    const db = new Database(':memory:');
+
+    db.exec(`
+        CREATE TABLE elements (
+            objectid INTEGER PRIMARY KEY,
+            name TEXT,
+            clean_name TEXT
+        );
+
+        CREATE TABLE properties (
+            objectid INTEGER,
+            category TEXT,
+            key TEXT,
+            value TEXT,
+            numeric_value REAL,
+            unit TEXT
+        );
+
+        CREATE TABLE coordinates (
+            objectid INTEGER PRIMARY KEY,
+            x REAL, y REAL, z REAL
+        );
+
+        CREATE TABLE hierarchy (
+            objectid INTEGER PRIMARY KEY,
+            parent_id INTEGER,
+            category TEXT,
+            is_leaf INTEGER,
+            is_real_element INTEGER  -- 1 = genuine physical element (name has a bracketed ID), 0 = container/grouping node
+        );
+
+        CREATE VIRTUAL TABLE property_keys_fts USING fts5(key, category, objectid UNINDEXED);
+
+        CREATE INDEX idx_props_category_key ON properties(category, key);
+        CREATE INDEX idx_props_objectid ON properties(objectid);
+        CREATE INDEX idx_hierarchy_category ON hierarchy(category);
+    `);
+
+    const insertElement = db.prepare('INSERT INTO elements (objectid, name, clean_name) VALUES (?, ?, ?)');
+    const insertProp = db.prepare(
+        'INSERT INTO properties (objectid, category, key, value, numeric_value, unit) VALUES (?, ?, ?, ?, ?, ?)'
+    );
+    const insertFts = db.prepare('INSERT INTO property_keys_fts (key, category, objectid) VALUES (?, ?, ?)');
+    const insertCoord = db.prepare('INSERT INTO coordinates (objectid, x, y, z) VALUES (?, ?, ?, ?)');
+    const insertHierarchy = db.prepare(
+    'INSERT INTO hierarchy (objectid, parent_id, category, is_leaf, is_real_element) VALUES (?, ?, ?, ?, ?)'
+    );
+
+    const ingestProperties = db.transaction((items) => {
+        for (const item of items) {
+            insertElement.run(item.objectid, item.name, cleanElementName(item.name));
+
+            for (const [category, details] of Object.entries(item.properties || {})) {
+                if (!details || typeof details !== 'object' || Array.isArray(details)) {
+                    continue;
+                }
+                for (const [key, value] of Object.entries(details)) {
+                    const { numericValue, unit } = parseValueAndUnit(value);
+                    insertProp.run(item.objectid, category, key, String(value), numericValue, unit);
+                    insertFts.run(key, category, item.objectid);
+                }
+            }
+
+            const coord = coordinates[item.objectid];
+            if (coord && coord.elementCent) {
+                const [x, y, z] = coord.elementCent;
+                insertCoord.run(item.objectid, x, y, z);
+            }
+        }
+    });
+
+    ingestProperties(collection);
+
+    const hierarchyRows = buildHierarchyRows(tree);
+    const ingestHierarchy = db.transaction((rows) => {
+    for (const row of rows) {
+        insertHierarchy.run(row.objectid, row.parentId, row.category, row.isLeaf, row.isRealElement);
+    }
+    });
+    ingestHierarchy(hierarchyRows);
+
+    return db;
+}
+
+function isRealElementName(name = '') {
+    return /\[\d+\]/.test(name);
+}
+
 // Returns the latest raw result for the selected/default model. Existing viewer
 // extensions use this to inspect or reuse the last query result.
 router.get('/ask_agent_simple', async function (req, res) {
@@ -771,6 +1181,66 @@ router.get('/ask_agent_simple', async function (req, res) {
     });
 });
 
+router.get('/debug_db', async function (req, res) {
+    try {
+        const model = getModelFromInput(req.query);
+        const context = await ensureModelContext(model);
+
+        const elementCount = context.db.prepare('SELECT COUNT(*) as c FROM elements').get().c;
+        const propertyCount = context.db.prepare('SELECT COUNT(*) as c FROM properties').get().c;
+        const hierarchyCount = context.db.prepare('SELECT COUNT(*) as c FROM hierarchy').get().c;
+        const leafCount = context.db.prepare('SELECT COUNT(*) as c FROM hierarchy WHERE is_leaf = 1').get().c;
+        const categorySample = context.db.prepare('SELECT DISTINCT category FROM hierarchy WHERE category IS NOT NULL LIMIT 20').all();
+
+        res.json({ elementCount, propertyCount, hierarchyCount, leafCount, categorySample });
+    } catch (error) {
+        console.error('debug_db error:', error);
+        res.status(500).json({ error: error.message, stack: error.stack });
+    }
+});
+
+router.get('/debug_leaves', async function (req, res) {
+    try {
+        const model = getModelFromInput(req.query);
+        const context = await ensureModelContext(model);
+
+        const containers = context.db.prepare(
+            'SELECT h.objectid, e.name, h.category FROM hierarchy h JOIN elements e ON e.objectid = h.objectid WHERE h.is_real_element = 0 LIMIT 20'
+        ).all();
+
+        const realPileCap = context.db.prepare(
+            "SELECT h.objectid, e.name, h.is_leaf, h.is_real_element FROM hierarchy h JOIN elements e ON e.objectid = h.objectid WHERE e.name LIKE '%512319%'"
+        ).get();
+
+        res.json({ containers, realPileCap });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.get('/debug_direct_query', async function (req, res) {
+    try {
+        const model = getModelFromInput(req.query);
+        const context = await ensureModelContext(model);
+
+        // Hand-written, no dynamic building, no app logic — just a direct
+        // check: does the database itself correctly answer this?
+        const rows = context.db.prepare(`
+            SELECT DISTINCT e.objectid, e.name
+            FROM elements e
+            JOIN hierarchy h ON h.objectid = e.objectid
+            JOIN properties p ON p.objectid = e.objectid
+            WHERE h.is_real_element = 1
+              AND ((p.category = 'Constraints' AND p.key = 'Base Level')
+                   OR (p.category = 'Constraints' AND p.key = 'Level'))
+              AND p.value LIKE '%2%'
+        `).all();
+
+        res.json({ count: rows.length, rows: rows.slice(0, 10) });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 // Stores object coordinates generated by the Viewer, keyed by model. APS
 // metadata knows object properties, while the Viewer is better for geometry.
 router.put('/ask_agent_simple', async function (req, res) {
@@ -839,8 +1309,8 @@ router.post('/ask_agent_simple', async function (req, res) {
             },
             cache: {
                 modelLoadedAt: context.loadedAt,
-                modelElementCount: context.collection.length,
-                propertyPathCount: context.propertyPaths.length
+                modelElementCount: context.elementCount,  // this field DOES exist on the new context
+                propertyPathCount: context.db.prepare('SELECT COUNT(DISTINCT category || key) as c FROM properties').get().c
             }
         });
     } catch (error) {

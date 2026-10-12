@@ -130,7 +130,8 @@ class LoggerExtension extends BaseExtension {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body:JSON.stringify(coordinateMap)
+                // Which model these coordinates belong to (main.js sets window.selectedModelUrn).
+                body:JSON.stringify({ urn: window.selectedModelUrn || '', coordinates: coordinateMap })
             })
             .then(response => response.json())
             .then(data => {

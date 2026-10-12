@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon server.js"
@@ -20,6 +23,7 @@
     "@langchain/langgraph": "^0.4.9",
     "@langchain/openai": "^0.6.13",
     "@types/forge-viewer": "^7.69.9",
+    "better-sqlite3": "^13.0.3",
     "body-parser": "^1.20.2",
     "cesium": "^1.121.1",
     "chromadb": "^3.0.15",

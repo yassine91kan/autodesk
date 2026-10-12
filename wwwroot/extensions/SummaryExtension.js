@@ -86,7 +86,8 @@ class SummaryExtension extends BaseExtension {
                 // Added Code
 
 
-                    fetch(`/ask_agent_simple`, {
+                    // The selected model (main.js sets window.selectedModelUrn).
+                    fetch(`/ask_agent_simple?urn=${encodeURIComponent(window.selectedModelUrn || '')}`, {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json'

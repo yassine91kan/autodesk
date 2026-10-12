@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="92" viewBox="0 0 120 92" fill="none">
+  <!-- Augmented mark, Claude-palette colourway (option B): ivory A for the dark
+       bar, Claude orange only in the sliver and spark. Same geometry as the
+       vector redraw of the supplied logo. -->
+  <defs>
+    <linearGradient id="aug-body" x1="14" y1="12" x2="104" y2="84" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#faf9f5"/>
+      <stop offset="0.5" stop-color="#faf9f5"/>
+      <stop offset="1" stop-color="#e8e6dc"/>
+    </linearGradient>
+    <linearGradient id="aug-bar" x1="12" y1="84" x2="74" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d1cfc5"/>
+      <stop offset="1" stop-color="#e8e6dc"/>
+    </linearGradient>
+  </defs>
+  <!-- legs and folded, rounded apex -->
+  <path d="M17 77 51.5 18.5C55 12.5 63 12.5 66.5 18.5L101 77" stroke="url(#aug-body)" stroke-width="19" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- crossbar band: rounded lobe at the bottom left, rising to the right -->
+  <path d="M10.5 79C8.5 71.5 12 65 19 61.5L66 41 72.5 51.5 29 84.5C21 90 12.5 87 10.5 79Z" fill="url(#aug-bar)"/>
+  <!-- the fold where the band passes under the right leg -->
+  <path d="M66 41 77.5 56 72.5 51.5Z" fill="#141413" fill-opacity="0.75"/>
+  <!-- the sliver and the four-point spark carry the orange -->
+  <path d="M79.5 37 88 23.5 85.5 36Z" fill="#d97757"/>
+  <path d="M103 2.5C104.2 9.5 105.8 11 112.5 12.3 105.8 13.6 104.2 15 103 22 101.8 15 100.2 13.6 93.5 12.3 100.2 11 101.8 9.5 103 2.5Z" fill="#d97757"/>
+</svg>

@@ -1,0 +1,10 @@
+[
+    { "question": "show me the beams",                         "expect": { "action": "list", "category": "Structural Framing" } },
+    { "question": "show me the steel beams",                   "expect": { "action": "list", "category": "Structural Framing", "answerIncludes": ["steel"] } },
+    { "question": "show me all elements on level 2",           "expect": { "action": "list" } },
+    { "question": "how many walls are there?",                 "expect": { "action": "count", "category": "Walls" } },
+    { "question": "which level has the most beams?",           "expect": { "action": "group", "category": "Structural Framing" } },
+    { "question": "what materials are used for the columns?",  "expect": { "action": "group", "category": "Structural Columns" } },
+    { "question": "list all ceilings",                         "expect": { "action": "clarify" } },
+    { "question": "what can you help me with?",                "expect": { "action": "reply" } }
+]
