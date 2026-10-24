@@ -375,6 +375,9 @@ a { color: inherit; text-underline-offset: 3px; }
   white-space: nowrap;
 }
 .view-rev[hidden] { display: none; }
+/* "Sign in" (a link) and "Log out" (a form): only one shows at a time */
+.btn-bar[hidden], form[hidden] { display: none; }
+a.btn-bar { text-decoration: none; }
 .view-rev .caps { color: var(--muted); font-size: 11px; }
 .view-rev__mark { font: 700 15px/1 var(--caps); letter-spacing: 0.03em; }
 .view-rev.is-latest { border-color: var(--accent); }
@@ -435,6 +438,50 @@ a { color: inherit; text-underline-offset: 3px; }
   line-height: 1.5;
 }
 #overlay > .notification ul { margin: 8px 0 0 18px; padding: 0; color: var(--ink-2); }
+
+/* ---------- Token notice (bottom-right, closes itself) ---------- */
+.toast {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 50;
+  width: min(360px, calc(100vw - 32px));
+  padding: 12px 36px 12px 14px;
+  border: 1px solid var(--ink);
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: 0 6px 24px rgba(20, 20, 19, 0.16);
+  line-height: 1.45;
+  animation: toast-in 240ms var(--ease-out);
+}
+.toast__title {
+  display: block;
+  font: 700 13px/1.2 var(--caps);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.toast__text { margin: 4px 0 0; font-size: 13px; color: var(--ink-2); }
+.toast__close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.toast__close:hover { background: var(--hover); color: var(--ink); }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}
 
 /* ---------- Schedule of answers ---------- */
 .schedule {
@@ -558,6 +605,8 @@ a { color: inherit; text-underline-offset: 3px; }
   gap: 12px;
   font-weight: 600;
 }
+/* Totals per level come as one line each */
+.result-summary > span:first-child { white-space: pre-line; }
 .result-summary__count {
   font: 700 22px/1 var(--caps);
   font-variant-numeric: tabular-nums;

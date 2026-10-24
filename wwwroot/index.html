@@ -65,6 +65,21 @@
           </svg>
           <span>New sheet</span>
         </button>
+        <!-- Guests see "Sign in", signed-in users "Log out" (main.js asks /api/me which). -->
+        <a id="signIn" class="btn-bar btn-bar--ghost" href="/login" title="Sign in for unlimited questions and model uploads" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M9.5 4.5h-3A1.5 1.5 0 0 0 5 6v12a1.5 1.5 0 0 0 1.5 1.5h3M14 16.5l4.5-4.5L14 7.5M18.5 12H9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span>Sign in</span>
+        </a>
+        <form id="logOut" method="post" action="/logout" hidden>
+          <button class="btn-bar btn-bar--ghost" type="submit" title="Sign out of Augmented">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M14.5 4.5h3a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5h-3M10 16.5 5.5 12 10 7.5M5.5 12H15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>Log out</span>
+          </button>
+        </form>
       </div>
 
       <!-- Not a visible control: extensions/LoggerExtension.js reads this checkbox before it

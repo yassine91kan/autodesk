@@ -1,0 +1,252 @@
+{
+  "model": {
+    "name": "Seaport-Civic-Center_Architecture.rvt",
+    "urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6ZnFwdGd0Z2Q2N2dnNGd2dWJhZ2VpdmpweHVzdW9pbXMtYmFzaWMtYXBwL1NlYXBvcnQtQ2l2aWMtQ2VudGVyX0FyY2hpdGVjdHVyZS5ydnQ"
+  },
+  "view": "103-1_Building Rear Hall",
+  "elements": 15147,
+  "builtAt": "2026-10-20T03:12:30.009Z",
+  "cases": [
+    {
+      "id": "T01",
+      "group": "all doors",
+      "question": "number of doors",
+      "expect": {
+        "count": 125
+      }
+    },
+    {
+      "id": "T02",
+      "group": "all doors",
+      "question": "count all the doors",
+      "expect": {
+        "count": 125
+      }
+    },
+    {
+      "id": "T03",
+      "group": "all doors",
+      "question": "doors?",
+      "expect": {
+        "count": 125
+      }
+    },
+    {
+      "id": "T04",
+      "group": "all doors",
+      "question": "how many doors do we have",
+      "expect": {
+        "count": 125
+      }
+    },
+    {
+      "id": "T05",
+      "group": "doors on level 2",
+      "question": "level 2 doors",
+      "expect": {
+        "count": 28
+      }
+    },
+    {
+      "id": "T06",
+      "group": "doors on level 2",
+      "question": "doors located on Level 2",
+      "expect": {
+        "count": 28
+      }
+    },
+    {
+      "id": "T07",
+      "group": "doors on level 2",
+      "question": "how many doors on level two?",
+      "expect": {
+        "count": 28
+      }
+    },
+    {
+      "id": "T08",
+      "group": "windows on level 3",
+      "question": "level three windows",
+      "expect": {
+        "count": 56
+      }
+    },
+    {
+      "id": "T09",
+      "group": "windows on level 3",
+      "question": "count the windows on Level 3",
+      "expect": {
+        "count": 56
+      }
+    },
+    {
+      "id": "T10",
+      "group": "exterior walls",
+      "question": "external walls",
+      "expect": {
+        "count": 816
+      }
+    },
+    {
+      "id": "T11",
+      "group": "exterior walls",
+      "question": "outside walls",
+      "expect": {
+        "count": 816
+      }
+    },
+    {
+      "id": "T12",
+      "group": "exterior walls",
+      "question": "walls that are exterior",
+      "expect": {
+        "count": 816
+      }
+    },
+    {
+      "id": "T13",
+      "group": "floor area",
+      "question": "sum of the floor areas",
+      "expect": {
+        "total": 256934.987,
+        "unit": "ft^2",
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "T14",
+      "group": "floor area",
+      "question": "total square footage of the floors",
+      "expect": {
+        "total": 256934.987,
+        "unit": "ft^2",
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "T15",
+      "group": "floor area",
+      "question": "floor area total",
+      "expect": {
+        "total": 256934.987,
+        "unit": "ft^2",
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "T16",
+      "group": "widest door",
+      "question": "which door is the widest?",
+      "expect": {
+        "count": 2
+      }
+    },
+    {
+      "id": "T17",
+      "group": "widest door",
+      "question": "door with the largest width",
+      "expect": {
+        "count": 2
+      }
+    },
+    {
+      "id": "T18",
+      "group": "units",
+      "question": "doors wider than 1 m",
+      "expect": {
+        "count": 96
+      }
+    },
+    {
+      "id": "T19",
+      "group": "units",
+      "question": "doors wider than 3 ft",
+      "expect": {
+        "count": 96
+      }
+    },
+    {
+      "id": "T20",
+      "group": "units",
+      "question": "doors wider than 36 inches",
+      "expect": {
+        "count": 96
+      }
+    },
+    {
+      "id": "T21",
+      "group": "units",
+      "question": "doors wider than 1000 mm",
+      "expect": {
+        "count": 96
+      }
+    },
+    {
+      "id": "T22",
+      "group": "synonyms",
+      "question": "how many toilets do we have",
+      "expect": {
+        "count": 40
+      }
+    },
+    {
+      "id": "T23",
+      "group": "synonyms",
+      "question": "number of chairs",
+      "expect": {
+        "counts": [
+          348,
+          528
+        ]
+      }
+    },
+    {
+      "id": "T24",
+      "group": "synonyms",
+      "question": "stairs that are precast",
+      "expect": {
+        "count": 36
+      }
+    },
+    {
+      "id": "T25",
+      "group": "synonyms",
+      "question": "show me the furniture on level 2",
+      "expect": {
+        "count": 228
+      }
+    },
+    {
+      "id": "T26",
+      "group": "not in model",
+      "question": "show me the rooms",
+      "expect": {
+        "noneOrClarify": true
+      }
+    },
+    {
+      "id": "T27",
+      "group": "not in model",
+      "question": "how many spaces are there",
+      "expect": {
+        "noneOrClarify": true
+      }
+    },
+    {
+      "id": "T28",
+      "group": "typos",
+      "question": "how many dors are there",
+      "expect": {
+        "count": 125
+      }
+    },
+    {
+      "id": "T29",
+      "group": "typos",
+      "question": "exterier walls",
+      "expect": {
+        "count": 816
+      }
+    }
+  ]
+}

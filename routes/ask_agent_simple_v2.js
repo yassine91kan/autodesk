@@ -17,6 +17,7 @@ const axios = require('axios');
 const Database = require('better-sqlite3');
 const OpenAI = require('openai');
 const { OPENAIKEY, APS_CLIENT_ID, APS_CLIENT_SECRET } = require('../config.js');
+const usage = require('./usage');   // daily token budgets per visitor
 
 const router = express.Router();
 
@@ -187,7 +188,16 @@ const PLACEHOLDER_VALUE = /^<.*>$/;
 
 const loadedModels = new Map();       // "urn:guid" -> finished model object
 const loadingModels = new Map();      // "urn:guid" -> Promise while a download is in progress
-const coordinatesByModel = new Map(); // "urn:guid" -> { objectId: { elementCent: [x, y, z] } }
+// Per USER and model, so two people never see each other's data:
+// "userId|urn:guid" -> { objectId: { elementCent: [x, y, z] } }
+const coordinatesByUser = new Map();
+// Keeps a per-user Map from growing forever: past this many entries the oldest goes.
+const MAX_USER_ENTRIES = 500;
+function remember(map, key, value) {
+    map.delete(key);   // re-inserting moves the key to the end: Maps keep insertion order
+    map.set(key, value);
+    if (map.size > MAX_USER_ENTRIES) map.delete(map.keys().next().value);
+}
 
 // "Basic Wall [1001]" -> "Basic Wall", "M_Single-Flush" -> "Single Flush".
 // Only used for nicer display names in the chat.
@@ -263,10 +273,11 @@ function buildDatabase(collection, tree) {
     // "level 2" = "Level 2", and SQLite can still use the index.
     db.exec(`
         CREATE TABLE elements (
-            objectid   INTEGER PRIMARY KEY,
-            name       TEXT,
-            clean_name TEXT,
-            category   TEXT COLLATE NOCASE
+            objectid    INTEGER PRIMARY KEY,
+            external_id TEXT,  -- Revit's permanent UniqueId: the same in every viewer format
+            name        TEXT,
+            clean_name  TEXT,
+            category    TEXT COLLATE NOCASE
         );
 
         CREATE TABLE properties (
@@ -290,7 +301,7 @@ function buildDatabase(collection, tree) {
     // The ?s are placeholders. Values are always passed separately, never glued into
     // the SQL text, so a value like "x'; DROP TABLE" can't break or change the query.
     const insertElement = db.prepare(
-        'INSERT OR IGNORE INTO elements (objectid, name, clean_name, category) VALUES (?, ?, ?, ?)'
+        'INSERT OR IGNORE INTO elements (objectid, external_id, name, clean_name, category) VALUES (?, ?, ?, ?, ?)'
     );
     const insertProperty = db.prepare(
         'INSERT INTO properties (objectid, path, value, numeric_value, unit) VALUES (?, ?, ?, ?, ?)'
@@ -306,7 +317,9 @@ function buildDatabase(collection, tree) {
 
             const info = treeInfoById.get(item.objectid) || {};
             // `?? null` = "use null if the left side is undefined/null"
-            insertElement.run(item.objectid, item.name, cleanElementName(item.name), info.category ?? null);
+            // externalId: the page needs it to find the element in the Viewer. objectid only
+            // equals the Viewer's own id (dbId) for SVF models; SVF2 numbers them differently.
+            insertElement.run(item.objectid, item.externalId ?? null, item.name, cleanElementName(item.name), info.category ?? null);
 
             // Family and type come from the tree, not from the properties. We store them
             // as two extra properties so filtering and grouping work on them like on any
@@ -500,17 +513,17 @@ async function getModel(urn, guid) {
 }
 
 // The Viewer knows geometry; APS properties don't. The frontend PUTs a map of
-// objectId -> { elementCent: [x, y, z] } and we keep it here.
-function setCoordinates(urn, guid, coordinates) {
-    coordinatesByModel.set(`${urn}:${guid}`, coordinates || {});
+// objectId -> { elementCent: [x, y, z] } and we keep it here, per user.
+function setCoordinates(userId, urn, guid, coordinates) {
+    remember(coordinatesByUser, `${userId}|${urn}:${guid}`, coordinates || {});
 }
 
 // Users often quote the Revit id shown in brackets ("Pile Cap [512319]"), but the
 // Viewer stores coordinates by its own object id. So we try the id as an object id
 // first, then look for an element whose name ends in "[id]".
 // Returns { objectId, position } or null.
-function getCoordinates(model, id) {
-    const coordinates = coordinatesByModel.get(model.key);
+function getCoordinates(model, id, userId) {
+    const coordinates = coordinatesByUser.get(`${userId}|${model.key}`);
     if (!coordinates) {
         return null;
     }
@@ -544,7 +557,9 @@ function getCoordinates(model, id) {
 // Everyday words for categories. This is the only hand-written name list: family,
 // type, property and value names all come from the model itself.
 const CATEGORY_WORDS = {
-    'Structural Framing': ['beam', 'framing', 'girder'],
+    // Not "girder": Revit records it as a Structural Usage value, which the dictionary
+    // finds by itself. As a category word it turned "girders" into all 370 framing members.
+    'Structural Framing': ['beam', 'framing'],
     'Structural Columns': ['column'],
     'Walls': ['wall'],
     'Floors': ['floor', 'slab'],
@@ -556,7 +571,9 @@ const CATEGORY_WORDS = {
     'Windows': ['window'],
     'Roofs': ['roof'],
     'Ceilings': ['ceiling'],
-    'Railings': ['railing']
+    'Railings': ['railing'],
+    'Rooms': ['room'],
+    'Spaces': ['space']
 };
 
 // Everyday words for properties. `null` means "all the level properties" (LEVEL_PATHS, section 4).
@@ -568,8 +585,110 @@ const PROPERTY_WORDS = {
     length: ['Dimensions.Length'],
     long: ['Dimensions.Length'],
     longer: ['Dimensions.Length'],
-    usage: ['Structural.Structural Usage']
+    short: ['Dimensions.Length'],
+    shorter: ['Dimensions.Length'],
+    volume: ['Dimensions.Volume'],
+    area: ['Dimensions.Area'],
+    usage: ['Structural.Structural Usage'],
+    // Revit's steel sections carry their weight per metre as "Nominal Weight".
+    weight: ['Structural Analysis.Nominal Weight'],
+    weigh: ['Structural Analysis.Nominal Weight'],
+    heavy: ['Structural Analysis.Nominal Weight'],
+    heavier: ['Structural Analysis.Nominal Weight'],
+    lighter: ['Structural Analysis.Nominal Weight'],
+    tonnage: ['Structural Analysis.Nominal Weight'],
+    mass: ['Structural Analysis.Nominal Weight'],
+    // Sizes ("the widest", "taller than 3 m", "square footage"): only used if the model has them.
+    width: ['Dimensions.Width'], wide: ['Dimensions.Width'],
+    height: ['Dimensions.Height'], tall: ['Dimensions.Height'],
+    thickness: ['Dimensions.Thickness'], thick: ['Dimensions.Thickness'],
+    'square footage': ['Dimensions.Area'], footage: ['Dimensions.Area'], sqft: ['Dimensions.Area']
 };
+
+// The number properties ranking and totals use most.
+const LENGTH_PATH = 'Dimensions.Length';
+const VOLUME_PATH = 'Dimensions.Volume';
+const WEIGHT_PATH = 'Structural Analysis.Nominal Weight';   // weight PER METRE (kgf/m) in Revit
+
+// Superlatives: rank by this property, highest ("desc") or lowest ("asc") first.
+// "the longest beam" = the beams tied at the greatest length.
+const RANK_WORDS = {
+    longest: [LENGTH_PATH, 'desc'], shortest: [LENGTH_PATH, 'asc'],
+    heaviest: [WEIGHT_PATH, 'desc'], lightest: [WEIGHT_PATH, 'asc'],
+    largest: [VOLUME_PATH, 'desc'], biggest: [VOLUME_PATH, 'desc'], smallest: [VOLUME_PATH, 'asc'],
+    widest: ['Dimensions.Width', 'desc'], narrowest: ['Dimensions.Width', 'asc'],
+    tallest: ['Dimensions.Height', 'desc'],
+    thickest: ['Dimensions.Thickness', 'desc'], thinnest: ['Dimensions.Thickness', 'asc']
+};
+
+// Rank words that don't say WHICH property: "the greatest LENGTH", "the highest WIDTH".
+// They rank by the property the question names. (So do "largest", "biggest", "smallest"
+// when a property is named: "the door with the largest WIDTH", not the largest volume.)
+const GENERIC_RANK_WORDS = { greatest: 'desc', highest: 'desc', maximum: 'desc', max: 'desc', lowest: 'asc', minimum: 'asc', min: 'asc' };
+const SIZE_RANK_WORDS = new Set(['largest', 'biggest', 'smallest']);
+
+// Words that ask to add numbers up, and which aggregate each one means.
+const AGGREGATE_WORDS = { total: 'sum', sum: 'sum', overall: 'sum', combined: 'sum', together: 'sum', add: 'sum',
+    average: 'average', mean: 'average' };
+
+// Material words: when one also appears inside a family name ("M_Concrete-Square-Column"),
+// people still mean the material ("concrete elements" = elements made of concrete).
+const MATERIAL_TERMS = new Set(['steel', 'concrete', 'timber', 'wood', 'wooden', 'softwood', 'lumber',
+    'aluminum', 'metal', 'masonry', 'brick', 'glass', 'precast', 'stud']);
+
+// Words that make a question continue the previous one: "AND on level 3?", "ONLY the
+// steel ones", "how many of THEM?". They name nothing in the model, so they are also
+// stopwords (they would otherwise count as words nothing matched).
+const FOLLOW_UP_WORDS = new Set(['and', 'also', 'only', 'just', 'now', 'but', 'then', 'same', 'about',
+    'them', 'those', 'these', 'they', 'their', 'again', 'instead', 'too', 'ok', 'okay']);
+// A follow-up usually STARTS with one of these ("and on level 3?", "except the HSS ones").
+const FOLLOW_UP_OPENERS = new Set(['and', 'also', 'only', 'just', 'now', 'but', 'then', 'same',
+    'except', 'excluding', 'without', 'not']);
+// ...or refers back to the last answer with one of these, anywhere ("how long are THEY?").
+const BACK_REFERENCES = new Set(['them', 'those', 'these', 'they', 'their']);
+// Words that ask about the WHOLE model: a question with them starts afresh.
+const FRESH_WORDS = new Set(['everything', 'anything', 'all', 'element', 'model']);
+
+// Words that turn a question around ("NOT on level 2", "EXCEPT the HSS ones"). Code
+// can't express those, so such questions skip tier 0 and go to the LLM, which can.
+// They're also kept from matching values like Section Shape "Not Defined".
+const NEGATION_WORDS = new Set(['not', 'except', 'excluding', 'exclude', 'without', 'isn', 'aren', 'don', 'doesn', 'non']);
+
+// Everyday words for values, used ONLY when the model lacks the word itself:
+// "external walls" -> "Exterior" (Revit's Function value). ("inside" is left out: it is
+// more often a place, "columns inside the core", than a value.)
+const VALUE_SYNONYMS = { external: 'exterior', outside: 'exterior', internal: 'interior' };
+
+// Numbers written as words, after a level word: "level two" -> "level 2".
+// Ordinals before one: "second level", "2nd floor" -> "level 2".
+const NUMBER_WORDS = { one: '1', two: '2', three: '3', four: '4', five: '5', six: '6', seven: '7', eight: '8',
+    nine: '9', ten: '10', eleven: '11', twelve: '12' };
+const ORDINAL_WORDS = { first: '1', second: '2', third: '3', fourth: '4', fifth: '5', sixth: '6', seventh: '7',
+    eighth: '8', ninth: '9', tenth: '10' };
+const LEVEL_NOUNS = new Set(['level', 'story', 'floor']);
+
+// British / American spellings, so "aluminium" finds "Aluminum".
+const WORD_VARIANTS = { aluminium: 'aluminum', colour: 'color', grey: 'gray', centre: 'center', storey: 'story' };
+
+// Everyday material words. Each looks for these words inside material and family names
+// instead ("wooden" finds "Softwood, Lumber"; "timber" also finds the "...(Timber)-Beam" family).
+const MATERIAL_WORDS = {
+    wood: ['softwood', 'lumber'],
+    wooden: ['softwood', 'lumber'],
+    timber: ['timber', 'softwood', 'lumber']
+};
+
+// Words a question may contain that no model name will ever match, and that a plan
+// expresses without repeating them: numbers, units, comparisons, sorting, "or".
+// Any OTHER unmatched word that the plan ignores means the answer leaves something out.
+const UNMATCHED_OK = new Set([
+    'mm', 'cm', 'm', 'meter', 'metre', 'km', 'kg', 'kgf', 'ton', 'tonne', 'sq', 'square', 'cubic', 'unit',
+    'than', 'more', 'less', 'over', 'under', 'above', 'below', 'between', 'greater', 'smaller', 'larger',
+    'bigger', 'shorter', 'wider', 'deeper', 'taller', 'exactly', 'about', 'around', 'approximately', 'equal',
+    'or', 'only', 'just', 'also', 'start', 'starting', 'end', 'ending', 'begin', 'sit', 'located', 'placed',
+    'break', 'down', 'split', 'sort', 'sorted', 'order', 'ordered', 'first', 'last', 'them', 'they', 'where',
+    'other', 'no', 'there', 'available', 'exist', 'existing'
+]);
 
 // Words that carry no meaning for the query. Intent words (show, how many, per)
 // are here too: the tier 0 prompt reads the intent from the full question.
@@ -580,7 +699,14 @@ const STOPWORDS = new Set([
     'do', 'does', 'did', 'have', 'has', 'had', 'of', 'on', 'in', 'at', 'to', 'for', 'from',
     'with', 'by', 'per', 'each', 'every', 'all', 'any', 'some', 'and', 'that', 'this', 'those',
     'these', 'it', 'its', 'element', 'item', 'object', 'thing', 'model', 'number', 'count',
-    'total', 'most', 'least', 'used', 'use', 'made', 'kind', 'kinds', 'group', 'grouped', 'breakdown'
+    'total', 'most', 'least', 'used', 'use', 'made', 'kind', 'kinds', 'group', 'grouped', 'breakdown',
+    'member', 'members', 'one', 'ones', 'everything', 'anything', 'something',
+    'sum', 'average', 'mean', 'overall', 'combined', 'top', 'value', 'values', 'break', 'down', 'split',
+    // filler that names nothing: "columns LOCATED on level 1", "PLS show", "I NEED the beams",
+    // "how are the beams DISTRIBUTED ACROSS the levels", "ADD UP the lengths", "all of them TOGETHER"
+    'located', 'placed', 'situated', 'sitting', 'exist', 'exists', 'existing', 'available', 'pls', 'plz', 'kindly',
+    'need', 'want', 'distributed', 'distribution', 'across', 'spread', 'add', 'up', 'together',
+    ...NEGATION_WORDS, ...FOLLOW_UP_WORDS
 ]);
 
 // Single-word values that are also ordinary English ("Other", "None", "Top").
@@ -599,12 +725,44 @@ function singular(word) {
 // "Light Gauge-Joists" -> ["light", "gauge", "joist"]. Anything that isn't a letter
 // or digit becomes a space, so "-", "_", "(" and ")" don't matter.
 function toWords(text) {
-    return String(text).toLowerCase()
+    const words = String(text).toLowerCase()
+        .replace(/['’]s\b/g, '')          // "what's" -> "what", "beam's" -> "beam" (a lone "s" matched marks like "S-3.3")
         .replace(/[^a-z0-9]+/g, ' ')
         .trim()
         .split(' ')
         .filter(Boolean)
+        .map(word => WORD_VARIANTS[word] || word)
         .map(word => (STOPWORDS.has(word) ? word : singular(word)));
+    // "level two" -> "level 2"; "second level" / "2nd floor" -> "level 2".
+    for (let i = 0; i < words.length; i++) {
+        const ordinal = ORDINAL_WORDS[words[i]] || (words[i].match(/^(\d+)(st|nd|rd|th)$/) || [])[1];
+        if (ordinal && LEVEL_NOUNS.has(words[i + 1])) {
+            words[i] = 'level';
+            words[i + 1] = ordinal;
+        } else if (LEVEL_NOUNS.has(words[i]) && NUMBER_WORDS[words[i + 1]]) {
+            words[i + 1] = NUMBER_WORDS[words[i + 1]];
+            if (words[i] === 'story') words[i] = 'level';
+        }
+    }
+    return words;
+}
+
+// How many single-letter edits turn `a` into `b`: add, remove, change a letter, or swap
+// two neighbouring letters ("widnow" -> "window" is ONE swap, the most common typo).
+// (Levenshtein distance plus swaps: "optimal string alignment".)
+function editDistance(a, b) {
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) {
+        for (let j = 1; j <= b.length; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+            if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+                d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);   // the swap
+            }
+        }
+    }
+    return d[a.length][b.length];
 }
 
 // Builds the lookup tables for one model.
@@ -652,7 +810,12 @@ function buildDictionary(db, vocabulary) {
 
     // Values of short-list text properties (levels, materials, usage) and all
     // family / type names, each with the categories that use it.
-    const listedPaths = visible.filter(p => p.kind === 'values' && !p.isNumeric).map(p => p.path);
+    // Family and type names are ALWAYS included, however many there are: the 100-name
+    // limit (MAX_LISTED_NAMES) keeps the PROMPT small, but matching in code costs nothing.
+    // (Seaport has 154 families: with the limit, "chairs" and "precast stairs" found none.)
+    const listedPaths = visible
+        .filter(p => (p.kind === 'values' && !p.isNumeric) || NAME_PATHS.has(p.path))
+        .map(p => p.path);
     const rows = listedPaths.length === 0 ? [] : db.prepare(`
         SELECT p.path, p.value, e.category
         FROM properties p JOIN elements e ON e.objectid = p.objectid
@@ -677,17 +840,174 @@ function buildDictionary(db, vocabulary) {
         partials.push({ words: new Set(words), entry });
     }
 
+    // Every word the model's names use, for typo correction ("colums" -> "column").
+    const knownWords = new Set();
+    for (const key of phrases.keys()) key.split(' ').forEach(word => knownWords.add(word));
+    for (const item of partials) item.words.forEach(word => knownWords.add(word));
+    Object.keys(PROPERTY_WORDS).concat(Object.keys(MATERIAL_WORDS)).forEach(word => knownWords.add(word));
+
+    // path -> its value entries, so tier 1 can show only the values a category really uses.
+    const valuesByPath = new Map();
+    for (const entry of values.values()) {
+        if (!valuesByPath.has(entry.path)) valuesByPath.set(entry.path, []);
+        valuesByPath.get(entry.path).push(entry);
+    }
+
+    // The unit each size property is stored in ("mm" here, "ft" in an imperial model),
+    // so "longer than 6 m" can be converted in code (see parseComparisons).
+    const units = new Map();
+    for (const path of COMPARISON_PATHS.filter(p => vocabulary.allPaths.has(p))) {
+        const row = db.prepare('SELECT unit FROM properties WHERE path = ? AND unit IS NOT NULL GROUP BY unit ORDER BY COUNT(*) DESC LIMIT 1').get(path);
+        if (row) units.set(path, row.unit);
+    }
+
     const longest = Math.max(1, ...[...phrases.keys()].map(key => key.split(' ').length));
-    return { phrases, partials, genericWords, longestPhrase: Math.min(longest, 8) };
+    return { phrases, partials, genericWords, knownWords, valuesByPath, units, longestPhrase: Math.min(longest, 8) };
+}
+
+// ---------------------------------------------------------------------------
+// Comparisons with a number, read and converted in code:
+//   "longer than 6 m", "over 2000 mm", "wider than 36 inches", "between 3 and 5 metres"
+// The number is converted into the unit the PROPERTY uses (mm, or ft in an imperial
+// model), so "doors wider than 1 m" works on a model in feet. An LLM can get that
+// arithmetic wrong without anyone noticing; code gets it right every time.
+// ---------------------------------------------------------------------------
+const COMPARISON_PATHS = [LENGTH_PATH, 'Dimensions.Width', 'Dimensions.Height', 'Dimensions.Thickness', WEIGHT_PATH];
+const COMPARATIVES = {
+    longer: ['gt', LENGTH_PATH], shorter: ['lt', LENGTH_PATH],
+    wider: ['gt', 'Dimensions.Width'], narrower: ['lt', 'Dimensions.Width'],
+    taller: ['gt', 'Dimensions.Height'],
+    thicker: ['gt', 'Dimensions.Thickness'], thinner: ['lt', 'Dimensions.Thickness'],
+    heavier: ['gt', WEIGHT_PATH], lighter: ['lt', WEIGHT_PATH],
+    // these say "more / less" but not of WHAT: the unit and the words around decide
+    bigger: ['gt', null], larger: ['gt', null], greater: ['gt', null], more: ['gt', null], over: ['gt', null], above: ['gt', null],
+    smaller: ['lt', null], less: ['lt', null], under: ['lt', null], below: ['lt', null],
+    'at least': ['gte', null], 'at most': ['lte', null]
+};
+const UNIT_RE = '(mm|millimet(?:er|re)s?|cm|centimet(?:er|re)s?|km|met(?:er|re)s?|m|ft|feet|foot|inch(?:es)?|in|kgf?\\s*/\\s*m|kgf?\\s+per\\s+(?:met(?:er|re)|m))';
+const NUMBER_RE = '(-?\\d+(?:\\.\\d+)?)';
+const COMPARE_RE = new RegExp(`\\b(${Object.keys(COMPARATIVES).join('|')})(?:\\s+than)?\\s+${NUMBER_RE}\\s*${UNIT_RE}(?![a-z])`, 'g');
+const BETWEEN_RE = new RegExp(`\\bbetween\\s+${NUMBER_RE}\\s*${UNIT_RE}?\\s+(?:and|to)\\s+${NUMBER_RE}\\s*${UNIT_RE}(?![a-z])`, 'g');
+const METRES_PER_UNIT = { mm: 0.001, cm: 0.01, m: 1, km: 1000, ft: 0.3048, in: 0.0254 };
+
+// "millimetres" -> "mm", "feet" -> "ft", "kg per metre" -> "kg/m". Unknown -> null.
+function normalUnit(unit) {
+    const u = String(unit || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    if (/^kgf?\s*\/\s*m$/.test(u) || /^kgf? per /.test(u)) return 'kg/m';
+    if (/^(mm|millimet)/.test(u)) return 'mm';
+    if (/^(cm|centimet)/.test(u)) return 'cm';
+    if (u === 'km') return 'km';
+    if (/^(m|met)/.test(u)) return 'm';
+    if (/^(ft|feet|foot)$/.test(u)) return 'ft';
+    if (/^(in|inch)/.test(u)) return 'in';
+    return null;
+}
+
+// 1, "m", "ft" -> 3.28084. null when the two units can't be converted.
+function convertUnit(value, from, to) {
+    if (!from || !to) return null;
+    if (from === to) return value;
+    if (from === 'kg/m' || to === 'kg/m') return null;
+    if (!(from in METRES_PER_UNIT) || !(to in METRES_PER_UNIT)) return null;
+    return value * METRES_PER_UNIT[from] / METRES_PER_UNIT[to];
+}
+
+// Which property "more than 6 m" is about: the comparative says it ("longer"), or the
+// unit (kg/m = weight), or a size word in the question ("width greater than", "6 m long").
+// Otherwise length is only a GUESS ("beams over 6 m"): returns null if the question
+// names another property ("start offset ABOVE 100 mm"), and the LLM decides instead.
+function comparedProperty(word, unit, text, dictionary) {
+    if (word && COMPARATIVES[word]?.[1]) return COMPARATIVES[word][1];
+    if (unit === 'kg/m') return WEIGHT_PATH;
+    if (/\b(width|wide)\b/.test(text)) return 'Dimensions.Width';
+    if (/\b(height|tall)\b/.test(text)) return 'Dimensions.Height';
+    if (/\bthick/.test(text)) return 'Dimensions.Thickness';
+    if (/\b(length|long)\b/.test(text)) return LENGTH_PATH;
+    return namesOtherProperty(text, dictionary) ? null : LENGTH_PATH;
+}
+
+// Does the question name a property code doesn't compare by itself ("start OFFSET")?
+// A word counts if it is part of property names and of no value, category or everyday word.
+function namesOtherProperty(text, dictionary) {
+    return toWords(text).some(word => !STOPWORDS.has(word) && !(word in PROPERTY_WORDS) &&
+        !dictionary.genericWords.has(word) && !/\d/.test(word) &&
+        findPartial(dictionary, [word], e => e.kind === 'property').length > 0 &&
+        findPartial(dictionary, [word], e => e.kind !== 'property').length === 0);
+}
+
+// Finds the comparisons in a question. Returns { filters, text }: the number filters,
+// and the question with those parts blanked out (so "6" and "m" don't count as words
+// nothing matched). A comparison code can't convert is left in the text for the LLM.
+function parseComparisons(question, dictionary) {
+    const lower = String(question).toLowerCase();
+    const filters = [];
+    const filterFor = (path, op, value, unit) => {
+        const propertyUnit = normalUnit(dictionary.units.get(path));
+        const converted = convertUnit(value, unit, propertyUnit);
+        return converted === null ? null : { paths: [path], op, value: Math.round(converted * 1e6) / 1e6 };
+    };
+    let text = lower.replace(BETWEEN_RE, (all, low, lowUnit, high, highUnit) => {
+        const unit = normalUnit(highUnit);
+        const path = comparedProperty(null, unit, lower, dictionary);
+        if (!path) return all;
+        const from = filterFor(path, 'gte', Number(low), normalUnit(lowUnit) || unit);
+        const to = filterFor(path, 'lte', Number(high), unit);
+        if (!from || !to) return all;
+        filters.push(from, to);
+        return ' ';
+    });
+    text = text.replace(COMPARE_RE, (all, word, number, unitText) => {
+        const unit = normalUnit(unitText);
+        const path = comparedProperty(word, unit, lower, dictionary);
+        if (!path) return all;
+        const filter = filterFor(path, COMPARATIVES[word][0], Number(number), unit);
+        if (!filter) return all;
+        filters.push(filter);
+        return ' ';
+    });
+    return { filters, text };
+}
+
+// "colums" -> "column": a word the model never uses, one edit away from exactly one word
+// it does use (two edits for long words), is treated as that word. Numbers, ignored words
+// and short words are left alone, and so is anything with more than one close match.
+function correctTypo(word, dictionary) {
+    if (word.length < 3 || /\d/.test(word) || STOPWORDS.has(word) || UNMATCHED_OK.has(word) || dictionary.knownWords.has(word)) {
+        return word;
+    }
+    // 3-letter words are only fixed into category words: "dors" -> (singular) "dor" -> "door".
+    // Anything else that short ("ask", "way") is too likely a real word to "correct".
+    if (word.length === 3) {
+        const close = [...dictionary.genericWords].filter(known => known.length === 4 && editDistance(word, known) === 1);
+        return close.length === 1 ? close[0] : word;
+    }
+    // Superlatives ("heaviest", "longest") are real words, not typos: "heaviest" is two
+    // edits from "heavier", and "correcting" it turned a top-N question into a breakdown.
+    if (word.length > 5 && word.endsWith('est')) {
+        return word;
+    }
+    const allowed = word.length >= 8 ? 2 : 1;
+    let best = null;
+    let bestDistance = allowed + 1;
+    let tie = false;
+    for (const known of dictionary.knownWords) {
+        if (/\d/.test(known) || Math.abs(known.length - word.length) > allowed) continue;
+        const distance = editDistance(word, known);
+        if (distance < bestDistance) { best = known; bestDistance = distance; tie = false; }
+        else if (distance === bestDistance) tie = true;
+    }
+    return best && !tie ? best : word;
 }
 
 // Finds names whose words include ALL of `words` ("ub" is in "UB-Universal Beams").
 // At least one word must be specific: "beam" alone would match every beam family.
-function findPartial(dictionary, words) {
+// `accept` narrows the kind of entry wanted; it runs BEFORE the cut to 12, or 12
+// property labels containing "chair" could crowd out the chair families.
+function findPartial(dictionary, words, accept = () => true) {
     const specific = words.filter(word => !dictionary.genericWords.has(word) && !/^\d+$/.test(word));
     if (specific.length === 0) return [];
     return dictionary.partials
-        .filter(item => words.every(word => item.words.has(word)))
+        .filter(item => words.every(word => item.words.has(word)) && accept(item.entry))
         .map(item => item.entry)
         .slice(0, 12);
 }
@@ -695,19 +1015,100 @@ function findPartial(dictionary, words) {
 // Step 1: which words of the question match which names?
 // Returns { matches: [{ words, partial, entries }], unexplained: [words nothing matched] }.
 function matchQuestion(question, dictionary) {
-    const words = toWords(question);
+    const corrections = []; // "colums -> column", shown in the response for transparency
+    const compared = parseComparisons(question, dictionary);   // "longer than 6 m" -> a number filter
+    const words = toWords(compared.text).map(word => {
+        // "external" -> "exterior", only when the model has "exterior" and not "external"
+        const synonym = VALUE_SYNONYMS[word];
+        if (synonym && !dictionary.knownWords.has(word) && dictionary.knownWords.has(synonym)) {
+            corrections.push(`${word} -> ${synonym}`);
+            return synonym;
+        }
+        const fixed = correctTypo(word, dictionary);
+        if (fixed !== word) corrections.push(`${word} -> ${fixed}`);
+        return fixed;
+    });
+    const negated = words.some(word => NEGATION_WORDS.has(word));
+
+    // Ranking: "the 3 longest beams", "top 5 heaviest columns" -> { path, order, limit }.
+    // The rank word and its number are replaced by "the" (a stopword): code has
+    // understood them, so they mustn't count as words nothing matched.
+    let rank = null;
+    // ("the highest NUMBER of beams" / "how MANY" is about counts, not a ranking.)
+    const aboutCounts = words.includes('number') || words.includes('many');
+    words.forEach((word, i) => {
+        if (rank || !(RANK_WORDS[word] || (GENERIC_RANK_WORDS[word] && !aboutCounts))) return;
+        const [path, order] = RANK_WORDS[word] || [null, GENERIC_RANK_WORDS[word]];
+        // flexible: ranks by the property the question names, if it names one
+        rank = { word, path, order, limit: null, flexible: !RANK_WORDS[word] || SIZE_RANK_WORDS.has(word) };
+        words[i] = 'the';
+        // The number right before ("3 longest") or right after "top" ("top 3 longest").
+        const numberAt = [i - 1, words.indexOf('top') + 1].find(j => j >= 0 && /^\d+$/.test(words[j] || ''));
+        if (numberAt !== undefined) {
+            rank.limit = Number(words[numberAt]);
+            words[numberAt] = 'the';
+        }
+    });
+
+    // Adding up: "total length", "average volume", "how much do they weigh", "tonnage".
+    // (Only a real total if a measure such as length or volume is named too: see planRankOrTotal.)
+    let aggregate = AGGREGATE_WORDS[words.find(word => AGGREGATE_WORDS[word])] || null;
+    // ("how MANY beams weigh more than 50 kg/m" is a count, so it needs "much" or "how heavy".)
+    const weightWord = words.some(word => ['weight', 'weigh', 'heavy', 'mass'].includes(word));
+    const howHeavy = words.some((word, i) => word === 'how' && words[i + 1] === 'heavy');
+    if (!aggregate && (words.includes('tonnage') || howHeavy || (weightWord && words.includes('much')))) {
+        aggregate = 'sum';
+    }
+
     const matches = [];
     const leftover = []; // runs of words that didn't match a whole phrase
+
+    // "level 2" in a model whose levels are "O-Level 2", "O/G/PH/C-Level 1": the level
+    // VALUES containing those words. Returns [] if there's no such value.
+    const levelValues = (i) => {
+        if (!['level', 'story', 'floor'].includes(words[i]) || !words[i + 1] || dictionary.phrases.has(`${words[i]} ${words[i + 1]}`)) return [];
+        return findPartial(dictionary, [words[i], words[i + 1]], e => e.kind === 'value' && (LEVEL_PATHS.includes(e.path) || TOP_LEVEL_PATHS.includes(e.path)));
+    };
 
     // Longest phrase first: "light gauge joist" before "joist".
     let run = [];
     let i = 0;
     while (i < words.length) {
         let found = false;
+        const levels = levelValues(i);
+        if (levels.length > 0) {
+            if (run.length) leftover.push(run);
+            run = [];
+            matches.push({ words: `${words[i]} ${words[i + 1]}`, partial: true, entries: levels, levelName: true });
+            i += 2;
+            continue;
+        }
         for (let n = Math.min(dictionary.longestPhrase, words.length - i); n >= 1; n--) {
             const phrase = words.slice(i, i + n).join(' ');
+            // A filler word alone never matches a model name: "NUMBER of doors" was matching
+            // the grid property "Number", "count ALL the doors" the value "All" (Region).
+            if (n === 1 && STOPWORDS.has(phrase)) continue;
             if (dictionary.phrases.has(phrase)) {
-                matches.push({ words: phrase, partial: false, entries: dictionary.phrases.get(phrase) });
+                let entries = dictionary.phrases.get(phrase);
+                // An exact match only on a minor property ("pile caps" = Assembly Description
+                // "Pile Caps") must not hide the names people mean (the "Pile Cap-..." families):
+                // add those partial matches too, and let name preference choose.
+                // Same for a property LABEL nobody means as a property: "chairs" is the label of
+                // a dining-table parameter (Construction.Chairs = 4), but people mean the chairs.
+                // Everyday property words ("length", "level") are kept as properties.
+                const obscureProperty = entries.some(e => e.kind === 'property') && !(phrase in PROPERTY_WORDS);
+                if (obscureProperty) {
+                    const isName = e => e.kind === 'value' && NAME_PATHS.has(e.path);
+                    const names = [...new Set([...entries.filter(isName), ...findPartial(dictionary, words.slice(i, i + n), isName)])];
+                    if (names.length > 0) entries = names;
+                }
+                const valuesOnly = entries.every(e => e.kind === 'value');
+                if (valuesOnly && Math.min(...entries.map(e => pathPriority(e.path))) >= 5) {
+                    const better = findPartial(dictionary, words.slice(i, i + n))
+                        .filter(e => e.kind === 'value' && pathPriority(e.path) < 5);
+                    if (better.length > 0) entries = entries.concat(better);
+                }
+                matches.push({ words: phrase, partial: false, entries });
                 i += n;
                 found = true;
                 break;
@@ -731,13 +1132,22 @@ function matchQuestion(question, dictionary) {
     // Step 2: the leftover words, by parts of names ("ub", "steel", "diameter").
     const unexplained = [];
     for (const words of leftover) {
-        const whole = findPartial(dictionary, words);
+        let whole = findPartial(dictionary, words);
+        // A material word on its own ("timber") also looks for its stand-ins ("softwood",
+        // "lumber"), even when a name contains the word itself ("Rectangular(Timber)-Beam"):
+        // then summarizeMatch can prefer the MATERIAL (see MATERIAL_TERMS).
+        if (whole.length > 0 && words.length === 1 && MATERIAL_WORDS[words[0]]) {
+            const standIns = MATERIAL_WORDS[words[0]].flatMap(w => findPartial(dictionary, [w]));
+            whole = [...new Set([...whole, ...standIns])];
+        }
         if (whole.length > 0) {
             matches.push({ words: words.join(' '), partial: true, entries: whole });
             continue;
         }
         for (const word of words) { // the run as a whole matched nothing: try word by word
-            const single = findPartial(dictionary, [word]);
+            // Everyday material words look for their stand-ins ("wooden" -> softwood, lumber).
+            const lookFor = MATERIAL_WORDS[word] || [word];
+            const single = [...new Set(lookFor.flatMap(w => findPartial(dictionary, [w])))];
             if (single.length > 0) {
                 matches.push({ words: word, partial: true, entries: single });
             } else {
@@ -746,11 +1156,26 @@ function matchQuestion(question, dictionary) {
         }
     }
 
-    return { matches, unexplained };
+    // withoutComparisons: the question minus "more than 20 kg per metre", for the intent
+    // prompt (whose "per" read as "a breakdown per X").
+    return { matches, unexplained, negated, corrections, rank, aggregate, comparisons: compared.filters,
+        withoutComparisons: compared.filters.length > 0 ? compared.text.replace(/\s+/g, ' ').trim() : question };
+}
+
+// Which property a name most likely refers to, when it appears in several (lower = more likely).
+function pathPriority(path) {
+    if (path === 'Element.Family') return 1;
+    if (path === 'Element.Type') return 2;
+    if (path.startsWith('Materials and Finishes.') || path === 'Construction.Function') return 3; // "exterior walls"
+    if (LEVEL_PATHS.includes(path) || TOP_LEVEL_PATHS.includes(path)) return 4;
+    if (path === 'Structural.Structural Usage') return 5;
+    return 9;
 }
 
 // Step 2: turn the matches into the pieces of a plan.
-function summarizeMatch(match) {
+// categoryHint: for a follow-up that names no category ("only the UB ones"), the
+// previous plan's category, so values are chosen for THAT category (the UB beams).
+function summarizeMatch(match, categoryHint = null) {
     const summary = {
         categories: [],        // categories named in the question
         missingCategories: [], // categories named that this model doesn't have
@@ -786,15 +1211,31 @@ function summarizeMatch(match) {
         // Values. If the question names a category, keep the values used by it:
         // "UB beams" -> the UB *beam* family, not the UB *column* family.
         let entries = m.entries.filter(e => e.kind === 'value');
-        if (summary.categories.length === 1) {
-            const inCategory = entries.filter(e => e.categories.has(summary.categories[0]));
+        const category = summary.categories.length === 1 ? summary.categories[0] : categoryHint;
+        if (category) {
+            const inCategory = entries.filter(e => e.categories.has(category));
             if (inCategory.length > 0) entries = inCategory;
         }
-        // A name that is both a family and a type: the family is what people mean.
-        if (entries.some(e => e.path === 'Element.Family')) {
-            entries = entries.filter(e => e.path !== 'Element.Type');
-        }
+        // A word found in several properties: keep the one people most likely mean.
+        // "pile caps" -> the Pile Cap families, not Assembly Description "Pile Caps";
+        // "steel" -> the material, not Assembly Description "Steel Light Gauge Floor System".
+        // A material word ("concrete") means the material, even where a family name also
+        // contains it ("M_Concrete-Square-Column"): "concrete elements" are the ones MADE of it.
+        const materials = entries.filter(e => e.path.startsWith('Materials and Finishes.'));
+        if (MATERIAL_TERMS.has(m.words) && materials.length > 0) entries = materials;
+        const best = Math.min(...entries.map(e => pathPriority(e.path)));
+        entries = entries.filter(e => pathPriority(e.path) === best);
 
+        // Part of a name, found in names of SEVERAL categories, and no category named:
+        // "toilet" is in "Toilet-Domestic-3D" (plumbing) and in "Toilet Partition Panel"
+        // (specialty equipment). Which one is meant is for tier 1 to decide, not code.
+        const nameCategories = new Set(entries.filter(e => NAME_PATHS.has(e.path)).flatMap(e => [...e.categories]));
+        if (m.partial && !category && nameCategories.size > 1) {
+            summary.ambiguous = true;
+        }
+        if (m.levelName && new Set(entries.map(e => e.value)).size > 1) {
+            summary.ambiguous = true;
+        }
         const paths = [...new Set(entries.map(e => e.path))];
         const allLevels = paths.every(path => LEVEL_PATHS.includes(path) || TOP_LEVEL_PATHS.includes(path));
         if (paths.length > 1 && !allLevels) {
@@ -803,19 +1244,33 @@ function summarizeMatch(match) {
         summary.valueFilters.push({ paths, values: [...new Set(entries.map(e => e.value))] });
     }
 
+    // Number filters read in code ("longer than 6 m"). The property word next to them
+    // ("LENGTH greater than 6 m", "WEIGH more than 20 kg/m") is part of the comparison,
+    // not a request to break the answer down by it.
+    summary.numberFilters = match.comparisons || [];
+    const compared = new Set(summary.numberFilters.flatMap(filter => filter.paths));
+    summary.propertyMentions = summary.propertyMentions.filter(paths => !paths.some(path => compared.has(path)));
     return summary;
 }
 
 // Tier 0 only when code understood EVERYTHING: no leftover words, nothing ambiguous.
 function isSimple(match, summary) {
-    const found = summary.categories.length + summary.valueFilters.length +
+    const found = summary.categories.length + summary.valueFilters.length + summary.numberFilters.length +
         summary.propertyMentions.length + (summary.groupByCategory ? 1 : 0);
-    return found > 0 && match.unexplained.length === 0 && !summary.ambiguous &&
+    return found > 0 && match.unexplained.length === 0 && !summary.ambiguous && !match.negated &&
         summary.missingCategories.length === 0 && summary.categories.length <= 1;
 }
 
 // Builds the plan in code from the matches + the intent the tier 0 prompt chose.
 // Returns null when the pieces don't fit that intent (then tier 1 takes over).
+// The filters code found: names ("Level 2", "steel") and numbers ("longer than 6 m").
+function filtersOf(summary) {
+    return [
+        ...summary.valueFilters.map(f => ({ properties: f.paths, op: 'equals', value: f.values })),
+        ...(summary.numberFilters || []).map(f => ({ properties: f.paths, op: f.op, value: f.value }))
+    ];
+}
+
 function planFromMatch(summary, action) {
     // "How many elements PER CATEGORY" or "show the MATERIALS of the columns": a count or
     // list that names something to break down by is really a grouping.
@@ -826,7 +1281,7 @@ function planFromMatch(summary, action) {
     const plan = {
         action,
         category: summary.categories[0] || null,
-        filters: summary.valueFilters.map(f => ({ properties: f.paths, op: 'equals', value: f.values })),
+        filters: filtersOf(summary),
         groupBy: null
     };
 
@@ -842,6 +1297,155 @@ function planFromMatch(summary, action) {
     return plan;
 }
 
+// Properties that can be added up or ranked.
+const MEASURE_PATHS = new Set([LENGTH_PATH, VOLUME_PATH, 'Dimensions.Area', WEIGHT_PATH]);
+const isMeasure = paths => paths.length > 0 && paths.every(path => MEASURE_PATHS.has(path));
+
+// Does the question ask to add up a measure ("total LENGTH", "how much do they WEIGH")?
+// "Total number of beams" names no measure, so it stays a count.
+function wantsTotal(match, summary) {
+    return Boolean(match.aggregate) && summary.propertyMentions.some(isMeasure);
+}
+
+// Ranking and totals, built in code with NO LLM call: the words already say everything.
+//   "the longest beam"              -> { action: "rank", sortBy: [Length], order: "desc", limit: null }
+//   "total length of steel beams"   -> { action: "total", measure: [Length], aggregate: "sum" }
+//   "total volume per level"        -> ... groupBy: [the level properties]
+// Returns null when the pieces don't fit (e.g. two "per ..." words): then tier 1 decides.
+function planRankOrTotal(summary, match, base = null) {
+    base = base || {
+        category: summary.categories[0] || null,
+        filters: filtersOf(summary)
+    };
+
+    if (wantsTotal(match, summary)) {
+        const measureAt = summary.propertyMentions.findIndex(isMeasure);
+        const measure = summary.propertyMentions[measureAt];
+        const others = summary.propertyMentions.filter((_, i) => i !== measureAt); // "per LEVEL"
+        if (others.length + (summary.groupByCategory ? 1 : 0) > 1) return null;
+        return {
+            action: 'total', ...base,
+            // Weight isn't stored per element, only per metre: "weight" = Nominal Weight x Length.
+            measure: measure.includes(WEIGHT_PATH) ? 'weight' : measure,
+            aggregate: match.aggregate,
+            groupBy: summary.groupByCategory ? 'category' : (others[0] || null)
+        };
+    }
+
+    if (match.rank) {
+        // "the door with the largest WIDTH", "the greatest LENGTH": rank by the named property.
+        let sortBy = match.rank.path ? [match.rank.path] : null;
+        let others = summary.propertyMentions;
+        if (match.rank.flexible && others.length === 1) {
+            sortBy = others[0];
+            others = [];
+        } else if (sortBy) {
+            // "the longest beam by length" is fine; "the longest beam per level" is for tier 1.
+            others = others.filter(paths => !paths.includes(sortBy[0]));
+        }
+        if (!sortBy || others.length > 0 || summary.groupByCategory) return null;
+        return { action: 'rank', ...base, sortBy, order: match.rank.order, limit: match.rank.limit };
+    }
+    return null;
+}
+
+
+// ---------------------------------------------------------------------------
+// Follow-up questions: "steel beams on level 2" -> "and on level 3?" -> "how many?"
+// The route remembers the last plan that ran (per user, model and sheet). A follow-up
+// is merged into it instead of being answered from scratch.
+// ---------------------------------------------------------------------------
+
+// Did code understand every word? (Then it can merge the plans itself, 0 tokens.)
+function understoodByCode(match, summary) {
+    return match.unexplained.length === 0 && !match.negated && !summary.ambiguous &&
+        summary.missingCategories.length === 0 && summary.categories.length <= 1;
+}
+
+// Is this question a follow-up of the previous one?
+//   - it starts with "and", "only", "what about", "except", ...  -> yes
+//   - it refers back with "them", "those", "they", ...           -> yes
+//   - "which ONES are steel?" (no category named)              -> yes
+//   - a FRAGMENT code fully understood, with no category: no question word of its own
+//     ("on level 3?", "the longest?"), or nothing but one ("how many?") -> yes
+// A full question ("show me the light gauge joists") is a new question, even without
+// a category: treating it as a follow-up mixed it with the previous answer's filters.
+function isFollowUp(question, match, summary) {
+    const words = toWords(question);
+    if (FOLLOW_UP_OPENERS.has(words[0])) return true;
+    if ((words[0] === 'what' || words[0] === 'how') && words[1] === 'about') return true;
+    if (words.some(word => BACK_REFERENCES.has(word))) return true;
+    const noCategory = summary.categories.length === 0 && !summary.groupByCategory;
+    if (noCategory && words.some(word => word === 'one' || word === 'ones')) return true;
+
+    if (!understoodByCode(match, summary) || !noCategory || words.some(word => FRESH_WORDS.has(word))) return false;
+    const named = summary.valueFilters.length + summary.propertyMentions.length + (match.rank || match.aggregate ? 1 : 0);
+    const asksSomething = words.some(word => QUESTION_WORDS.has(word));
+    return !asksSomething || named === 0;
+}
+// Words that start a full question of its own.
+const QUESTION_WORDS = new Set(['show', 'list', 'find', 'get', 'give', 'display', 'select', 'highlight', 'see',
+    'how', 'what', 'which', 'where', 'count']);
+
+// Do two filters test the same property? All level properties count as one
+// ("on level 3" replaces "on level 2"), and so do the two material properties.
+const isLevelPath = path => LEVEL_PATHS.includes(path) || TOP_LEVEL_PATHS.includes(path);
+const isMaterialPath = path => path.startsWith('Materials and Finishes.');
+function sameProperty(a, b) {
+    return a.some(path => b.includes(path)) ||
+        (a.some(isLevelPath) && b.some(isLevelPath)) ||
+        (a.some(isMaterialPath) && b.some(isMaterialPath));
+}
+
+const LIST_WORDS = new Set(['show', 'list', 'which', 'find', 'highlight', 'display', 'select', 'see']);
+
+// Merges a follow-up into the previous plan, in code. Returns the new plan, or null
+// when code can't tell what to change (then tier 1 gets both questions).
+//   a new category   replaces the old one        ("and the columns?")
+//   a new value      replaces a filter on the same property, or is added
+//                                                ("and on level 3?", "only the UB ones")
+//   rank / total words, "how many", "show", "per X" change the action
+//   nothing about the action keeps it            ("and on level 3?" after a total = a total)
+function mergeFollowUp(previous, summary, match, question) {
+    const words = new Set(toWords(question));
+    let category = previous.category ?? null;
+    if (summary.categories.length === 1) category = summary.categories[0];
+
+    let filters = (Array.isArray(previous.filters) ? previous.filters : []).map(filter => ({ ...filter }));
+    for (const added of filtersOf(summary)) {
+        filters = filters.filter(old => !sameProperty(toArray(old.properties ?? old.property), added.properties));
+        filters.push(added);
+    }
+    const base = { category, filters };
+
+    // "the longest?", "and the total length?"
+    if (wantsTotal(match, summary) || match.rank) {
+        return planRankOrTotal(summary, match, base);
+    }
+    // "per level?" / "and their materials?": break the same set down by that property.
+    if (summary.propertyMentions.length > 1) return null;
+    const mention = summary.propertyMentions[0];
+    if (mention) {
+        return previous.action === 'total'
+            ? { ...previous, ...base, groupBy: mention }   // a total per level
+            : { action: 'group', ...base, groupBy: mention };
+    }
+    if ((words.has('how') && words.has('many')) || words.has('count') || words.has('number')) {
+        return { action: 'count', ...base, groupBy: null };
+    }
+    if ([...words].some(word => LIST_WORDS.has(word))) {
+        return { action: 'list', ...base, groupBy: null };
+    }
+    // Only the filters changed: same kind of answer as before.
+    return { ...previous, ...base };
+}
+
+// The previous question and plan, as text for the LLM (tiers 1 and 2).
+function describePrevious(previous) {
+    return `PREVIOUS QUESTION: ${previous.question}\nPREVIOUS PLAN: ${JSON.stringify(previous.plan)}\n` +
+        'This question follows on from it: start from the previous plan and change only what this question changes.';
+}
+
 
 // ===========================================================================
 // 3. PLANNER
@@ -852,7 +1456,9 @@ function planFromMatch(summary, action) {
 // ===========================================================================
 
 const openai = new OpenAI({ apiKey: OPENAIKEY });
-const PLANNER_MODEL = 'gpt-4o-mini';
+// gpt-6-luna replaces gpt-4o-mini, which OpenAI shuts down on 14 Jan 2027.
+// It's OpenAI's most efficient model for short, high-volume tasks like ours.
+const PLANNER_MODEL = 'gpt-6-luna';
 
 // The vocabulary is sent with EVERY question, so it decides the cost per question.
 // Which properties go in:
@@ -924,6 +1530,9 @@ function describeProperty(property, onlyValues = null) {
     if (property.kind === 'number') {
         return `- ${property.path} ${usedBy} numbers from ${property.min} to ${property.max}${property.unit ? ' ' + property.unit : ''}`;
     }
+    if (onlyValues) {   // names that matched the question, from a property with too many to list
+        return `- ${property.path} ${usedBy} matching values: ${onlyValues.map(v => JSON.stringify(v)).join(', ')}`;
+    }
     return `- ${property.path} ${usedBy} free text, e.g. ${property.samples.map(v => JSON.stringify(v)).join(', ')}`;
 }
 
@@ -946,10 +1555,12 @@ Use ONLY the categories and property paths listed under MODEL below. Never inven
 
 Return ONLY a JSON object with these fields:
 {
-  "action": "list" | "count" | "group" | "coordinates" | "clarify" | "reply",
+  "action": "list" | "count" | "group" | "rank" | "total" | "coordinates" | "clarify" | "reply",
   "category": exact category name, or null for all categories,
   "filters": [ { "properties": [exact paths], "op": "equals" | "not_equals" | "contains" | "gt" | "gte" | "lt" | "lte", "value": text, number, or a list of texts for equals / not_equals } ],
   "groupBy": [exact paths] or "category" or null,
+  "sortBy": [one number path] or null, "order": "desc" | "asc", "limit": number or null,
+  "measure": [one number path] or "weight" or null, "aggregate": "sum" | "average" | "min" | "max",
   "elementId": number or null,
   "message": text or null
 }
@@ -957,7 +1568,14 @@ Return ONLY a JSON object with these fields:
 How to choose:
 - "list": show / find / which elements. "count": how many. "group": breakdowns such as
   "which level has the most beams", "what materials are used", "count by type".
+- "rank": longest / heaviest / largest / top N. sortBy = the number property, order "desc" for
+  the highest first. limit = N for "top N", null for "the longest" (all tied elements are returned).
+- "total": total / sum / average of a quantity (length, volume, area). measure = that number
+  property, or "weight" for total weight or tonnage (computed as Nominal Weight x Length).
+  groupBy is optional ("total volume per level"). "Total number of beams" is a count, not a total.
 - "coordinates": where a specific element id is. Put the id in elementId.
+- If the message has PREVIOUS QUESTION and PREVIOUS PLAN, the question is a follow-up: start from
+  the previous plan and change only what the question changes.
 - "clarify": the question mentions something this model does not have, or is ambiguous.
   Put a short question for the user in message, naming the closest real options.
 - "reply": questions about you or not about the model. Put the answer in message.
@@ -973,9 +1591,15 @@ Rules:
   put every relevant path in "properties". An element matches if any of them matches.
 - If a property lists its values, use op "equals" with exact listed value(s).
 - For free text (e.g. a material name like "steel" inside "Steel ASTM A992"), use op "contains".
-- For numbers use gt/gte/lt/lte with a plain number in the property's unit.
+- For numbers use gt/gte/lt/lte with a plain number in the property's unit. kg/m and kgf/m are
+  the same unit for weight per metre.
 - Several conditions = several entries in "filters" (they are combined with AND).
+- Within one property, "X or Y" is one filter with a list of values.
 - Use the fewest filters that answer the question. Never add a condition the user did not ask for.
+- Set "category" only when the question names a kind of element (beams, columns, walls, ...).
+  For "members", "elements", "items" or "everything", use null.
+- If the question asks for something this model doesn't have, use "clarify". Never answer while
+  leaving out a word that says what the user wants.
 
 Examples:
 "steel beams" ->
@@ -984,6 +1608,10 @@ Examples:
 {"action":"group","category":"Walls","filters":[],"groupBy":["Materials and Finishes.Structural Material"],"elementId":null,"message":null}
 "how many elements per category" ->
 {"action":"group","category":null,"filters":[],"groupBy":"category","elementId":null,"message":null}
+"the 5 longest walls" ->
+{"action":"rank","category":"Walls","filters":[],"sortBy":["Dimensions.Length"],"order":"desc","limit":5,"elementId":null,"message":null}
+"total volume of the floors per level" ->
+{"action":"total","category":"Floors","filters":[],"measure":["Dimensions.Volume"],"aggregate":"sum","groupBy":["Constraints.Level"],"elementId":null,"message":null}
 
 MODEL
 ${describeVocabulary(vocabulary)}`;
@@ -994,6 +1622,10 @@ ${describeVocabulary(vocabulary)}`;
 async function askForJson(systemPrompt, userMessage) {
     const completion = await openai.chat.completions.create({
         model: PLANNER_MODEL,
+        // Luna can "think" before answering (reasoning), which adds hidden tokens and delay.
+        // Writing a small JSON plan doesn't need it, so it's switched off. That also keeps
+        // `temperature` allowed: OpenAI only accepts it while reasoning is off.
+        reasoning_effort: 'none',
         temperature: 0,                            // 0 = as repeatable as possible; same question -> same plan
         response_format: { type: 'json_object' },  // forces the reply to be JSON (it can still be the WRONG JSON)
         messages: [
@@ -1036,18 +1668,32 @@ const CANDIDATES_PROMPT = `You turn a question about a BIM model into a JSON que
 The user message has the QUESTION and the CANDIDATES: the names in this model that match it. Use only those names.
 
 Return ONLY JSON:
-{"action": "list" | "count" | "group" | "coordinates" | "clarify" | "reply" | "need_more",
+{"action": "list" | "count" | "group" | "rank" | "total" | "coordinates" | "clarify" | "reply" | "need_more",
  "category": category name or null,
  "filters": [{"properties": [paths], "op": "equals" | "not_equals" | "contains" | "gt" | "gte" | "lt" | "lte", "value": text, number or list of texts}],
  "groupBy": [paths] or "category" or null,
+ "sortBy": [one number path] or null, "order": "desc" | "asc", "limit": number or null,
+ "measure": [one number path] or "weight" or null, "aggregate": "sum" | "average" | "min" | "max",
  "elementId": number or null,
  "message": text or null}
 
 - list: show / find. count: how many. group: a breakdown (per X, which X has the most, what X are used).
+- rank: longest / heaviest / top N, by sortBy (desc = highest first; limit null = all tied at the top).
+- total: total / average of a length, volume or area (measure), or "weight" for total weight.
+  groupBy optional. "Total number of X" is a count.
 - coordinates: where one element is; put its id in elementId.
+- PREVIOUS QUESTION / PREVIOUS PLAN given: this is a follow-up. Start from the previous plan and
+  change only what the question changes (a new level replaces the level filter, "only X" adds a
+  filter, "how many" changes the action, a new category replaces the category).
+- kg/m and kgf/m are the same unit for weight per metre.
 - equals: exact listed value(s). contains: part of a text. gt/gte/lt/lte: a plain number in the
   property's unit (6 m = 6000 when the unit is mm).
 - Several filters are combined with AND. Use the fewest filters; never add one the user didn't ask for.
+- Within one property, "X or Y" is one filter with a list of values.
+- category: only when the question names a kind of element (beams, columns, walls, ...). For
+  "members", "elements", "items" or "everything", use null.
+- Never answer without part of the question. If a word under "words not found in this model" says
+  WHAT the user wants (a kind of element, a material, a name), use need_more; don't drop it.
 - reply: questions about you, not the model (answer in message).
 - clarify: the question is ambiguous (a short question in message).
 - need_more: the CANDIDATES don't contain what the question needs.`;
@@ -1073,6 +1719,11 @@ function describeCandidates(match, summary, model) {
     // Properties: the ones named, plus the ones whose values matched. For family and
     // type names we show only the matched names, not all 100.
     const shown = new Map(); // path -> values to show (null = all)
+    // The rank word ("longest") was taken out of the question's words, so show its property here.
+    if (match.rank && vocabulary.allPaths.has(match.rank.path)) {
+        lines.push(`- "${match.rank.word}" ranks by ${match.rank.path} (${match.rank.order}${match.rank.limit ? `, limit ${match.rank.limit}` : ''})`);
+        shown.set(match.rank.path, null);
+    }
     for (const paths of summary.propertyMentions) {
         paths.forEach(path => shown.set(path, null));
     }
@@ -1085,43 +1736,114 @@ function describeCandidates(match, summary, model) {
     for (const [path, onlyValues] of shown) {
         const property = vocabulary.properties.find(p => p.path === path);
         if (!property || added >= MAX_CANDIDATE_PROPERTIES) continue;
-        lines.push(describeProperty(property, onlyValues));
+        // With one category named, show only the values that category uses: for "beams",
+        // the framing materials, not "Steel, 45-345", which only columns have.
+        let values = onlyValues;
+        if (!values && property.kind === 'values' && summary.categories.length === 1) {
+            const inCategory = (model.dictionary.valuesByPath.get(path) || [])
+                .filter(entry => entry.categories.has(summary.categories[0]))
+                .map(entry => entry.value);
+            if (inCategory.length > 0) values = inCategory;
+        }
+        lines.push(describeProperty(property, values));
         added++;
     }
     if ([...shown.keys()].some(path => LEVEL_PATHS.includes(path))) {
         lines.push('- (a filter on one level property automatically covers all of them)');
     }
 
-    if (match.unexplained.length > 0) {
-        lines.push(`- words not found in this model: ${match.unexplained.join(', ')}`);
+    // Only words that could be names: numbers, units and comparisons ("20", "kg", "than")
+    // are never names, and listing them made the LLM give up on questions it could answer.
+    const notFound = match.unexplained.filter(word => !/^\d/.test(word) && !UNMATCHED_OK.has(word));
+    if (notFound.length > 0) {
+        lines.push(`- words not found in this model: ${notFound.join(', ')}`);
     }
     return lines.length > 0 ? lines.join('\n') : '- nothing in the question matched a name in this model';
 }
 
-async function planWithCandidates(question, match, summary, model) {
-    const message = `QUESTION: ${question}\n\nCANDIDATES:\n${describeCandidates(match, summary, model)}`;
+async function planWithCandidates(question, match, summary, model, previous = null) {
+    let message = `QUESTION: ${question}\n\nCANDIDATES:\n${describeCandidates(match, summary, model)}`;
+    if (previous) message += `\n\n${describePrevious(previous)}`;
     const { json, usage } = await askForJson(CANDIDATES_PROMPT, message);
     return { plan: json, usage };
 }
 
 // --- Tier 2: the full vocabulary (~3,000 tokens), only when tier 1 couldn't do it.
-async function planQuery(question, model) {
+async function planQuery(question, model, match, summary, previous = null) {
     // Build the prompt the first time this model needs it, then reuse it.
     if (!model.plannerPrompt) {
         model.plannerPrompt = buildSystemPrompt(model.vocabulary);
     }
-    const { json, usage } = await askForJson(model.plannerPrompt, question);
+    // The full vocabulary shows only the most common properties. The names that matched
+    // THIS question (e.g. Nominal Weight for "weigh") go along in the user message: after
+    // the system prompt, so the long shared beginning stays cacheable.
+    const matched = describeCandidates(match, summary, model);
+    let message = `${question}\n\nNames in this model that match the question:\n${matched}`;
+    if (previous) message += `\n\n${describePrevious(previous)}`;
+    const { json, usage } = await askForJson(model.plannerPrompt, message);
     return { plan: json, usage };
+}
+
+// The guard against answering a different question: "the longest beam" or "total length of
+// the beams" answered with a plain list, count or breakdown leaves out what was asked.
+function missedIntent(match, summary, plan) {
+    if (!plan || !['list', 'count', 'group'].includes(plan.action)) return false;
+    return wantsTotal(match, summary) || Boolean(match.rank);
+}
+
+// The guard against answers that leave part of the question out: returns a word from the
+// question that no model name matched, that isn't a number, unit or comparison, and that
+// the plan doesn't use either. "curtain walls" answered with all walls -> "curtain".
+function ignoredWord(match, plan) {
+    if (!plan || !['list', 'count', 'group'].includes(plan.action)) return null;
+    const planText = JSON.stringify(plan).toLowerCase();
+    return match.unexplained.find(word =>
+        !/^\d/.test(word) && !UNMATCHED_OK.has(word) && !planText.includes(word.slice(0, 5))) || null;
+}
+
+// The guard against filters the LLM made up: a text filter (equals / not_equals /
+// contains) is kept only if its value shares a word with the question. "steel" keeps
+// "Metal - Steel - 345 MPa"; "shorter than 2 m" drops an invented Family = "M_TJL Wood
+// Open Web Joist". Typo fixes and material stand-ins ("timber" -> softwood) count as words
+// of the question. Returns the plan with those filters removed, and logs what it removed.
+function dropInventedFilters(plan, question, match) {
+    if (!plan || !Array.isArray(plan.filters)) return plan;
+    const asked = new Set(toWords(question).map(word => WORD_VARIANTS[word] || word));
+    for (const fix of match.corrections) asked.add(fix.split(' -> ')[1]);
+    for (const word of [...asked]) (MATERIAL_WORDS[word] || []).forEach(alias => asked.add(alias));
+    const grounded = filter => {
+        if (!['equals', 'not_equals', 'contains'].includes(filter?.op)) return true;   // numbers: always kept
+        const values = [].concat(filter.value ?? []).map(String);
+        return values.every(value => {
+            const words = toWords(value).filter(word => !/^\d+$/.test(word) && !STOPWORDS.has(word));
+            if (/^-?\d/.test(value.trim())) return true;                                 // "25.4 kg/m" is a number
+            return words.length === 0 || words.some(word => asked.has(word) || [...asked].some(a => a.length > 3 && word.includes(a)));
+        });
+    };
+    const kept = plan.filters.filter(grounded);
+    if (kept.length === plan.filters.length) return plan;
+    console.log(`Removed invented filter(s): ${JSON.stringify(plan.filters.filter(f => !grounded(f)))}`);
+    return { ...plan, filters: kept };
 }
 
 // Decides which tier answers. Returns { tier, plan, checked, calls, match }:
 //   checked - the result of validatePlan (ok + clean plan, or a question for the user)
 //   calls   - one { tier, ...usage } per LLM call, for the token report
-async function answerQuestion(question, model) {
+//   previous - { question, plan } of the last answer on this sheet, or null
+async function answerQuestion(question, model, previous = null) {
     const calls = [];
     const match = matchQuestion(question, model.dictionary);
-    const summary = summarizeMatch(match);
-    const done = (tier, plan, checked) => ({ tier, plan, checked, calls, match });
+    let summary = summarizeMatch(match);
+    const followUp = Boolean(previous) && isFollowUp(question, match, summary);
+    // A follow-up without a category of its own is about the previous plan's category.
+    if (followUp && summary.categories.length === 0 && previous.plan?.category) {
+        summary = summarizeMatch(match, previous.plan.category);
+    }
+    const context = followUp ? previous : null;   // what tiers 1 and 2 are told about the last question
+    const done = (tier, plan, checked) => ({ tier, plan, checked, calls, match, followUp });
+    // The guard against invented filters must accept words from the earlier questions too:
+    // "steel" in the plan came from "steel beams on level 2", not from "and on level 3?".
+    const askedText = context ? `${question} ${context.question}` : question;
 
     // Asked for a category this model doesn't have ("ceilings"): no LLM needed.
     if (summary.missingCategories.length > 0 && summary.categories.length === 0) {
@@ -1129,9 +1851,33 @@ async function answerQuestion(question, model) {
         return done(0, null, ask(`This model has no ${summary.missingCategories[0]} category. Categories in this model: ${available}.`));
     }
 
-    // Tier 0: code understood every word; the tiny prompt only picks list / count / group.
-    if (isSimple(match, summary)) {
-        const { action, usage } = await classifyIntent(question);
+    // A follow-up code fully understood: merge it into the previous plan (0 tokens).
+    if (followUp && understoodByCode(match, summary)) {
+        const plan = mergeFollowUp(previous.plan, summary, match, question);
+        if (plan) {
+            const checked = validatePlan(plan, model);
+            // "and the columns?" when the old filter's value isn't used by columns is a
+            // real question for the user; only an unknown name sends it on to the LLM.
+            if (checked.ok || checked.kind !== 'unknown-name') return done(0, plan, checked);
+        }
+    }
+
+    // Tier 0: code understood every word.
+    //   Ranking / totals: the words already say what to do, so code writes the plan (0 tokens).
+    //   Otherwise the tiny prompt only picks list / count / group.
+    // (Not for follow-ups: starting from scratch would forget the previous question.)
+    const special = wantsTotal(match, summary) || Boolean(match.rank);
+    if (followUp) {
+        // straight to tier 1, with the previous question
+    } else if (isSimple(match, summary) && special) {
+        const plan = planRankOrTotal(summary, match);
+        if (plan) {
+            const checked = validatePlan(plan, model);
+            if (checked.ok) return done(0, plan, checked);
+        }
+    } else if (isSimple(match, summary)) {
+        // (Without the comparisons code already read: also a few tokens cheaper.)
+        const { action, usage } = await classifyIntent(match.withoutComparisons);
         calls.push({ tier: 0, ...usage });
         const plan = action === 'other' ? null : planFromMatch(summary, action);
         if (plan) {
@@ -1141,18 +1887,31 @@ async function answerQuestion(question, model) {
     }
 
     // Tier 1: small prompt with only the matched names.
-    const tier1 = await planWithCandidates(question, match, summary, model);
+    const tier1 = await planWithCandidates(question, match, summary, model, context);
     calls.push({ tier: 1, ...tier1.usage });
-    if (tier1.plan?.action !== 'need_more') {
+    tier1.plan = dropInventedFilters(tier1.plan, askedText, match);
+    if (tier1.plan?.action !== 'need_more' && !ignoredWord(match, tier1.plan) && !missedIntent(match, summary, tier1.plan)) {
         const checked = validatePlan(tier1.plan, model);
         // A plan using names that don't exist means the candidates were too few:
         // try again with everything. Any other problem is a real question for the user.
         if (checked.ok || checked.kind !== 'unknown-name') return done(1, tier1.plan, checked);
     }
+    // (A tier 1 plan that ignored a word of the question also goes on to tier 2:
+    //  the full vocabulary may contain what that word refers to.)
 
     // Tier 2: the full vocabulary.
-    const tier2 = await planQuery(question, model);
+    const tier2 = await planQuery(question, model, match, summary, context);
     calls.push({ tier: 2, ...tier2.usage });
+    tier2.plan = dropInventedFilters(tier2.plan, askedText, match);
+    const dropped = ignoredWord(match, tier2.plan);
+    if (dropped) {
+        return done(2, tier2.plan, ask(`I couldn't find "${dropped}" in this model, so I can't answer that exactly. Ask without it, or use a name from the model.`));
+    }
+    if (missedIntent(match, summary, tier2.plan)) {
+        return done(2, tier2.plan, ask(match.rank
+            ? `I couldn't work out how to rank that. Try e.g. "the ${match.rank.word} beams" or "top 5 ${match.rank.word} columns".`
+            : 'I couldn\'t work out which quantity to add up. Try e.g. "total length of the steel beams" or "total volume of the floors".'));
+    }
     return done(2, tier2.plan, validatePlan(tier2.plan, model));
 }
 
@@ -1167,7 +1926,8 @@ async function answerQuestion(question, model) {
 // wrong, look at the plan: bad plan = LLM problem, good plan = code problem.
 // ===========================================================================
 
-const ACTIONS = new Set(['list', 'count', 'group', 'coordinates', 'clarify', 'reply']);
+const ACTIONS = new Set(['list', 'count', 'group', 'rank', 'total', 'coordinates', 'clarify', 'reply']);
+const AGGREGATES = new Set(['sum', 'average', 'min', 'max']);
 
 // Each operator maps to a small piece of SQL. `p` is the properties table.
 // The LLM can only pick a NAME from this list; it never writes SQL itself.
@@ -1195,7 +1955,8 @@ const LEVEL_PATHS = ['Constraints.Level', 'Constraints.Base Level', 'Constraints
 const TOP_LEVEL_PATHS = ['Constraints.Top Level', 'Constraints.Top Constraint'];
 
 // "12", "12 mm", "6000.5" -> a number with an optional unit word after it.
-const NUMBER_WITH_UNIT = /^-?\d+(?:\.\d+)?\s*[a-z°²³^0-9]*$/i;
+// (Units may contain "/": "25.4 kg/m", "12.5 kgf/m".)
+const NUMBER_WITH_UNIT = /^-?\d+(?:\.\d+)?\s*[a-z°²³^0-9/]*$/i;
 
 const MAX_RETURNED_ELEMENTS = 500; // never send more than this many elements to the frontend
 const MAX_GROUPS = 50;
@@ -1266,6 +2027,14 @@ function valueExists(db, paths, value, category) {
     ).get(...join.params, ...paths, value));
 }
 
+// Does any value under these paths CONTAIN `text` (ignoring case), for this category?
+function textExists(db, paths, text, category) {
+    const join = categoryJoin(category);
+    return Boolean(db.prepare(
+        `SELECT 1 FROM properties p ${join.sql} WHERE p.path IN (${placeholders(paths)}) AND p.value LIKE ? ESCAPE '\\' LIMIT 1`
+    ).get(...join.params, ...paths, `%${escapeLike(text)}%`));
+}
+
 // When an exact value isn't found, offer real values the user might have meant.
 function suggestValues(db, paths, value, category) {
     const join = categoryJoin(category);
@@ -1312,13 +2081,30 @@ function validateFilter(rawFilter, category, model) {
         return { filter: { paths, op, values: [number] } };
     }
 
-    const values = toArray(rawFilter.value);
+    let values = toArray(rawFilter.value);
     if (values.length === 0) {
         return { question: `What value of ${labels(paths)} are you looking for?` };
     }
 
+    // contains: "steel or timber" keeps BOTH values (any of them matches). Each one must
+    // occur in this category, or the user is asked: never a silent "nothing found" for one of them.
     if (op === 'contains') {
-        return { filter: { paths, op, values: [values[0]] } };
+        // Everyday material words stand for the names the model uses: "timber" -> "softwood",
+        // "lumber" (when "timber" itself appears nowhere in these values).
+        values = values.flatMap(value => {
+            const aliases = MATERIAL_WORDS[value.toLowerCase()];
+            if (!aliases || textExists(db, paths, value, category)) return [value];
+            const found = aliases.filter(alias => textExists(db, paths, alias, category));
+            return found.length > 0 ? found : [value];
+        });
+        const missing = values.find(value => !textExists(db, paths, value, category));
+        if (missing) {
+            const where = category ? `${category} with` : 'elements with';
+            const options = suggestValues(db, paths, missing, category);
+            return { question: `I couldn't find ${where} ${labels(paths)} containing "${missing}" in this model.` +
+                (options.length ? ` Options: ${options.join(', ')}.` : '') };
+        }
+        return { filter: { paths, op, values } };
     }
 
     // "Bar Diameter equals 12 mm" on a number property: compare the numbers,
@@ -1394,9 +2180,10 @@ function validatePlan(rawPlan, model) {
         }
     }
 
-    // --- groupBy: only needed for "group"; either "category" or real paths
+    // --- groupBy: needed for "group", optional for "total"; either "category" or real paths
     let groupBy = null;
-    if (plan.action === 'group') {
+    const wantsGroups = plan.action === 'group' || (plan.action === 'total' && plan.groupBy);
+    if (wantsGroups) {
         if (plan.groupBy === 'category') {
             groupBy = 'category';
         } else {
@@ -1410,6 +2197,59 @@ function validatePlan(rawPlan, model) {
             }
             groupBy = withAllLevelPaths(groupBy, vocabulary.allPaths);
         }
+    }
+
+    // A property to rank by or add up must exist AND hold numbers ("6000 mm", not "Level 2").
+    function numberPaths(raw, what) {
+        const paths = toArray(raw);
+        if (paths.length === 0) {
+            return { question: `Which property should I ${what}?` };
+        }
+        const unknownPath = paths.find(path => !vocabulary.allPaths.has(path));
+        if (unknownPath) {
+            return { question: `This model has no property called "${label(unknownPath)}".`, kind: 'unknown-name' };
+        }
+        // A few non-number values somewhere in the model don't matter: the SQL only uses
+        // rows that have a number. A property with no numbers at all can't be ranked.
+        const hasNumbers = path => vocabulary.numericPaths.has(path) ||
+            Boolean(model.db.prepare('SELECT 1 FROM properties WHERE path = ? AND numeric_value IS NOT NULL LIMIT 1').get(path));
+        const textPath = paths.find(path => !hasNumbers(path));
+        if (textPath) {
+            return { question: `${label(textPath)} isn't a number, so I can't ${what} it.` };
+        }
+        return { paths };
+    }
+
+    if (plan.action === 'rank') {
+        const sortBy = numberPaths(plan.sortBy, 'rank by');
+        if (sortBy.question) return ask(sortBy.question, sortBy.kind);
+        // limit: a whole number 1-500, or null = "every element tied at the top".
+        const limit = Number(plan.limit);
+        return {
+            ok: true,
+            plan: {
+                action: 'rank', category, filters,
+                sortBy: sortBy.paths,
+                order: plan.order === 'asc' ? 'asc' : 'desc',
+                limit: Number.isInteger(limit) && limit >= 1 ? Math.min(limit, MAX_RETURNED_ELEMENTS) : null
+            }
+        };
+    }
+
+    if (plan.action === 'total') {
+        const aggregate = AGGREGATES.has(plan.aggregate) ? plan.aggregate : 'sum';
+        // "weight" is worked out from two properties, so both must exist. (Adding up Nominal
+        // Weight itself would add kg PER METRE, which means nothing: that's a weight too.)
+        if (plan.measure === 'weight' || (toArray(plan.measure).includes(WEIGHT_PATH) && aggregate === 'sum')) {
+            const missing = [WEIGHT_PATH, LENGTH_PATH].find(path => !vocabulary.numericPaths.has(path));
+            if (missing) {
+                return ask(`I can't work out weights in this model: it has no ${label(missing)} numbers.`);
+            }
+            return { ok: true, plan: { action: 'total', category, filters, measure: 'weight', aggregate, groupBy } };
+        }
+        const measure = numberPaths(plan.measure, 'add up');
+        if (measure.question) return ask(measure.question, measure.kind);
+        return { ok: true, plan: { action: 'total', category, filters, measure: measure.paths, aggregate, groupBy } };
     }
 
     return { ok: true, plan: { action: plan.action, category, filters, groupBy } };
@@ -1436,8 +2276,10 @@ function buildWhere(plan) {
         } else if (filter.op === 'equals_number' || filter.op === 'not_equals_number') {
             test = `p.numeric_value IN (${placeholders(values)})`; // set by validateFilter for "12 mm"
         } else if (filter.op === 'contains') {
-            test = "p.value LIKE ? ESCAPE '\\'";            // "\" lets us search for a literal % or _
-            values = [`%${escapeLike(values[0])}%`];
+            // One LIKE per value, joined with OR: "steel or timber" matches either.
+            // ("\" lets us search for a literal % or _.)
+            test = '(' + values.map(() => "p.value LIKE ? ESCAPE '\\'").join(' OR ') + ')';
+            values = values.map(value => `%${escapeLike(value)}%`);
         } else {
             test = `p.numeric_value ${NUMERIC_SQL[filter.op]} ?`;
         }
@@ -1476,7 +2318,7 @@ function findElements(db, plan) {
     const { where, params } = buildWhere(plan);
     const total = db.prepare(`SELECT COUNT(*) AS c FROM elements e ${where}`).get(...params).c;
     const rows = db.prepare(
-        `SELECT e.objectid, e.name, e.clean_name FROM elements e ${where} ORDER BY e.objectid LIMIT ?`
+        `SELECT e.objectid, e.external_id, e.name, e.clean_name FROM elements e ${where} ORDER BY e.objectid LIMIT ?`
     ).all(...params, MAX_RETURNED_ELEMENTS);
     return { total, rows };
 }
@@ -1514,11 +2356,98 @@ function groupElements(db, plan) {
     return { groups, missing };
 }
 
+// Every matching element with ONE number from `paths` (e.g. its length) and, if asked,
+// the group it belongs to. One row per element, also for elements without the number
+// (number = null), so the answer can say how many were left out.
+// Each (SELECT ... LIMIT 1) is a "subquery": it runs once per element and picks that
+// element's first matching property row. Their ?s come before the WHERE's, so the
+// params are in that order too: [paths, paths, group paths, ...where params].
+function measureElements(db, plan, paths, groupBy = null) {
+    const { where, params } = buildWhere(plan);
+    const pick = column => `(SELECT m.${column} FROM properties m
+        WHERE m.objectid = e.objectid AND m.path IN (${placeholders(paths)}) AND m.numeric_value IS NOT NULL LIMIT 1)`;
+    let group = 'NULL';
+    let groupParams = [];
+    if (groupBy === 'category') {
+        group = "COALESCE(e.category, 'Uncategorised')";
+    } else if (groupBy) {
+        group = `(SELECT g.value FROM properties g WHERE g.objectid = e.objectid AND g.path IN (${placeholders(groupBy)}) LIMIT 1)`;
+        groupParams = groupBy;
+    }
+    return db.prepare(`
+        SELECT e.objectid, e.external_id, e.name, e.clean_name, ${pick('numeric_value')} AS number, ${pick('unit')} AS unit, ${group} AS grp
+        FROM elements e ${where} ORDER BY e.objectid
+    `).all(...paths, ...paths, ...groupParams, ...params);
+}
+
+// Unit text -> how many metres (or kg per metre) one unit is. Unknown units -> undefined.
+const METRES_PER = { mm: 0.001, cm: 0.01, m: 1, ft: 0.3048, in: 0.0254 };
+const KG_PER_METRE = { 'kg/m': 1, 'kgf/m': 1, 'lb/ft': 1.48816 };
+
+// Revit stores a steel section's weight PER METRE ("Nominal Weight", kgf/m), not the
+// member's weight. So the member's weight = Nominal Weight x Length, in kg.
+// Returns rows like measureElements, with number = kg (null if either value is missing).
+function weighElements(db, plan, groupBy = null) {
+    const weights = measureElements(db, plan, [WEIGHT_PATH], groupBy);
+    const lengths = new Map(measureElements(db, plan, [LENGTH_PATH]).map(row => [row.objectid, row]));
+    return weights.map(row => {
+        const length = lengths.get(row.objectid);
+        const perMetre = KG_PER_METRE[String(row.unit).toLowerCase()];
+        const metres = METRES_PER[String(length?.unit).toLowerCase()];
+        const known = row.number !== null && length?.number != null && perMetre && metres;
+        return { ...row, number: known ? row.number * perMetre * length.number * metres : null, unit: 'kg' };
+    });
+}
+
+// Adds up rows per unit: values in "mm" and in "m" must never be added together.
+// Returns [{ unit, value, count }], e.g. [{ unit: 'mm', value: 258448.1, count: 42 }].
+function aggregateByUnit(rows, aggregate) {
+    const byUnit = new Map();
+    for (const row of rows) {
+        if (!byUnit.has(row.unit)) byUnit.set(row.unit, []);
+        byUnit.get(row.unit).push(row.number);
+    }
+    return [...byUnit].map(([unit, numbers]) => {
+        const sum = numbers.reduce((a, b) => a + b, 0);
+        const value = aggregate === 'average' ? sum / numbers.length
+            : aggregate === 'min' ? Math.min(...numbers)
+            : aggregate === 'max' ? Math.max(...numbers)
+            : sum;
+        return { unit, value, count: numbers.length };
+    });
+}
+
+// 258448.1, "mm" -> "258,448.1 mm (258.448 m)". The comma groups make big numbers readable;
+// the second unit saves the reader a conversion.
+function formatQuantity(value, unit) {
+    const number = n => n.toLocaleString('en-US', { maximumFractionDigits: 3 });
+    const shownUnit = String(unit ?? '').replace('^3', '³').replace('^2', '²');
+    let text = `${number(value)}${shownUnit ? ' ' + shownUnit : ''}`;
+    if (unit === 'mm' && Math.abs(value) >= 1000) text += ` (${number(value / 1000)} m)`;
+    if (unit === 'kg' && Math.abs(value) >= 1000) text += ` (${number(value / 1000)} t)`;
+    return text;
+}
+
+// The element list the frontend shows (same shape as list/count), plus each element's number.
+function elementData(rows, total) {
+    const shown = rows.slice(0, MAX_RETURNED_ELEMENTS);
+    const objectIds = shown.map(row => row.objectid);
+    return {
+        count: total,
+        returned: shown.length,
+        truncated: total > shown.length,
+        objectIds,
+        elements: shown.map(row => ({ id: row.objectid, externalId: row.external_id, name: row.clean_name, rawName: row.name, value: row.number, unit: row.unit }))
+    };
+}
+
+const AGGREGATE_LABELS = { sum: 'Total', average: 'Average', min: 'Smallest', max: 'Largest' };
+
 // Runs a validated plan. Always returns { answer, objectIds, data }:
 //   answer    - text for the chat bubble
 //   objectIds - ids for the Viewer to highlight
 //   data      - structured details (element list, groups, coordinates, ...)
-function runPlan(plan, model) {
+function runPlan(plan, model, userId) {
     switch (plan.action) {
         case 'reply':
         case 'clarify':
@@ -1526,7 +2455,7 @@ function runPlan(plan, model) {
             return { answer: plan.message || 'Could you rephrase that?', objectIds: [], data: null };
 
         case 'coordinates': {
-            const found = getCoordinates(model, plan.elementId);
+            const found = getCoordinates(model, plan.elementId, userId);
             if (!found) {
                 return { answer: `I don't have coordinates for element ${plan.elementId} yet.`, objectIds: [], data: null };
             }
@@ -1559,7 +2488,7 @@ function runPlan(plan, model) {
                     returned: rows.length,
                     truncated: total > rows.length,
                     objectIds,
-                    elements: rows.map(row => ({ id: row.objectid, name: row.clean_name, rawName: row.name }))
+                    elements: rows.map(row => ({ id: row.objectid, externalId: row.external_id, name: row.clean_name, rawName: row.name }))
                 }
             };
         }
@@ -1577,6 +2506,82 @@ function runPlan(plan, model) {
 
             const { rows } = findElements(model.db, plan); // so the Viewer can highlight the whole set
             return { answer, objectIds: rows.map(row => row.objectid), data: { groups, missing } };
+        }
+
+        case 'rank': {
+            const rows = measureElements(model.db, plan, plan.sortBy);
+            const measured = rows.filter(row => row.number !== null);
+            // Highest first for "desc", lowest first for "asc".
+            measured.sort((a, b) => (plan.order === 'desc' ? b.number - a.number : a.number - b.number));
+            const what = labels(plan.sortBy);
+            const extreme = plan.order === 'desc' ? 'highest' : 'lowest';
+
+            if (measured.length === 0) {
+                return { answer: `None of the ${describe(plan)} has a ${what} value, so I can't rank them.`, objectIds: [], data: elementData([], 0) };
+            }
+            // No limit: every element tied at the top ("the longest beam" may be 4 beams of the
+            // same length). A limit: exactly that many ("top 5").
+            const chosen = plan.limit
+                ? measured.slice(0, plan.limit)
+                : measured.filter(row => row.number === measured[0].number);
+            const first = formatQuantity(chosen[0].number, chosen[0].unit);
+            const last = formatQuantity(chosen[chosen.length - 1].number, chosen[chosen.length - 1].unit);
+
+            let answer = plan.limit
+                ? `The ${chosen.length} ${describe(plan)} with the ${extreme} ${what}: from ${first} to ${last}.`
+                : `${chosen.length === 1 ? '1 element has' : `${chosen.length} elements share`} the ${extreme} ${what} of the ${describe(plan)}: ${first}.`;
+            if (rows.length > measured.length) {
+                const unranked = rows.length - measured.length;
+                answer += ` (${unranked} of them ${unranked === 1 ? 'has' : 'have'} no ${what} and ${unranked === 1 ? 'was' : 'were'} not ranked.)`;
+            }
+            const data = elementData(chosen, chosen.length);
+            return { answer, objectIds: data.objectIds, data };
+        }
+
+        case 'total': {
+            const isWeight = plan.measure === 'weight';
+            const rows = isWeight
+                ? weighElements(model.db, plan, plan.groupBy)
+                : measureElements(model.db, plan, plan.measure, plan.groupBy);
+            const measured = rows.filter(row => row.number !== null);
+            const what = isWeight ? 'weight' : labels(plan.measure);
+            const title = `${AGGREGATE_LABELS[plan.aggregate]} ${what}`;
+
+            if (measured.length === 0) {
+                const answer = rows.length === 0
+                    ? `No ${describe(plan)} found.`
+                    : `None of the ${rows.length} ${describe(plan)} has a ${isWeight ? 'Nominal Weight and Length' : what} value.`;
+                return { answer, objectIds: [], data: { ...elementData(rows, rows.length), totals: [], groups: [] } };
+            }
+
+            // "258,448.1 mm (258.448 m)", or one part per unit if the values use several units.
+            const totals = aggregateByUnit(measured, plan.aggregate);
+            const shown = totals.length === 1
+                ? formatQuantity(totals[0].value, totals[0].unit)
+                : totals.map(t => `${formatQuantity(t.value, t.unit)} (${t.count} elements)`).join('; ');
+            let answer = `${title} of the ${measured.length} ${describe(plan)}: ${shown}.`;
+            if (isWeight) answer += ' (Weight = Nominal Weight per metre x Length.)';
+            if (rows.length > measured.length) {
+                answer += ` ${rows.length - measured.length} more have no ${isWeight ? 'Nominal Weight or Length' : what} and are not included.`;
+            }
+
+            // "per level": the same calculation for each group, biggest first.
+            let groups = [];
+            if (plan.groupBy) {
+                const byGroup = new Map();
+                for (const row of measured) {
+                    const key = row.grp ?? `(no ${plan.groupBy === 'category' ? 'category' : labels(plan.groupBy)})`;
+                    if (!byGroup.has(key)) byGroup.set(key, []);
+                    byGroup.get(key).push(row);
+                }
+                groups = [...byGroup].map(([value, list]) => ({ value, count: list.length, totals: aggregateByUnit(list, plan.aggregate) }))
+                    .sort((a, b) => b.totals[0].value - a.totals[0].value)
+                    .slice(0, MAX_GROUPS);
+                answer += '\n' + groups.map(g => `• ${g.value}: ${g.totals.map(t => formatQuantity(t.value, t.unit)).join('; ')}`).join('\n');
+            }
+
+            const data = { ...elementData(rows, rows.length), totals, groups, measure: plan.measure, aggregate: plan.aggregate };
+            return { answer, objectIds: data.objectIds, data };
         }
 
         default:
@@ -1599,12 +2604,29 @@ const DEFAULT_MODEL = {
     guid: '2b8b1cf8-31bf-7e71-dfb5-e1d4342ddb82'
 };
 
-// Object ids of the last answer per model, for GET /ask_agent_simple.
-const lastResults = new Map();
+// Answers that come with a list of elements for the page's result table.
+const ELEMENT_ACTIONS = new Set(['list', 'count', 'rank', 'total']);
 
-// Running total of LLM tokens since the server started. In v2 this is
-// complete: every question makes exactly one LLM call.
-const tokenTotals = { promptTokens: 0, cachedTokens: 0, completionTokens: 0, totalTokens: 0 };
+// Object ids of the last answer per user and model, for GET /ask_agent_simple.
+const lastResults = new Map(); // "userId|urn:guid" -> [ids]
+
+// Who is asking (set by login.js). Without login.js (the tests) everyone is "local".
+const userOf = req => req.user?.id || 'local';
+
+// The last plan that ran, per user + model + sheet, for follow-up questions:
+// "userId|urn:guid|sheetId" -> { question, plan, at }. The page sends a new sheet id
+// when you press New sheet or pick another model, which starts afresh.
+const lastPlans = new Map();
+const FOLLOW_UP_MINUTES = 30;   // after 30 quiet minutes a question starts afresh
+const SHEET_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+function conversationKey(req, urn, guid) {
+    const sheet = SHEET_ID_PATTERN.test(String(req.body?.conversationId || '')) ? req.body.conversationId : 'default';
+    return `${userOf(req)}|${urn}:${guid}|${sheet}`;
+}
+
+// Longer questions are refused: no real question needs more, and a pasted page
+// would only burn tokens.
+const MAX_QUESTION_LENGTH = 500;
 
 // A request asked for something we refuse to even try (e.g. a malformed model id).
 class BadRequestError extends Error {}
@@ -1694,6 +2716,17 @@ router.post('/ask_agent_simple', async (req, res) => {
         if (!question) {
             return res.status(400).json({ success: false, message: 'A prompt is required.' });
         }
+        if (question.length > MAX_QUESTION_LENGTH) {
+            return res.status(400).json({ success: false, message: `Please keep questions under ${MAX_QUESTION_LENGTH} characters.` });
+        }
+
+        // 0. Is this visitor still within today's budget (and not asking too fast)?
+        const refused = usage.checkBefore(req);
+        if (refused) {
+            return res.status(refused.status).json({
+                success: false, limitReached: Boolean(refused.limitReached), message: refused.message, budget: usage.budgetOf(req)
+            });
+        }
 
         // 1. Which model (the one chosen in the page's dropdown), then load it
         //    (downloaded once, then served from memory).
@@ -1702,43 +2735,58 @@ router.post('/ask_agent_simple', async (req, res) => {
 
         // 2. Match the words to model names, pick the cheapest tier that can answer,
         //    and get back a plan that validatePlan has already checked.
-        const outcome = await answerQuestion(question, model);
+        const key = conversationKey(req, urn, guid);
+        const last = lastPlans.get(key);
+        const previous = last && Date.now() - last.at < FOLLOW_UP_MINUTES * 60 * 1000 ? last : null;
+        const outcome = await answerQuestion(question, model, previous);
         const { checked } = outcome;
 
         // Add up the tokens of every LLM call this question needed (1 or 2).
-        const usage = { promptTokens: 0, cachedTokens: 0, completionTokens: 0, totalTokens: 0 };
+        const tokens = { promptTokens: 0, cachedTokens: 0, completionTokens: 0, totalTokens: 0 };
         for (const call of outcome.calls) {
-            for (const field of Object.keys(usage)) {
-                usage[field] += call[field];
-                tokenTotals[field] += call[field];
+            for (const field of Object.keys(tokens)) {
+                tokens[field] += call[field];
             }
         }
+        usage.recordAfter(req, tokens.totalTokens); // counts towards this visitor's daily budget
         // One line per question in the server console: which tier, how many tokens, what plan.
-        console.log(`TIER ${outcome.tier} | ${usage.totalTokens} tokens | PLAN: ${JSON.stringify(outcome.plan)}`);
+        console.log(`TIER ${outcome.tier} | ${tokens.totalTokens} tokens | PLAN: ${JSON.stringify(outcome.plan)}`);
 
         // 3. Run it (or, if validation failed, the "result" is just the question).
         const result = checked.ok
-            ? runPlan(checked.plan, model)
+            ? runPlan(checked.plan, model, userOf(req))
             : { answer: checked.question, objectIds: [], data: null };
 
         const action = checked.ok ? checked.plan.action : 'clarify';
-        lastResults.set(`${urn}:${guid}`, result.objectIds);
+        // Remember this plan for a follow-up, if it found elements to follow up on.
+        // An answer that found NOTHING is a dead end, not a starting point: the next
+        // follow-up builds on the last answer that found something.
+        // The question text builds up ("steel beams on level 2 / and on level 3?"), so the
+        // LLM, and the invented-filter guard, can see where each filter came from.
+        const foundSomething = result.data?.count > 0 || result.data?.groups?.length > 0;
+        if (checked.ok && ['list', 'count', 'group', 'rank', 'total'].includes(action) && foundSomething) {
+            const asked = outcome.followUp && previous ? `${previous.question} / ${question}` : question;
+            remember(lastPlans, key, { question: asked.slice(-500), plan: outcome.plan, at: Date.now() });
+        }
+        remember(lastResults, `${userOf(req)}|${urn}:${guid}`, result.objectIds);
 
         return res.json({
             success: true,
-            action,                      // list | count | group | coordinates | clarify | reply
+            action,                      // list | count | group | rank | total | coordinates | clarify | reply
             answer: result.answer,       // text to show in the chat
             objectIds: result.objectIds, // ids to highlight in the Viewer
-            // `message` keeps v1's shape so the current frontend still works:
-            // element results for list/count, plain text for everything else.
-            message: (action === 'list' || action === 'count') ? result.data : result.answer,
+            // `message` keeps v1's shape so the current frontend still works: element
+            // results (a table + highlight) for list/count/rank/total, plain text otherwise.
+            message: ELEMENT_ACTIONS.has(action) ? result.data : result.answer,
             data: result.data,
             tier: outcome.tier,          // 0 = tiny intent prompt, 1 = small prompt, 2 = full prompt
+            followUp: outcome.followUp,  // true = built on the previous question
             plan: outcome.plan,          // the plan that ran: the first thing to look at when an answer is wrong
             // What code understood: "beam -> category Structural Framing", ...
             matched: outcome.match.matches.map(m => `${m.words} -> ${describeEntries(m.entries)}`),
             unmatched: outcome.match.unexplained,
-            token: { currentRequest: usage, calls: outcome.calls, total: tokenTotals },
+            token: { currentRequest: tokens, calls: outcome.calls },
+            budget: usage.budgetOf(req), // guests: today's tokens used / limit; signed in: no limit
             cache: { modelLoadedAt: model.loadedAt, modelElementCount: model.elementCount }
         });
     } catch (error) {
@@ -1751,8 +2799,14 @@ router.post('/ask_agent_simple', async (req, res) => {
 router.get('/ask_agent_simple', async (req, res) => {
     try {
         const { urn, guid } = await resolveModel(req.query);
-        const objectIds = lastResults.get(`${urn}:${guid}`) || [];
-        res.json({ success: true, model: { urn, guid }, message: objectIds.map(objectid => ({ objectid })) });
+        const objectIds = lastResults.get(`${userOf(req)}|${urn}:${guid}`) || [];
+        // With each id its externalId: SVF2 viewers number elements differently, and
+        // translate through the externalId (see toViewerIds in main.js).
+        const model = objectIds.length > 0 ? await getModel(urn, guid) : null;
+        const externalIds = new Map(model ? model.db.prepare(
+            `SELECT objectid, external_id FROM elements WHERE objectid IN (${placeholders(objectIds)})`
+        ).all(...objectIds).map(row => [row.objectid, row.external_id]) : []);
+        res.json({ success: true, model: { urn, guid }, message: objectIds.map(objectid => ({ objectid, externalId: externalIds.get(objectid) ?? null })) });
     } catch (error) {
         return sendError(res, error);
     }
@@ -1770,7 +2824,7 @@ router.put('/ask_agent_simple', async (req, res) => {
             coordinates = rest;
         }
 
-        setCoordinates(urn, guid, coordinates);
+        setCoordinates(userOf(req), urn, guid, coordinates);
         res.json({ success: true, model: { urn, guid }, count: Object.keys(coordinates).length });
     } catch (error) {
         return sendError(res, error);

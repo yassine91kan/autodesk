@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml" />
+    <title>Sign in · Augmented</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Montserrat:wght@600&display=swap" />
+    <link rel="stylesheet" href="assets/css/drawing-sheet.css" />
+    <link rel="stylesheet" href="assets/css/login.css" />
+  </head>
+  <body class="login-page">
+    <header class="topbar">
+      <span class="topbar__logo logo" aria-label="Augmented">
+        <img class="logo__mark" src="assets/images/augmented-mark.svg" width="47" height="36" alt="" />
+        <span class="logo__word">Augmented</span>
+      </span>
+    </header>
+
+    <!-- Sheet A-00 of the same set as the app, laid out like it: a drawing on the left,
+         the schedule column on the right (sign-in, notes, title block). -->
+    <main class="table">
+      <div class="sheet">
+        <div class="zones zones--top" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span></div>
+        <div class="zones zones--bottom" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span></div>
+        <div class="zones zones--left" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>
+        <div class="zones zones--right" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>
+
+        <div class="sheet__body">
+          <section class="drawing login-drawing" aria-labelledby="dwg-title">
+            <div class="view-title">
+              <span class="view-title__mark" aria-hidden="true">1</span>
+              <div class="view-title__text">
+                <h2 class="view-title__name" id="dwg-title">Typical frame</h2>
+                <p class="view-title__sub">Illustration · not to scale</p>
+              </div>
+            </div>
+
+            <figure class="login-drawing__view" id="sketch">
+              <!-- Asymmetric axonometric of a 3 x 2 bay, two-storey frame (generated geometry).
+                   Every member is its own element, so the script can select real sets. -->
+              <svg class="frame" viewBox="-192 -176 526 436" role="img" aria-labelledby="frameTitle">
+                <title id="frameTitle">Line drawing of a two-storey structural frame on grids 1 to 4 and A to C, with sets of columns and beams selected in orange in turn.</title>
+                <g class="frame__grid">
+                  <path class="" style="--n: 0" data-grid="A" d="M-27.3 -11L281.9 113.9" />
+                  <path class="" style="--n: 1" data-grid="B" d="M-83.9 36.6L225.3 161.5" />
+                  <path class="" style="--n: 2" data-grid="C" d="M-140.6 84.1L168.6 209" />
+                  <path class="" style="--n: 3" data-grid="1" d="M19.8 -16.6L-148.5 124.6" />
+                  <path class="" style="--n: 4" data-grid="2" d="M97.7 14.8L-70.6 156.1" />
+                  <path class="" style="--n: 5" data-grid="3" d="M175.6 46.3L7.2 187.6" />
+                  <path class="" style="--n: 6" data-grid="4" d="M253.5 77.8L85.1 219" />
+                </g>
+                <g class="frame__columns">
+                  <path class="" pathLength="1" style="--n: 0" data-kind="column" data-grid-num="1" data-grid-letter="A" d="M0 0L0 -160" />
+                  <path class="" pathLength="1" style="--n: 1" data-kind="column" data-grid-num="1" data-grid-letter="B" d="M-56.7 47.6L-56.7 -112.4" />
+                  <path class="" pathLength="1" style="--n: 2" data-kind="column" data-grid-num="1" data-grid-letter="C" d="M-113.4 95.1L-113.4 -64.9" />
+                  <path class="" pathLength="1" style="--n: 3" data-kind="column" data-grid-num="2" data-grid-letter="A" d="M77.9 31.5L77.9 -128.5" />
+                  <path class="" pathLength="1" style="--n: 4" data-kind="column" data-grid-num="2" data-grid-letter="B" d="M21.2 79L21.2 -81" />
+                  <path class="" pathLength="1" style="--n: 5" data-kind="column" data-grid-num="2" data-grid-letter="C" d="M-35.5 126.6L-35.5 -33.4" />
+                  <path class="" pathLength="1" style="--n: 6" data-kind="column" data-grid-num="3" data-grid-letter="A" d="M155.8 62.9L155.8 -97.1" />
+                  <path class="" pathLength="1" style="--n: 7" data-kind="column" data-grid-num="3" data-grid-letter="B" d="M99.1 110.5L99.1 -49.5" />
+                  <path class="" pathLength="1" style="--n: 8" data-kind="column" data-grid-num="3" data-grid-letter="C" d="M42.4 158.1L42.4 -1.9" />
+                  <path class="" pathLength="1" style="--n: 9" data-kind="column" data-grid-num="4" data-grid-letter="A" d="M233.7 94.4L233.7 -65.6" />
+                  <path class="" pathLength="1" style="--n: 10" data-kind="column" data-grid-num="4" data-grid-letter="B" d="M177 142L177 -18" />
+                  <path class="" pathLength="1" style="--n: 11" data-kind="column" data-grid-num="4" data-grid-letter="C" d="M120.3 189.5L120.3 29.5" />
+                </g>
+                <g class="frame__beams" data-level="Level 2">
+                  <path class="" pathLength="1" style="--n: 0" data-kind="beam" d="M0 -80L77.9 -48.5" />
+                  <path class="" pathLength="1" style="--n: 1" data-kind="beam" d="M77.9 -48.5L155.8 -17.1" />
+                  <path class="" pathLength="1" style="--n: 2" data-kind="beam" d="M155.8 -17.1L233.7 14.4" />
+                  <path class="" pathLength="1" style="--n: 3" data-kind="beam" d="M-56.7 -32.4L21.2 -1" />
+                  <path class="" pathLength="1" style="--n: 4" data-kind="beam" d="M21.2 -1L99.1 30.5" />
+                  <path class="" pathLength="1" style="--n: 5" data-kind="beam" d="M99.1 30.5L177 62" />
+                  <path class="" pathLength="1" style="--n: 6" data-kind="beam" d="M-113.4 15.1L-35.5 46.6" />
+                  <path class="" pathLength="1" style="--n: 7" data-kind="beam" d="M-35.5 46.6L42.4 78.1" />
+                  <path class="" pathLength="1" style="--n: 8" data-kind="beam" d="M42.4 78.1L120.3 109.5" />
+                  <path class="" pathLength="1" style="--n: 9" data-kind="beam" d="M0 -80L-56.7 -32.4" />
+                  <path class="" pathLength="1" style="--n: 10" data-kind="beam" d="M-56.7 -32.4L-113.4 15.1" />
+                  <path class="" pathLength="1" style="--n: 11" data-kind="beam" d="M77.9 -48.5L21.2 -1" />
+                  <path class="" pathLength="1" style="--n: 12" data-kind="beam" d="M21.2 -1L-35.5 46.6" />
+                  <path class="" pathLength="1" style="--n: 13" data-kind="beam" d="M155.8 -17.1L99.1 30.5" />
+                  <path class="" pathLength="1" style="--n: 14" data-kind="beam" d="M99.1 30.5L42.4 78.1" />
+                  <path class="" pathLength="1" style="--n: 15" data-kind="beam" d="M233.7 14.4L177 62" />
+                  <path class="" pathLength="1" style="--n: 16" data-kind="beam" d="M177 62L120.3 109.5" />
+                </g>
+                <g class="frame__beams" data-level="Roof">
+                  <path class="" pathLength="1" style="--n: 0" data-kind="beam" d="M0 -160L77.9 -128.5" />
+                  <path class="" pathLength="1" style="--n: 1" data-kind="beam" d="M77.9 -128.5L155.8 -97.1" />
+                  <path class="" pathLength="1" style="--n: 2" data-kind="beam" d="M155.8 -97.1L233.7 -65.6" />
+                  <path class="" pathLength="1" style="--n: 3" data-kind="beam" d="M-56.7 -112.4L21.2 -81" />
+                  <path class="" pathLength="1" style="--n: 4" data-kind="beam" d="M21.2 -81L99.1 -49.5" />
+                  <path class="" pathLength="1" style="--n: 5" data-kind="beam" d="M99.1 -49.5L177 -18" />
+                  <path class="" pathLength="1" style="--n: 6" data-kind="beam" d="M-113.4 -64.9L-35.5 -33.4" />
+                  <path class="" pathLength="1" style="--n: 7" data-kind="beam" d="M-35.5 -33.4L42.4 -1.9" />
+                  <path class="" pathLength="1" style="--n: 8" data-kind="beam" d="M42.4 -1.9L120.3 29.5" />
+                  <path class="" pathLength="1" style="--n: 9" data-kind="beam" d="M0 -160L-56.7 -112.4" />
+                  <path class="" pathLength="1" style="--n: 10" data-kind="beam" d="M-56.7 -112.4L-113.4 -64.9" />
+                  <path class="" pathLength="1" style="--n: 11" data-kind="beam" d="M77.9 -128.5L21.2 -81" />
+                  <path class="" pathLength="1" style="--n: 12" data-kind="beam" d="M21.2 -81L-35.5 -33.4" />
+                  <path class="" pathLength="1" style="--n: 13" data-kind="beam" d="M155.8 -97.1L99.1 -49.5" />
+                  <path class="" pathLength="1" style="--n: 14" data-kind="beam" d="M99.1 -49.5L42.4 -1.9" />
+                  <path class="" pathLength="1" style="--n: 15" data-kind="beam" d="M233.7 -65.6L177 -18" />
+                  <path class="" pathLength="1" style="--n: 16" data-kind="beam" d="M177 -18L120.3 29.5" />
+                </g>
+                <g class="frame__hits"></g>
+                <g class="frame__bubbles">
+                  <g class="frame__bubble" style="--n: 0" data-grid="A"><circle cx="307.6" cy="124.3" r="11" /><text x="307.6" y="124.3">A</text></g>
+                  <g class="frame__bubble" style="--n: 1" data-grid="B"><circle cx="251" cy="171.9" r="11" /><text x="251" y="171.9">B</text></g>
+                  <g class="frame__bubble" style="--n: 2" data-grid="C"><circle cx="194.3" cy="219.4" r="11" /><text x="194.3" y="219.4">C</text></g>
+                  <g class="frame__bubble" style="--n: 3" data-grid="1"><circle cx="-167.2" cy="140.3" r="11" /><text x="-167.2" y="140.3">1</text></g>
+                  <g class="frame__bubble" style="--n: 4" data-grid="2"><circle cx="-89.3" cy="171.8" r="11" /><text x="-89.3" y="171.8">2</text></g>
+                  <g class="frame__bubble" style="--n: 5" data-grid="3"><circle cx="-11.5" cy="203.3" r="11" /><text x="-11.5" y="203.3">3</text></g>
+                  <g class="frame__bubble" style="--n: 6" data-grid="4"><circle cx="66.4" cy="234.7" r="11" /><text x="66.4" y="234.7">4</text></g>
+                </g>
+                <g class="frame__levels">
+                  <text class="frame__level" data-level="Level 2" x="-127.4" y="15.1">LEVEL 2</text>
+                  <text class="frame__level" data-level="Roof" x="-127.4" y="-64.9">ROOF</text>
+                </g>
+              </svg>
+              <figcaption class="login-legend">
+                <span class="login-legend__swatch" aria-hidden="true"></span>
+                Selected elements: how the assistant shows an answer in the model
+              </figcaption>
+            </figure>
+          </section>
+
+          <aside class="schedule login-panel" aria-labelledby="login-title">
+            <div class="view-title login-panel__title">
+              <span class="view-title__mark" aria-hidden="true">0</span>
+              <div class="view-title__text">
+                <h1 class="view-title__name" id="login-title">Sign in</h1>
+                <p class="view-title__sub">BIM model assistant</p>
+              </div>
+            </div>
+
+            <form class="query login-form" id="loginForm" method="post" action="/login">
+              <!-- Where to go after signing in (filled from the address by the script below). -->
+              <input type="hidden" name="next" id="next" value="/" />
+              <label class="caps" for="password">Access password</label>
+              <div class="query__row">
+                <div class="login-field">
+                  <input type="password" id="password" name="password" autocomplete="current-password" spellcheck="false" required autofocus aria-describedby="loginError capsNote loginHint" />
+                  <button class="login-field__toggle" type="button" id="showPassword" aria-controls="password" aria-pressed="false">Show</button>
+                </div>
+                <button type="submit" id="signIn" aria-label="Sign in">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4.5 12h13M12.5 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </button>
+              </div>
+              <span class="progress-line" id="signingIn" hidden></span>
+              <p class="login-message" id="loginError" role="alert" hidden></p>
+              <p class="login-message login-message--quiet" id="capsNote" hidden>Caps Lock is on.</p>
+              <p class="query__hint" id="loginHint">Enter to sign in</p>
+            </form>
+
+            <div class="schedule__log notes login-notes">
+              <h2 class="caps">General notes</h2>
+              <ol>
+                <li>Augmented answers questions about the building models in BV's model library and selects the matching elements in 3D.</li>
+                <li>Sign in with the team access password. You stay signed in on this device for 7 days, or until you log out.</li>
+                <li>No password yet? Ask your BV contact.</li>
+              </ol>
+            </div>
+
+            <dl class="title-block">
+              <div class="title-block__cell">
+                <dt>Project</dt>
+                <dd>Augmented</dd>
+              </div>
+              <div class="title-block__cell">
+                <dt>Sheet</dt>
+                <dd>A-00</dd>
+              </div>
+              <div class="title-block__cell">
+                <dt>Access</dt>
+                <dd>BV team</dd>
+              </div>
+              <div class="title-block__cell">
+                <dt>Date</dt>
+                <dd id="tbDate">–</dd>
+              </div>
+            </dl>
+          </aside>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      // The parts the server can't fill in: where to return to (including the "#model.rvt"
+      // part, which browsers never send to the server), messages, and small field behaviours.
+      const params = new URLSearchParams(location.search);
+      const next = params.get('next') || '/';
+      document.getElementById('next').value = next.startsWith('/') ? next + location.hash : '/';
+
+      const password = document.getElementById('password');
+      const messages = {
+        wrong: 'That password is not correct. Check it and try again.',
+        locked: 'Too many attempts from this connection. Wait 15 minutes, then try again.',
+        expired: 'Your session ended. Sign in again to continue where you were.',
+        limit: 'You have used today\'s free questions. Sign in to keep asking, or come back tomorrow.',
+        member: 'This part of Augmented needs signing in: uploading models and the other assistants.'
+      };
+      const error = messages[params.get('error')];
+      if (error) {
+        const box = document.getElementById('loginError');
+        box.textContent = error;
+        box.hidden = false;
+        if (params.get('error') === 'wrong') password.setAttribute('aria-invalid', 'true');
+      }
+
+      // Show / hide the password (long passphrases are easier to type when you can see them).
+      const toggle = document.getElementById('showPassword');
+      toggle.addEventListener('click', () => {
+        const show = password.type === 'password';
+        password.type = show ? 'text' : 'password';
+        toggle.textContent = show ? 'Hide' : 'Show';
+        toggle.setAttribute('aria-pressed', String(show));
+        password.focus();
+      });
+
+      // Caps Lock warning: only meaningful while typing in the field.
+      const capsNote = document.getElementById('capsNote');
+      const checkCaps = event => {
+        if (event.getModifierState) capsNote.hidden = !event.getModifierState('CapsLock');
+      };
+      password.addEventListener('keydown', checkCaps);
+      password.addEventListener('keyup', checkCaps);
+      password.addEventListener('blur', () => { capsNote.hidden = true; });
+
+      // While the browser posts the form: one submission only, and visible progress.
+      const form = document.getElementById('loginForm');
+      form.addEventListener('submit', () => {
+        password.removeAttribute('aria-invalid');
+        document.getElementById('signIn').disabled = true;
+        document.getElementById('signingIn').hidden = false;
+        form.setAttribute('aria-busy', 'true');
+      });
+      // Coming back with the Back button restores the page from cache: make it usable again.
+      window.addEventListener('pageshow', () => {
+        document.getElementById('signIn').disabled = false;
+        document.getElementById('signingIn').hidden = true;
+        form.removeAttribute('aria-busy');
+      });
+
+      document.getElementById('tbDate').textContent =
+        new Date().toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+    </script>
+
+    <script>
+      // The drawing: it drafts itself, then selects sets of members in turn, in orange,
+      // the way the app shows an answer in the model (columns on a grid line, beams on a level).
+      (() => {
+        const figure = document.getElementById('sketch');
+        if (!figure || !figure.offsetParent) return;   // drawing hidden (phones): no animation work at all
+
+        const svg = figure.querySelector('.frame');
+        const hits = svg.querySelector('.frame__hits');
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // Each set: which members light up, and which grid bubble or level tag lights with them.
+        const SETS = [
+          { members: '[data-kind="column"][data-grid-letter="B"]', tag: '.frame__bubble[data-grid="B"]' },
+          { members: '.frame__beams[data-level="Level 2"] path', tag: '.frame__level[data-level="Level 2"]' },
+          { members: '[data-kind="column"][data-grid-num="3"]', tag: '.frame__bubble[data-grid="3"]' },
+          { members: '.frame__beams[data-level="Roof"] path', tag: '.frame__level[data-level="Roof"]' }
+        ];
+
+        const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+        // The loop only runs while the tab is visible.
+        const whileVisible = async () => {
+          while (document.hidden) {
+            await new Promise(resolve => document.addEventListener('visibilitychange', resolve, { once: true }));
+          }
+        };
+
+        // Draws orange copies of the set's members on the selection layer, one after another.
+        function select(set) {
+          const members = [...svg.querySelectorAll(set.members)];
+          hits.replaceChildren(...members.map((member, index) => {
+            const copy = member.cloneNode(false);
+            copy.setAttribute('class', 'frame__hit');
+            copy.style.setProperty('--i', index);
+            return copy;
+          }));
+          svg.querySelector(set.tag)?.classList.add('is-selected');
+        }
+
+        async function clearSelection() {
+          figure.classList.add('is-clearing');
+          await wait(300);
+          hits.replaceChildren();
+          svg.querySelectorAll('.is-selected').forEach(tag => tag.classList.remove('is-selected'));
+          figure.classList.remove('is-clearing');
+        }
+
+        async function run() {
+          if (!reduce) {
+            figure.classList.add('is-drafting');           // the drawing drafts itself (CSS)
+            await wait(2900);
+            figure.classList.remove('is-drafting');
+          }
+          for (let k = 0; ; k++) {
+            await whileVisible();
+            select(SETS[k % SETS.length]);
+            await wait(3800);
+            await clearSelection();
+            await wait(500);
+          }
+        }
+
+        run();
+      })();
+    </script>
+  </body>
+</html>

@@ -53,6 +53,9 @@ initViewer(document.getElementById('preview')).then(viewer => {
 // ---------------------------------------------------------------------------
 // Model selection and upload
 // ---------------------------------------------------------------------------
+// The model selected when the address doesn't name one ("rstbasicsampleproject.rvt").
+const DEFAULT_MODEL_NAME = /^rstbasicsampleproject\.rvt$/i;
+
 // `wanted` is the model to select: its file name (from the address) or its URN (after an upload).
 async function setupModelSelection(viewer, wanted) {
     const dropdown = document.getElementById('models');
@@ -63,8 +66,11 @@ async function setupModelSelection(viewer, wanted) {
             throw new Error(await resp.text());
         }
         const models = await resp.json();
+        // No model in the address (or one that no longer exists): start with the RST Basic sample.
+        const found = models.some(model => model.name === wanted || model.urn === wanted);
+        const start = found ? wanted : models.find(model => DEFAULT_MODEL_NAME.test(model.name))?.name;
         for (const model of models) {
-            const isWanted = model.name === wanted || model.urn === wanted;
+            const isWanted = model.name === start || model.urn === start;
             dropdown.add(new Option(model.name, model.urn, false, isWanted));
         }
         dropdown.onchange = () => onModelSelected(viewer, dropdown.value);
@@ -96,6 +102,7 @@ async function setupModelUpload(viewer) {
         showNotification(`Uploading ${file.name}. Do not reload the page.`);
         try {
             const resp = await fetch('/api/models', { method: 'POST', body: data });
+            if (resp.status === 401) return signInAgain('member');   // guests can't upload
             if (!resp.ok) {
                 throw new Error(await resp.text());
             }
@@ -191,6 +198,36 @@ function setModelName(name) {
     badge.title = label;
 }
 
+// The server answered 401 (this needs signing in): go to the sign-in page and come
+// back to this model afterwards. `reason` picks the message the sign-in page shows.
+function signInAgain(reason = 'member') {
+    location.assign(signInUrl(reason));
+}
+function signInUrl(reason) {
+    return `/login?error=${reason}&next=${encodeURIComponent('/' + location.hash)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Guest or signed in?
+// ---------------------------------------------------------------------------
+// Anyone can ask as a guest, with a daily token budget. The top bar shows "Sign in"
+// to guests and "Log out" to signed-in users.
+let account = { kind: 'guest', budget: null };
+async function loadAccount() {
+    try {
+        const resp = await fetch('/api/me');
+        if (resp.ok) account = await resp.json();
+    } catch (err) {
+        console.warn('Could not check the sign-in state.', err);
+    }
+    const isGuest = account.kind === 'guest';
+    const signIn = document.getElementById('signIn');
+    signIn.hidden = !isGuest;
+    signIn.href = signInUrl('');
+    document.getElementById('logOut').hidden = isGuest;
+}
+loadAccount();
+
 // The model chosen in the dropdown. Every question and status check is sent with it,
 // so the assistant always answers about the model you are looking at.
 function currentUrn() {
@@ -214,6 +251,7 @@ async function loadIndexStatus(urn) {
     try {
         // Also loads and indexes the model on the server, so the first question is fast.
         const resp = await fetch(`/model_status?urn=${encodeURIComponent(urn)}`);
+        if (resp.status === 401) return signInAgain();
         const data = await resp.json();
         if (data.ready) {
             next = { state: 'ready', ...data };
@@ -348,6 +386,30 @@ function propValue(props, names) {
         if (prop && prop.displayValue !== '' && prop.displayValue !== null && prop.displayValue !== '<By Category>') return prop;
     }
     return null;
+}
+
+// ---------------------------------------------------------------------------
+// The server's element ids -> the Viewer's ids
+// ---------------------------------------------------------------------------
+// The server finds elements by the id in the model's property data (objectid). The
+// Viewer has its own id per element (dbId). For SVF models they are the same number,
+// but SVF2 models (e.g. Seaport) number them differently: selecting "4521" then picks
+// the WRONG element. Every element also has a permanent externalId (Revit's UniqueId),
+// the same in every format, so we translate through that.
+const externalIdMaps = new WeakMap();   // Viewer model -> { externalId: dbId }, read once per model
+function externalIdMap(model) {
+    if (!externalIdMaps.has(model)) {
+        externalIdMaps.set(model, new Promise(resolve => model.getExternalIdMapping(resolve, () => resolve({}))));
+    }
+    return externalIdMaps.get(model);
+}
+// Returns the elements with `id` = the Viewer's dbId, and `modelId` = the server's id
+// (shown in the table). Without a loaded model, or an externalId, the id stays as it is.
+async function toViewerIds(elements) {
+    const model = currentViewer?.model;
+    if (!model) return elements.map(e => ({ ...e, modelId: e.id }));
+    const map = await externalIdMap(model);
+    return elements.map(e => ({ ...e, modelId: e.id, id: (e.externalId && map[e.externalId]) ?? e.id }));
 }
 
 async function describeElements(elements) {
@@ -553,6 +615,16 @@ function renderText(entry, body, text) {
     makeLatest(entry);
 }
 
+// Today's free tokens are used up: say so, and offer signing in instead of "Try again".
+function renderLimit(entry, body, message) {
+    settle(body);
+    body.classList.add('is-error');
+    const signIn = el('a', 'btn-line', 'Sign in to keep asking');
+    signIn.href = signInUrl('limit');
+    body.append(el('p', 'entry__flag', 'Daily limit reached'), el('p', null, message), signIn);
+    makeLatest(entry);
+}
+
 function renderError(entry, body, message, retry) {
     settle(body);
     body.classList.add('is-error');
@@ -568,7 +640,7 @@ function renderError(entry, body, message, retry) {
 
 async function renderElements(entry, body, data) {
     settle(body);
-    const elements = (data.message.elements || []).map(e => ({ id: e.id, name: e.name }));
+    const elements = await toViewerIds((data.message.elements || []).map(e => ({ id: e.id, externalId: e.externalId, name: e.name })));
 
     if (elements.length === 0) {
         body.append(el('p', 'result-summary', 'No matching elements found in this model.'));
@@ -615,7 +687,7 @@ async function renderElements(entry, body, data) {
             const type = el('span', 'result-item__name');
             type.append(el('span', null, info?.type || stripId(element.name)));
             if (info?.material) type.append(el('small', null, info.material));
-            row.append(type, el('span', 'result-item__level', info?.level || DASH), el('span', 'result-item__id', String(element.id)));
+            row.append(type, el('span', 'result-item__level', info?.level || DASH), el('span', 'result-item__id', String(element.modelId ?? element.id)));
             row.addEventListener('click', () => {
                 table.querySelectorAll('[aria-pressed="true"]').forEach(other => other.setAttribute('aria-pressed', 'false'));
                 row.setAttribute('aria-pressed', 'true');
@@ -670,10 +742,46 @@ async function renderElements(entry, body, data) {
     renderRows();
 }
 
+// Questions above this many tokens (prompt + answer, all LLM calls) get a notice.
+const TOKEN_WARNING = 2000;
+
 function updateTokens(data) {
     const usage = data?.token?.currentRequest;
     document.getElementById('compToken').textContent = usage?.completionTokens ?? 0;
     document.getElementById('promptToken').textContent = usage?.promptTokens ?? 0;
+    if ((usage?.totalTokens ?? 0) > TOKEN_WARNING) {
+        showToast('High token use',
+            `This question used ${usage.totalTokens.toLocaleString()} tokens (the limit is ${TOKEN_WARNING.toLocaleString()}). ` +
+            'It needed the full model description. Naming the category, level or material directly keeps questions cheaper.');
+    }
+}
+
+// Guests: past 80% of today's budget, say how much is left (once per page visit,
+// so it doesn't pop up after every question).
+let budgetWarned = false;
+function warnAboutBudget(budget) {
+    if (!budget || budget.kind !== 'guest' || !budget.warn || budgetWarned) return;
+    budgetWarned = true;
+    const left = Math.max(0, budget.limit - budget.used);
+    showToast('Free questions almost used',
+        `You have about ${left.toLocaleString()} of today's ${budget.limit.toLocaleString()} free tokens left. Sign in to keep asking without a limit.`);
+}
+
+// A small notice in the corner that closes itself after 8 s (or with its × button).
+// Unlike showNotification it doesn't cover the model, so work can go on.
+let toastTimer;
+function showToast(title, message) {
+    document.querySelector('.toast')?.remove();
+    clearTimeout(toastTimer);
+    const toast = el('div', 'toast');
+    toast.setAttribute('role', 'status');   // screen readers announce it without moving focus
+    const close = el('button', 'toast__close', '×');
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Close');
+    close.addEventListener('click', () => toast.remove());
+    toast.append(el('strong', 'toast__title', title), el('p', 'toast__text', message), close);
+    document.body.append(toast);
+    toastTimer = setTimeout(() => toast.remove(), 8000);
 }
 
 function setBusy(value) {
@@ -682,6 +790,12 @@ function setBusy(value) {
     promptBox.setAttribute('aria-disabled', String(value));
 }
 
+// Which sheet the questions belong to. The server remembers the last question per
+// sheet, so "and on level 3?" builds on it. New sheet (and picking another model)
+// starts a new id: then the next question starts afresh.
+const newConversationId = () => (crypto.randomUUID?.() || String(Date.now()) + Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9-]/g, '');
+let conversationId = newConversationId();
+
 async function ask(prompt) {
     setBusy(true);
     const { entry, body } = addEntry(prompt);
@@ -689,8 +803,9 @@ async function ask(prompt) {
         const response = await fetch(`/${routeselect}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, urn: currentUrn() })   // answer about the model in the dropdown
+            body: JSON.stringify({ prompt, urn: currentUrn(), conversationId })   // the model in the dropdown, this sheet
         });
+        if (response.status === 401) return signInAgain('member');
 
         let data;
         try {
@@ -700,11 +815,16 @@ async function ask(prompt) {
                 ? 'The server sent an answer the page could not read.'
                 : `The server returned an error (${response.status}).`);
         }
+        if (data?.limitReached) {
+            showToast('Daily limit reached', 'Sign in to keep asking, or come back tomorrow: the free tokens start again every day.');
+            return renderLimit(entry, body, data.message);
+        }
         if (!response.ok) {
             throw new Error(typeof data?.message === 'string' ? data.message : `The server returned an error (${response.status}).`);
         }
 
         updateTokens(data);
+        warnAboutBudget(data.budget);
         // If the status check failed earlier (e.g. the model was still processing),
         // a working answer means the model is ready now: refresh the chip.
         if (data.cache && indexStatus.state !== 'ready') loadIndexStatus(currentUrn());
@@ -712,6 +832,12 @@ async function ask(prompt) {
             await renderElements(entry, body, data);
         } else {
             renderText(entry, body, data.message ?? '');
+        }
+        // "and on level 3?": say that the answer builds on the previous question.
+        if (data.followUp) {
+            const note = el('p', 'entry__method');
+            note.append(el('span', 'caps', 'Follow-up'), el('span', null, 'Built on your previous question. Press New sheet to start afresh.'));
+            body.prepend(note);
         }
     } catch (err) {
         console.error('Query failed:', err);
@@ -763,6 +889,7 @@ document.getElementById('newSheet').addEventListener('click', () => {
 
 // Also used when a different model is picked (see onModelSelected).
 function startNewSheet() {
+    conversationId = newConversationId();   // follow-up questions don't reach across sheets
     log.replaceChildren(notesTemplate.cloneNode(true));
     entryCount = 0;
     updateCounts();

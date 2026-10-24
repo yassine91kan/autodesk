@@ -1,0 +1,179 @@
+/* =====================================================================
+   Sign-in sheet (A-00). Laid out with the app's own classes from
+   drawing-sheet.css (sheet__body, drawing, view-title, schedule, query,
+   notes, title-block, progress-line); this file adds only what they lack.
+   ===================================================================== */
+
+/* ---------- Schedule column: title, then the form, then notes ---------- */
+.login-panel { grid-template-rows: auto auto minmax(0, 1fr) auto; }
+.login-panel__title { padding: 16px 16px 14px; }
+
+/* ---------- The password field: the query box's look ---------- */
+.login-field { position: relative; min-width: 0; }
+.login-field input {
+  width: 100%;
+  height: 46px;
+  padding: 0 64px 0 12px;              /* room for the Show button */
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  background: var(--sheet);
+  color: var(--ink);
+  font: 15px var(--sans);
+  letter-spacing: 0.04em;
+}
+.login-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.22);
+}
+/* The browser's autofill paints its own yellow or blue: keep the sheet's ivory. */
+.login-field input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 40px var(--sheet) inset;
+  -webkit-text-fill-color: var(--ink);
+  caret-color: var(--accent);
+}
+.login-field input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 40px var(--sheet) inset, 0 0 0 3px rgba(217, 119, 87, 0.22);
+}
+/* Hide Edge's own reveal eye: the Show button does that job, once. */
+.login-field input::-ms-reveal { display: none; }
+
+/* Show / Hide: a quiet text button inside the field (overrides `.query button`). */
+.query .login-field__toggle {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  height: 32px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink-2);
+  font: 600 12px var(--caps);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.query .login-field__toggle:hover { background: var(--hover); color: var(--ink); }
+.query .login-field__toggle:active { transform: none; background: var(--pressed); }
+
+.login-form .query__row button[type="submit"] { min-height: 46px; }
+
+/* Messages under the field. The error uses the app's neutral "not answered" style,
+   so orange keeps its one meaning: what the assistant selected. */
+.login-message {
+  margin: 2px 0 0;
+  padding: 9px 12px;
+  border: 1px solid var(--amber);
+  background: var(--amber-tint);
+  color: var(--ink);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.login-message--quiet { padding: 0; border: 0; background: none; color: var(--ink-2); font-size: 13px; }
+.login-message[hidden], .progress-line[hidden] { display: none; }
+
+/* ---------- General notes ---------- */
+.login-notes { border-top: 1px solid var(--ink); padding-top: 4px; }
+.login-notes h2 { margin: 14px 0 8px; color: var(--ink); font-size: 13px; }
+.login-notes ol { max-width: 46ch; }
+
+/* ---------- The drawing ---------- */
+.login-drawing__view {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+  margin: 0 16px 16px;
+  padding: 24px 24px 14px;
+  border: 1px solid var(--construct);   /* the viewport frame, like the app's 3D view */
+}
+.frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 720px;
+  max-height: 560px;
+  margin: auto;
+  overflow: visible;
+}
+.frame path { fill: none; stroke-linecap: round; }
+/* Grid lines: thin centre lines (long dash, dot), as on any general arrangement. */
+.frame__grid { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 14 4 2 4; }
+.frame__beams { stroke: var(--ink); stroke-width: 1.6; }
+.frame__columns { stroke: var(--ink); stroke-width: 2.2; }
+.frame__bubble circle { fill: var(--sheet); stroke: var(--ink); stroke-width: 1.3; transition: fill 240ms var(--ease-out), stroke 240ms var(--ease-out); }
+.frame__bubble text {
+  fill: var(--ink);
+  font: 700 12px var(--caps);
+  letter-spacing: 0.02em;
+  text-anchor: middle;
+  dominant-baseline: central;
+  transition: fill 240ms var(--ease-out);
+}
+.frame__level {
+  fill: var(--ink-2);
+  font: 600 11px var(--caps);
+  letter-spacing: 0.08em;
+  text-anchor: end;
+  dominant-baseline: central;
+  transition: fill 240ms var(--ease-out);
+}
+
+/* ---------- The answer: matching members drawn in orange, one after another ---------- */
+.frame__hits { transition: opacity 280ms ease-in; }
+.frame__hit {
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-dasharray: 1;
+  animation: frame-draft 520ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 55ms);
+}
+.is-clearing .frame__hits { opacity: 0; }
+/* The grid bubble or level tag the question was about lights up, like the app's sheet zones. */
+.frame__bubble.is-selected circle { fill: var(--accent-tint); stroke: var(--accent); stroke-width: 2; }
+.frame__bubble.is-selected text,
+.frame__level.is-selected { fill: var(--accent-ink); }
+
+/* ---------- Drafting: the drawing draws itself once, on arrival ----------
+   Only while the script sets .is-drafting; without it the drawing is simply there. */
+@keyframes frame-draft { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes frame-fade { from { opacity: 0; } }
+@keyframes frame-land { from { opacity: 0; transform: scale(0.6); } }
+
+.is-drafting .frame__grid path { animation: frame-fade 600ms var(--ease-out) both; animation-delay: calc(var(--n) * 60ms); }
+.is-drafting .frame__bubble {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: frame-land 420ms var(--ease-out) both;
+  animation-delay: calc(420ms + var(--n) * 50ms);
+}
+.is-drafting .frame__columns path { stroke-dasharray: 1; animation: frame-draft 520ms var(--ease-out) both; animation-delay: calc(820ms + var(--n) * 45ms); }
+.is-drafting .frame__beams path { stroke-dasharray: 1; animation: frame-draft 420ms var(--ease-out) both; }
+.is-drafting .frame__beams[data-level="Level 2"] path { animation-delay: calc(1480ms + var(--n) * 24ms); }
+.is-drafting .frame__beams[data-level="Roof"] path { animation-delay: calc(1820ms + var(--n) * 24ms); }
+.is-drafting .frame__level { animation: frame-fade 500ms var(--ease-out) both; animation-delay: 2150ms; }
+
+.login-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+.login-legend__swatch { flex: none; width: 22px; height: 4px; border-radius: 2px; background: var(--accent); }
+
+/* ---------- Tablets and phones: the sign-in column only ---------- */
+@media (max-width: 860px) {
+  .login-drawing { display: none; }      /* an illustration: the task comes first on a small screen */
+  .login-panel { border-top: 0; }         /* no double rule now that it opens the sheet body */
+  .login-panel__title { padding: 14px 12px 12px; }
+}
+
+/* Reduced motion: the script skips drafting; selections appear without drawing in.
+   Their colour and fade changes stay, so each selection still reads. */
+@media (prefers-reduced-motion: reduce) {
+  .frame__hit { animation: none; }
+}

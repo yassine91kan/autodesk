@@ -1,0 +1,44 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "montserrat",
+        "createdAt": "2026-10-13T03:45:57.491Z",
+        "reason": "User confirmed: Montserrat is only the Augmented logo wordmark, per the approved redesign's brand commitment (redesign-claude/PRODUCT.md)"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "wwwroot/index.html",
+          "wwwroot/login.html"
+        ],
+        "createdAt": "2026-10-13T03:45:57.538Z",
+        "reason": "User confirmed: the approved Augmented drawing-sheet design (ivory paper on a warm grey table, 11 Oct 2026)"
+      },
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "wwwroot/index.html",
+          "wwwroot/login.html"
+        ],
+        "createdAt": "2026-10-13T03:45:57.588Z",
+        "reason": "Agent: .progress-line is a loading indicator shown only while a request is in flight, not auto-scrolling content"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "wwwroot/index.html",
+          "wwwroot/login.html"
+        ],
+        "createdAt": "2026-10-13T03:45:57.640Z",
+        "reason": "Agent: sheet__body is the drawing sheet's inner frame; its columns sit on the frame lines by design and carry their own padding"
+      }
+    ]
+  }
+}

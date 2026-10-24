@@ -1,0 +1,450 @@
+{
+  "model": {
+    "name": "Seaport-Civic-Center_Architecture.rvt",
+    "urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6ZnFwdGd0Z2Q2N2dnNGd2dWJhZ2VpdmpweHVzdW9pbXMtYmFzaWMtYXBwL1NlYXBvcnQtQ2l2aWMtQ2VudGVyX0FyY2hpdGVjdHVyZS5ydnQ"
+  },
+  "ranAt": "2026-10-18T23:27:26.307Z",
+  "results": [
+    {
+      "id": "S04",
+      "group": "families and types",
+      "question": "Show me the curtain walls",
+      "expected": "6539 elements",
+      "outcome": "PASS",
+      "why": "",
+      "stable": true,
+      "outcomes": [
+        "PASS"
+      ],
+      "tier": 0,
+      "tokens": 106,
+      "ms": 1599,
+      "answer": "Found 6539 elements where Family is \"Curtain Wall\". Showing the first 500.",
+      "plan": {
+        "action": "list",
+        "category": null,
+        "filters": [
+          {
+            "properties": [
+              "Element.Family"
+            ],
+            "op": "equals",
+            "value": [
+              "Curtain Wall"
+            ]
+          }
+        ],
+        "groupBy": null
+      }
+    },
+    {
+      "id": "S05",
+      "group": "families and types",
+      "question": "How many toilets are there?",
+      "expected": "40 elements",
+      "outcome": "PASS",
+      "why": "",
+      "stable": true,
+      "outcomes": [
+        "PASS"
+      ],
+      "tier": 0,
+      "tokens": 107,
+      "ms": 1537,
+      "answer": "There are 40 elements where Type is \"Toilet\".",
+      "plan": {
+        "action": "count",
+        "category": null,
+        "filters": [
+          {
+            "properties": [
+              "Element.Type"
+            ],
+            "op": "equals",
+            "value": [
+              "Toilet"
+            ]
+          }
+        ],
+        "groupBy": null
+      }
+    },
+    {
+      "id": "S06",
+      "group": "families and types",
+      "question": "How many chairs are there?",
+      "expected": "348 or 528 elements",
+      "outcome": "PASS",
+      "why": "",
+      "stable": true,
+      "outcomes": [
+        "PASS"
+      ],
+      "tier": 0,
+      "tokens": 107,
+      "ms": 891,
+      "answer": "There are 528 elements where Family is one of \"Chair-Breuer\", \"Chair-Corbu\", \"Chair-Task Arms\", \"Table-Dining Round w Chairs\". Showing the first 500.",
+      "plan": {
+        "action": "count",
+        "category": null,
+        "filters": [
+          {
+            "properties": [
+              "Element.Family"
+            ],
+            "op": "equals",
+            "value": [
+              "Chair-Breuer",
+              "Chair-Corbu",
+              "Chair-Task Arms",
+              "Table-Dining Round w Chairs"
+            ]
+          }
+        ],
+        "groupBy": null
+      }
+    },
+    {
+      "id": "S07",
+      "group": "families and types",
+      "question": "Show me the precast stairs",
+      "expected": "36 elements",
+      "outcome": "PASS",
+      "why": "",
+      "stable": true,
+      "outcomes": [
+        "PASS"
+      ],
+      "tier": 0,
+      "tokens": 107,
+      "ms": 909,
+      "answer": "Found 36 elements where Family is \"Precast Stair\".",
+      "plan": {
+        "action": "list",
+        "category": null,
+        "filters": [
+          {
+            "properties": [
+              "Element.Family"
+            ],
+            "op": "equals",
+            "value": [
+              "Precast Stair"
+            ]
+          }
+        ],
+        "groupBy": null
+      }
+    },
+    {
+      "id": "S08",
+      "group": "levels",
+      "question": "Doors on level 2",
+      "expected": "28 elements",
+      "outcome": "PASS",
+      "why": "",
+      "stable": true,
+      "outcomes": [
+        "PASS"
+      ],
+      "tier": 0,
+      "tokens": 106,
+      "ms": 812,
+      "answer": "Found 28 Doors elements where Level is \"O-Level 2\".",
+      "plan": {
+        "action": "list",
+        "category": "Doors",
+        "filters": [
+          {
+            "properties": [
+              "Constraints.Level"
+            ],
+            "op": "equals",
+            "value": [
+              "O-Level 2"
+            ]
+          }
+        ],
+        "groupBy": null
+      }
+    },
+    {
+      "id": "S09",
+      "group": "levels",
+      "question": "How many windows are on level 3?",
+      "expected": "56 elements",
+      "outcome": "PASS",
+      "why": "",
+      "stable": true,
+      "outcomes": [
+        "PASS"
+      ],
+      "tier": 0,
+      "tokens": 110,
+      "ms": 648,
+      "answer": "There are 56 Windows elements where Level is \"O-Level 3\".",
+      "plan": {
+        "action": "count",
+        "category": "Windows",
+        "filters": [
+          {
+            "properties": [
+              "Constraints.Level"
+            ],
+            "op": "equals",
+            "value": [
+              "O-Level 3"
+            ]
+          }
+        ],
+        "groupBy": null
+      }
+    },
+    {
+      "id": "S10",
+      "group": "properties",
+      "question": "Show me the exterior walls",
+      "expected": "816 elements",
+      "outcome": "PASS",
+      "why": "",
+      "stable": true,
+      "outcomes": [
+        "PASS"
+      ],
+      "tier": 0,
+      "tokens": 106,
+      "ms": 1302,
+      "answer": "Found 816 Walls elements where Function is \"Exterior\". Showing the first 500.",
+      "plan": {
+        "action": "list",
+        "category": "Walls",
+        "filters": [
+          {
+            "properties": [
+              "Construction.Function"
+            ],
+            "op": "equals",
+            "value": [
+              "Exterior"
+            ]
+          }
+        ],
+        "groupBy": null
+      }
+    },
+    {
+      "id": "S11",
+      "group": "negation",
+      "question": "Doors that are not on level 1",
+      "expected": "93 elements",
+      "outcome": "PASS",
+      "why": "",
+      "stable": true,
+      "outcomes": [
+        "PASS"
+      ],
+      "tier": 1,
+      "tokens": 839,
+      "ms": 1220,
+      "answer": "Found 93 Doors elements where Level is not \"O/G/PH/C-Level 1\".",
+      "plan": {
+        "action": "list",
+        "category": "Doors",
+        "filters": [
+          {
+            "properties": [
+              "Constraints.Level"
+            ],
+            "op": "not_equals",
+            "value": "O/G/PH/C-Level 1"
+          }
+        ],
+        "groupBy": null,
+        "sortBy": null,
+        "order": "asc",
+        "limit": null,
+        "measure": null,
+        "aggregate": "sum",
+        "elementId": null,
+        "message": null
+      }
+    },
+    {
+      "id": "S13",
+      "group": "grouping",
+      "question": "Break down the doors by family",
+      "expected": "biggest group: Door-Double-Glass",
+      "outcome": "PASS",
+      "why": "",
+      "stable": true,
+      "outcomes": [
+        "PASS"
+      ],
+      "tier": 0,
+      "tokens": 107,
+      "ms": 729,
+      "answer": "Doors elements by Family:\n• Door-Double-Glass: 34\n• Single-Flush: 29\n• Door-Double-Flush_Panel: 24\n• Door-Interior-Double-Sliding-2_Panel-Wood: 24\n• Door-Double-Sliding: 12\n• Door-Overhead-Rolling: 2",
+      "plan": {
+        "action": "group",
+        "category": "Doors",
+        "filters": [],
+        "groupBy": [
+          "Element.Family"
+        ]
+      }
+    },
+    {
+      "id": "S15",
+      "group": "quantities",
+      "question": "What is the total area of the floors?",
+      "expected": "total 256934.987 ft^2",
+      "outcome": "PASS",
+      "why": "",
+      "stable": true,
+      "outcomes": [
+        "PASS"
+      ],
+      "tier": 0,
+      "tokens": 0,
+      "ms": 108,
+      "answer": "Total Area of the 170 Floors elements: 256,934.987 ft².",
+      "plan": {
+        "action": "total",
+        "category": "Floors",
+        "filters": [],
+        "measure": [
+          "Dimensions.Area"
+        ],
+        "aggregate": "sum",
+        "groupBy": null
+      }
+    },
+    {
+      "id": "S16",
+      "group": "quantities",
+      "question": "Total volume of the floors on level 3",
+      "expected": "total 61363.313 ft^3",
+      "outcome": "PASS",
+      "why": "",
+      "stable": true,
+      "outcomes": [
+        "PASS"
+      ],
+      "tier": 0,
+      "tokens": 0,
+      "ms": 5,
+      "answer": "Total Volume of the 47 Floors elements where Level is \"O-Level 3\": 61,363.313 ft³.",
+      "plan": {
+        "action": "total",
+        "category": "Floors",
+        "filters": [
+          {
+            "properties": [
+              "Constraints.Level"
+            ],
+            "op": "equals",
+            "value": [
+              "O-Level 3"
+            ]
+          }
+        ],
+        "measure": [
+          "Dimensions.Volume"
+        ],
+        "aggregate": "sum",
+        "groupBy": null
+      }
+    },
+    {
+      "id": "S17",
+      "group": "superlatives",
+      "question": "Show me the longest railing",
+      "expected": "1 elements",
+      "outcome": "PASS",
+      "why": "",
+      "stable": true,
+      "outcomes": [
+        "PASS"
+      ],
+      "tier": 0,
+      "tokens": 0,
+      "ms": 5,
+      "answer": "1 element has the highest Length of the Railings elements: 130.602 ft.",
+      "plan": {
+        "action": "rank",
+        "category": "Railings",
+        "filters": [],
+        "sortBy": [
+          "Dimensions.Length"
+        ],
+        "order": "desc",
+        "limit": null
+      }
+    },
+    {
+      "id": "S18",
+      "group": "superlatives",
+      "question": "What is the widest door?",
+      "expected": "2 elements",
+      "outcome": "PASS",
+      "why": "",
+      "stable": true,
+      "outcomes": [
+        "PASS"
+      ],
+      "tier": 0,
+      "tokens": 0,
+      "ms": 4,
+      "answer": "2 elements share the highest Width of the Doors elements: 14 ft.",
+      "plan": {
+        "action": "rank",
+        "category": "Doors",
+        "filters": [],
+        "sortBy": [
+          "Dimensions.Width"
+        ],
+        "order": "desc",
+        "limit": null
+      }
+    },
+    {
+      "id": "S19",
+      "group": "not in model",
+      "question": "List all rooms",
+      "expected": "none, or ask back",
+      "outcome": "PASS",
+      "why": "",
+      "stable": true,
+      "outcomes": [
+        "PASS"
+      ],
+      "tier": 0,
+      "tokens": 0,
+      "ms": 2,
+      "answer": "This model has no Rooms category. Categories in this model: Walls, Lighting Fixtures, Structural Framing, Structural Columns, Furniture, Planting, Columns, Specialty Equipment, Supports, Windows, Floors, Wall Sweeps, Doors, Railings, Top Rails, Lines, Runs, Plumbing Fixtures, Stairs, Site, Generic Models, Ceilings, Casework, Landings, Roofs, <Room Separation>, Furniture Systems.",
+      "plan": null
+    },
+    {
+      "id": "S20",
+      "group": "typos",
+      "question": "show me the widnows",
+      "expected": "190 elements",
+      "outcome": "PASS",
+      "why": "",
+      "stable": true,
+      "outcomes": [
+        "PASS"
+      ],
+      "tier": 0,
+      "tokens": 107,
+      "ms": 1102,
+      "answer": "Found 190 Windows elements.",
+      "plan": {
+        "action": "list",
+        "category": "Windows",
+        "filters": [],
+        "groupBy": null
+      }
+    }
+  ]
+}

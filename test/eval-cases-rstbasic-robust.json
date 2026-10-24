@@ -1,0 +1,364 @@
+{
+  "model": {
+    "name": "rstbasicsampleproject.rvt",
+    "urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6ZnFwdGd0Z2Q2N2dnNGd2dWJhZ2VpdmpweHVzdW9pbXMtYmFzaWMtYXBwL3JzdGJhc2ljc2FtcGxlcHJvamVjdC5ydnQ"
+  },
+  "view": "{3D}",
+  "elements": 845,
+  "builtAt": "2026-10-20T03:12:32.289Z",
+  "cases": [
+    {
+      "id": "R01",
+      "group": "all beams",
+      "question": "list every beam",
+      "expect": {
+        "count": 370
+      }
+    },
+    {
+      "id": "R02",
+      "group": "all beams",
+      "question": "display the beams",
+      "expect": {
+        "count": 370
+      }
+    },
+    {
+      "id": "R03",
+      "group": "all beams",
+      "question": "beams",
+      "expect": {
+        "count": 370
+      }
+    },
+    {
+      "id": "R04",
+      "group": "all beams",
+      "question": "what beams are there?",
+      "expect": {
+        "count": 370
+      }
+    },
+    {
+      "id": "R05",
+      "group": "all beams",
+      "question": "can you highlight the beams please",
+      "expect": {
+        "count": 370
+      }
+    },
+    {
+      "id": "R06",
+      "group": "all beams",
+      "question": "show all structural framing",
+      "expect": {
+        "count": 370
+      }
+    },
+    {
+      "id": "R07",
+      "group": "all beams",
+      "question": "how many beams do we have?",
+      "expect": {
+        "count": 370
+      }
+    },
+    {
+      "id": "R08",
+      "group": "columns on level 1",
+      "question": "how many columns on level one?",
+      "expect": {
+        "count": 1
+      }
+    },
+    {
+      "id": "R09",
+      "group": "columns on level 1",
+      "question": "count the columns on Level 1",
+      "expect": {
+        "count": 1
+      }
+    },
+    {
+      "id": "R10",
+      "group": "columns on level 1",
+      "question": "number of columns at level 1",
+      "expect": {
+        "count": 1
+      }
+    },
+    {
+      "id": "R11",
+      "group": "columns on level 1",
+      "question": "Level 1 columns, how many?",
+      "expect": {
+        "count": 1
+      }
+    },
+    {
+      "id": "R12",
+      "group": "columns on level 1",
+      "question": "columns located on level 1",
+      "expect": {
+        "count": 1
+      }
+    },
+    {
+      "id": "R13",
+      "group": "steel beams on level 2",
+      "question": "level 2 steel beams",
+      "expect": {
+        "count": 17
+      }
+    },
+    {
+      "id": "R14",
+      "group": "steel beams on level 2",
+      "question": "beams made of steel on level 2",
+      "expect": {
+        "count": 17
+      }
+    },
+    {
+      "id": "R15",
+      "group": "steel beams on level 2",
+      "question": "steel framing on level two",
+      "expect": {
+        "count": 17
+      }
+    },
+    {
+      "id": "R16",
+      "group": "steel beams on level 2",
+      "question": "show me the steel beams located on Level 2",
+      "expect": {
+        "count": 17
+      }
+    },
+    {
+      "id": "R17",
+      "group": "longer than 6 m",
+      "question": "beams over 6 m",
+      "expect": {
+        "count": 33
+      }
+    },
+    {
+      "id": "R18",
+      "group": "longer than 6 m",
+      "question": "beams longer than 6000 mm",
+      "expect": {
+        "count": 33
+      }
+    },
+    {
+      "id": "R19",
+      "group": "longer than 6 m",
+      "question": "beams longer than 6 meters",
+      "expect": {
+        "count": 33
+      }
+    },
+    {
+      "id": "R20",
+      "group": "longer than 6 m",
+      "question": "beams with a length greater than 6 m",
+      "expect": {
+        "count": 33
+      }
+    },
+    {
+      "id": "R21",
+      "group": "longer than 6 m",
+      "question": "beams more than 6m long",
+      "expect": {
+        "count": 33
+      }
+    },
+    {
+      "id": "R22",
+      "group": "total length",
+      "question": "sum of the lengths of the steel beams",
+      "expect": {
+        "total": 258448.1,
+        "unit": "mm",
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "R23",
+      "group": "total length",
+      "question": "how long are all the steel beams together?",
+      "expect": {
+        "total": 258448.1,
+        "unit": "mm",
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "R24",
+      "group": "total length",
+      "question": "total steel beam length",
+      "expect": {
+        "total": 258448.1,
+        "unit": "mm",
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "R25",
+      "group": "total length",
+      "question": "add up the length of the steel beams",
+      "expect": {
+        "total": 258448.1,
+        "unit": "mm",
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "R26",
+      "group": "longest",
+      "question": "which beam is the longest?",
+      "expect": {
+        "count": 4
+      }
+    },
+    {
+      "id": "R27",
+      "group": "longest",
+      "question": "what's the longest beam",
+      "expect": {
+        "count": 4
+      }
+    },
+    {
+      "id": "R28",
+      "group": "longest",
+      "question": "longest framing member",
+      "expect": {
+        "count": 4
+      }
+    },
+    {
+      "id": "R29",
+      "group": "longest",
+      "question": "the beam with the greatest length",
+      "expect": {
+        "count": 4
+      }
+    },
+    {
+      "id": "R30",
+      "group": "per level",
+      "question": "number of beams per level",
+      "expect": {
+        "firstGroup": "Top of Parapet"
+      }
+    },
+    {
+      "id": "R31",
+      "group": "per level",
+      "question": "beams by level",
+      "expect": {
+        "firstGroup": "Top of Parapet"
+      }
+    },
+    {
+      "id": "R32",
+      "group": "per level",
+      "question": "count the beams grouped by level",
+      "expect": {
+        "firstGroup": "Top of Parapet"
+      }
+    },
+    {
+      "id": "R33",
+      "group": "per level",
+      "question": "how are the beams distributed across the levels?",
+      "expect": {
+        "firstGroup": "Top of Parapet"
+      }
+    },
+    {
+      "id": "R34",
+      "group": "typos",
+      "question": "show me the colmns",
+      "expect": {
+        "count": 30
+      }
+    },
+    {
+      "id": "R35",
+      "group": "typos",
+      "question": "beams on levle 2",
+      "expect": {
+        "count": 84
+      }
+    },
+    {
+      "id": "R36",
+      "group": "typos",
+      "question": "stel beams",
+      "expect": {
+        "count": 42
+      }
+    },
+    {
+      "id": "R37",
+      "group": "timber",
+      "question": "beams made of timber",
+      "expect": {
+        "counts": [
+          171,
+          198
+        ]
+      }
+    },
+    {
+      "id": "R38",
+      "group": "timber",
+      "question": "wood beams",
+      "expect": {
+        "counts": [
+          171,
+          198
+        ]
+      }
+    },
+    {
+      "id": "R39",
+      "group": "timber",
+      "question": "timber framing",
+      "expect": {
+        "counts": [
+          171,
+          198
+        ]
+      }
+    },
+    {
+      "id": "R40",
+      "group": "casual",
+      "question": "any steel beams on level 2?",
+      "expect": {
+        "count": 17
+      }
+    },
+    {
+      "id": "R41",
+      "group": "casual",
+      "question": "pls show the columns",
+      "expect": {
+        "count": 30
+      }
+    },
+    {
+      "id": "R42",
+      "group": "casual",
+      "question": "I need the steel beams on level 2",
+      "expect": {
+        "count": 17
+      }
+    }
+  ]
+}

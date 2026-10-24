@@ -1,7 +1,7 @@
 process.env.ROUTER = '../routes/ask_agent_simple_v2.js'; // v2
 const { app, calls, origLog: log, BROKEN_URN, SECOND_URN, DWG_URN } = require('./harness');
 
-let base, pass = 0, fail = 0;
+let base, pass = 0, fail = 0, reported = 0;
 const tierCount = { 0: 0, 1: 0, 2: 0 };
 
 async function api(method, path, body) {
@@ -13,6 +13,7 @@ async function api(method, path, body) {
 async function ask(prompt, extra = {}) {
     const r = await api('POST', '/api/ask_agent_simple', { prompt, ...extra });
     if (r.body && r.body.tier !== undefined) tierCount[r.body.tier]++;
+    reported += r.body?.token?.currentRequest?.totalTokens || 0;
     return r;
 }
 function check(name, cond, detail = '') {
@@ -70,6 +71,57 @@ const info = r => `[tier ${r.body.tier}, ${r.body.token?.currentRequest?.totalTo
     r = await ask('list all ceilings');
     check('"ceilings" (not in this model) -> answered by code, 0 tokens', r.body.action === 'clarify' && r.body.token.currentRequest.totalTokens === 0, info(r));
 
+    log('\n=== Ranking and totals: planned by code, 0 tokens ===');
+    r = await ask('show me the longest beam');
+    check('"the longest beam" -> both beams tied at 9000 mm', r.body.action === 'rank' && same(r.body.objectIds, [3002, 3003]) &&
+        r.body.token.currentRequest.totalTokens === 0, info(r));
+    check('...rank answers come with the element table for the page', r.body.message?.elements?.length === 2 && r.body.message.elements[0].value === 9000);
+    r = await ask('top 2 shortest beams');
+    check('"top 2 shortest" -> 4000 mm then 6000 mm, beams without a length left out', same(r.body.objectIds, [3004, 3001]) && /left|not ranked/.test(r.body.answer), info(r));
+    r = await ask('the 2 heaviest beams');
+    check('"2 heaviest" ranks by Nominal Weight', r.body.action === 'rank' && r.body.objectIds.length === 2 && same(r.body.plan.sortBy, ['Structural Analysis.Nominal Weight']), info(r));
+    r = await ask('what is the total length of the steel beams?');
+    check('total length of steel beams -> 24,000 mm (24 m)', r.body.action === 'total' && /24,000 mm \(24 m\)/.test(r.body.answer) &&
+        r.body.token.currentRequest.totalTokens === 0, info(r));
+    r = await ask('total weight of the steel beams');
+    check('total weight = Nominal Weight x Length = 38.7 x 24 m = 928.8 kg', /928\.8 kg/.test(r.body.answer), info(r));
+    r = await ask('how much do the steel beams weigh?');
+    check('"how much do they weigh" is the same total', /928\.8 kg/.test(r.body.answer), info(r));
+    r = await ask('total volume of the concrete beams');
+    check('"concrete" means the material, not the family name -> 0.72 m³', r.body.action === 'total' && /0\.72 m³/.test(r.body.answer) &&
+        same(r.body.plan.filters[0].properties, ['Materials and Finishes.Structural Material']), info(r));
+    r = await ask('total length of the beams per level');
+    check('total per level, biggest first; 2 beams without a length reported', r.body.data.groups[0].value === 'Level 2' &&
+        r.body.data.groups[0].totals[0].value === 15000 && /2 more have no Length/.test(r.body.answer), info(r));
+    r = await ask('total length of the walls');
+    check('nothing to add up -> says so instead of "0 mm"', r.body.action === 'total' && /None of the/.test(r.body.answer), info(r));
+
+    log('\n=== Follow-up questions: built on the previous plan of the same sheet ===');
+    const sheet = { conversationId: 'sheet-1' };
+    r = await ask('steel beams on level 2', sheet);
+    check('start: steel beams on level 2 -> 3001, 3002', same(r.body.objectIds, [3001, 3002]) && r.body.followUp === false, info(r));
+    r = await ask('and on level 12?', sheet);
+    check('"and on level 12?" -> the level filter is REPLACED, steel kept -> 3003, 0 tokens',
+        r.body.followUp === true && same(r.body.objectIds, [3003]) && r.body.token.currentRequest.totalTokens === 0, info(r));
+    r = await ask('how many?', sheet);
+    check('"how many?" -> same filters, now a count -> 1', r.body.action === 'count' && r.body.data.count === 1, info(r));
+    r = await ask('and the total length?', sheet);
+    check('"and the total length?" -> a total of the same set -> 9,000 mm', r.body.action === 'total' && /9,000 mm/.test(r.body.answer), info(r));
+    r = await ask('the longest?', sheet);
+    check('"the longest?" -> the same set, ranked', r.body.action === 'rank' && same(r.body.objectIds, [3003]), info(r));
+    r = await ask('and the columns?', sheet);
+    check('"and the columns?" -> category swapped; no steel columns on Level 12 -> asks back, no guess',
+        r.body.action === 'clarify' && /Structural Columns/.test(r.body.answer), info(r));
+    r = await ask('show me the doors', sheet);
+    check('a full new question starts afresh -> 1 door', r.body.followUp === false && same(r.body.objectIds, [5001]), info(r));
+    r = await ask('and on level 12?', { conversationId: 'sheet-2' });
+    check('another sheet (New sheet) has no previous question -> not a follow-up', r.body.followUp === false, info(r));
+    await ask('steel beams on level 2', sheet);
+    r = await ask('except the ones on level 2', sheet);
+    check('a follow-up code can\'t merge goes to tier 1 WITH the previous question and plan',
+        r.body.followUp === true && calls.lastTier1Message.includes('PREVIOUS PLAN') && calls.lastTier1Message.includes('steel beams on level 2'),
+        calls.lastTier1Message.split('\n').slice(-3).join('\n'));
+
     log('\n=== Tier 1: small prompt with only the matched names ===');
     r = await ask('beams with a start level offset of 200 mm');
     check('numbers compare as numbers: "200 mm" = "200.000 mm" (fix C)', r.body.tier === 1 && same(r.body.objectIds, [3001]), info(r));
@@ -92,7 +144,7 @@ const info = r => `[tier ${r.body.tier}, ${r.body.token?.currentRequest?.totalTo
     check('Level 7 does not exist -> suggests real levels', r.body.action === 'clarify' && r.body.answer.includes('Level 1'), info(r));
     r = await ask('group beams by fire rating');
     check('invented property -> asks instead of guessing', r.body.action === 'clarify', info(r));
-    r = await ask('everything on level 2 (llm picked one level key)');
+    r = await ask('everything on level 2, exactly');
     check('#5 LLM picks only Reference Level -> code adds the others', same(r.body.objectIds, [1002, 2002, 3001, 3002]), info(r));
     r = await ask('columns used as joists');
     check('value exists in model but not in that category -> asks back', r.body.action === 'clarify', info(r));
@@ -102,11 +154,14 @@ const info = r => `[tier ${r.body.tier}, ${r.body.token?.currentRequest?.totalTo
     check('not_equals with a value the model lacks is dropped -> 6', r.body.data.count === 6, info(r));
 
     log('\n=== Bookkeeping ===');
-    check('total tokens reported = sum of every LLM call made', r.body.token.total.totalTokens === calls.tokens,
-        `${r.body.token.total.totalTokens} reported, ${calls.tokens} used`);
+    check('tokens reported, added up over all answers = every LLM call made', reported === calls.tokens,
+        `${reported} reported, ${calls.tokens} used`);
+    check('no sign-in gate (tests, local) -> no budget', r.body.budget?.kind === 'member' && r.body.budget.limit === null, JSON.stringify(r.body.budget));
     await ask('show me the steel beams');
     r = await api('GET', '/api/ask_agent_simple');
-    check('GET last result = [{ objectid }] for SummaryExtension', same(r.body.message, [{ objectid: 3001 }, { objectid: 3002 }, { objectid: 3003 }]), JSON.stringify(r.body.message));
+    check('GET last result = [{ objectid, externalId }] for SummaryExtension', same(r.body.message, [3001, 3002, 3003].map(id => ({ objectid: id, externalId: `ext-${id}` }))), JSON.stringify(r.body.message));
+    r = await ask('show me the steel beams');
+    check('every element in an answer carries its externalId (to find it in SVF2 viewers)', r.body.message.elements.every(e => e.externalId === `ext-${e.id}`), JSON.stringify(r.body.message.elements[0]));
 
     log('\n=== Safety & errors ===');
     r = await ask("walls' OR 1=1 --");

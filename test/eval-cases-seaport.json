@@ -1,0 +1,178 @@
+{
+  "model": {
+    "name": "Seaport-Civic-Center_Architecture.rvt",
+    "urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6ZnFwdGd0Z2Q2N2dnNGd2dWJhZ2VpdmpweHVzdW9pbXMtYmFzaWMtYXBwL1NlYXBvcnQtQ2l2aWMtQ2VudGVyX0FyY2hpdGVjdHVyZS5ydnQ"
+  },
+  "view": "103-1_Building Rear Hall",
+  "elements": 15147,
+  "builtAt": "2026-10-18T23:18:52.967Z",
+  "cases": [
+    {
+      "id": "S01",
+      "group": "categories",
+      "question": "How many doors are there?",
+      "expect": {
+        "count": 125
+      }
+    },
+    {
+      "id": "S02",
+      "group": "categories",
+      "question": "Show me the windows",
+      "expect": {
+        "count": 190
+      }
+    },
+    {
+      "id": "S03",
+      "group": "categories",
+      "question": "Show me the beams",
+      "expect": {
+        "count": 1251
+      }
+    },
+    {
+      "id": "S04",
+      "group": "families and types",
+      "question": "Show me the curtain walls",
+      "expect": {
+        "count": 6539
+      }
+    },
+    {
+      "id": "S05",
+      "group": "families and types",
+      "question": "How many toilets are there?",
+      "expect": {
+        "count": 40
+      }
+    },
+    {
+      "id": "S06",
+      "group": "families and types",
+      "question": "How many chairs are there?",
+      "expect": {
+        "counts": [
+          348,
+          528
+        ]
+      }
+    },
+    {
+      "id": "S07",
+      "group": "families and types",
+      "question": "Show me the precast stairs",
+      "expect": {
+        "count": 36
+      }
+    },
+    {
+      "id": "S08",
+      "group": "levels",
+      "question": "Doors on level 2",
+      "expect": {
+        "count": 28
+      }
+    },
+    {
+      "id": "S09",
+      "group": "levels",
+      "question": "How many windows are on level 3?",
+      "expect": {
+        "count": 56
+      }
+    },
+    {
+      "id": "S10",
+      "group": "properties",
+      "question": "Show me the exterior walls",
+      "expect": {
+        "count": 816
+      }
+    },
+    {
+      "id": "S11",
+      "group": "negation",
+      "question": "Doors that are not on level 1",
+      "expect": {
+        "count": 93
+      }
+    },
+    {
+      "id": "S12",
+      "group": "grouping",
+      "question": "Which level has the most furniture?",
+      "expect": {
+        "firstGroup": "O-Level 2"
+      }
+    },
+    {
+      "id": "S13",
+      "group": "grouping",
+      "question": "Break down the doors by family",
+      "expect": {
+        "firstGroup": "Door-Double-Glass"
+      }
+    },
+    {
+      "id": "S14",
+      "group": "grouping",
+      "question": "Stairs per level",
+      "expect": {
+        "firstGroup": "O/G/PH/C-Level 1"
+      }
+    },
+    {
+      "id": "S15",
+      "group": "quantities",
+      "question": "What is the total area of the floors?",
+      "expect": {
+        "total": 256934.987,
+        "unit": "ft^2",
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "S16",
+      "group": "quantities",
+      "question": "Total volume of the floors on level 3",
+      "expect": {
+        "total": 61363.313,
+        "unit": "ft^3",
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "S17",
+      "group": "superlatives",
+      "question": "Show me the longest railing",
+      "expect": {
+        "count": 1
+      }
+    },
+    {
+      "id": "S18",
+      "group": "superlatives",
+      "question": "What is the widest door?",
+      "expect": {
+        "count": 2
+      }
+    },
+    {
+      "id": "S19",
+      "group": "not in model",
+      "question": "List all rooms",
+      "expect": {
+        "noneOrClarify": true
+      }
+    },
+    {
+      "id": "S20",
+      "group": "typos",
+      "question": "show me the widnows",
+      "expect": {
+        "count": 190
+      }
+    }
+  ]
+}

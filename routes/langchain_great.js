@@ -69,10 +69,14 @@ router.post('/langchain_great', async function (req, res, next) {
           }
 
           // ***General Invoking of the LLM
+          // gpt-6-luna replaces gpt-4o-mini (shut down by OpenAI on 14 Jan 2027).
+          // Reasoning is switched off through modelKwargs: this LangChain version doesn't
+          // recognise gpt-6 as a reasoning model, so its own `reasoning` option would be ignored.
           const model = new ChatOpenAI({
-            modelName: "gpt-4o-mini",
+            modelName: "gpt-6-luna",
             openAIApiKey: OPENAIKEY,
-            temperature:0
+            temperature: 0,
+            modelKwargs: { reasoning_effort: "none" }
         });
 
         

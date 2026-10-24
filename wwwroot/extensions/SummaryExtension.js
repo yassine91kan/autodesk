@@ -94,12 +94,16 @@ class SummaryExtension extends BaseExtension {
                         },
                     })
                     .then(response => response.json())
-                    .then(data => {
+                    .then(async data => {
 
+                        // The server's ids equal the Viewer's only for SVF models; SVF2 models
+                        // number elements differently, so translate through each externalId.
+                        const idMap = await new Promise(resolve => this.viewer.model.getExternalIdMapping(resolve, () => resolve({})));
                         let objectids=[];
 
                         for (let i = 0; i < data.message.length; i++) {
-                            objectids.push(data.message[i].objectid);
+                            const item = data.message[i];
+                            objectids.push((item.externalId && idMap[item.externalId]) ?? item.objectid);
                         }
 
                         console.log(objectids);

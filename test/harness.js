@@ -8,7 +8,8 @@ const calls = { auth: 0, metadata: 0, tree: 0, classifier: 0, agentLLM: 0 };
 // ---------------------------------------------------------------- fake model
 const BROKEN_URN = 'broken-urn-still-processing';
 
-function el(objectid, name, props) { return { objectid, name, properties: props }; }
+// externalId: like Revit's UniqueId, the id that stays the same in every viewer format.
+function el(objectid, name, props) { return { objectid, externalId: `ext-${objectid}`, name, properties: props }; }
 const ident = (cat, type) => ({ Category: cat, 'Type Name': type });
 
 const collection = [
@@ -19,10 +20,10 @@ const collection = [
     el(2001, 'Floor [2001]', { 'Identity Data': ident('Floors', 'Generic 300mm'), Constraints: { Level: 'Level 1' } }),
     el(2002, 'Floor [2002]', { 'Identity Data': ident('Floors', 'Generic 300mm'), Constraints: { Level: 'Level 2' } }),
     el(30, 'W-Wide Flange', {}),
-    el(3001, 'W-Wide Flange [3001]', { 'Identity Data': ident('Structural Framing', 'W310X38.7'), Constraints: { 'Reference Level': 'Level 2', 'Start Level Offset': '200.000 mm' }, 'Materials and Finishes': { 'Structural Material': 'Steel ASTM A992' }, Structural: { 'Structural Usage': 'Girder' }, Phasing: { 'Phase Created': 'New Construction' } }),
-    el(3002, 'W-Wide Flange [3002]', { 'Identity Data': ident('Structural Framing', 'W310X38.7'), Constraints: { 'Reference Level': 'Level 2', 'Start Level Offset': '0.000 mm' }, 'Materials and Finishes': { 'Structural Material': 'Steel ASTM A992' }, Structural: { 'Structural Usage': 'Other' } }),
-    el(3003, 'W-Wide Flange [3003]', { 'Identity Data': ident('Structural Framing', 'W310X38.7'), Constraints: { 'Reference Level': 'Level 12', 'Start Level Offset': '0.000 mm' }, 'Materials and Finishes': { 'Structural Material': 'Steel ASTM A992' }, Structural: { 'Structural Usage': 'Other' } }),
-    el(3004, 'Concrete-Rectangular Beam [3004]', { 'Identity Data': ident('Structural Framing', '300x600mm'), Constraints: { 'Reference Level': 'Level 1', 'Start Level Offset': '0.000 mm' }, 'Materials and Finishes': { 'Structural Material': 'Concrete, Precast' }, Structural: { 'Structural Usage': 'Girder' }, Phasing: { 'Phase Created': 'New Construction' } }),
+    el(3001, 'W-Wide Flange [3001]', { Dimensions: { Length: '6000.000 mm', Volume: '0.030 m^3' }, 'Structural Analysis': { 'Nominal Weight': '38.700 kgf/m' }, 'Identity Data': ident('Structural Framing', 'W310X38.7'), Constraints: { 'Reference Level': 'Level 2', 'Start Level Offset': '200.000 mm' }, 'Materials and Finishes': { 'Structural Material': 'Steel ASTM A992' }, Structural: { 'Structural Usage': 'Girder' }, Phasing: { 'Phase Created': 'New Construction' } }),
+    el(3002, 'W-Wide Flange [3002]', { Dimensions: { Length: '9000.000 mm', Volume: '0.045 m^3' }, 'Structural Analysis': { 'Nominal Weight': '38.700 kgf/m' }, 'Identity Data': ident('Structural Framing', 'W310X38.7'), Constraints: { 'Reference Level': 'Level 2', 'Start Level Offset': '0.000 mm' }, 'Materials and Finishes': { 'Structural Material': 'Steel ASTM A992' }, Structural: { 'Structural Usage': 'Other' } }),
+    el(3003, 'W-Wide Flange [3003]', { Dimensions: { Length: '9000.000 mm', Volume: '0.045 m^3' }, 'Structural Analysis': { 'Nominal Weight': '38.700 kgf/m' }, 'Identity Data': ident('Structural Framing', 'W310X38.7'), Constraints: { 'Reference Level': 'Level 12', 'Start Level Offset': '0.000 mm' }, 'Materials and Finishes': { 'Structural Material': 'Steel ASTM A992' }, Structural: { 'Structural Usage': 'Other' } }),
+    el(3004, 'Concrete-Rectangular Beam [3004]', { Dimensions: { Length: '4000.000 mm', Volume: '0.720 m^3' }, 'Identity Data': ident('Structural Framing', '300x600mm'), Constraints: { 'Reference Level': 'Level 1', 'Start Level Offset': '0.000 mm' }, 'Materials and Finishes': { 'Structural Material': 'Concrete, Precast' }, Structural: { 'Structural Usage': 'Girder' }, Phasing: { 'Phase Created': 'New Construction' } }),
     // Like your real model: a joist and a brace that are also "Structural Framing".
     el(3005, 'Light Gauge Joists [3005]', { 'Identity Data': ident('Structural Framing', 'LGJ 200'), Constraints: { 'Reference Level': 'Level 1', 'Start Level Offset': '0.000 mm' }, Structural: { 'Structural Usage': 'Joist' } }),
     el(3006, 'CHS Circular Hollow Sections [3006]', { 'Identity Data': ident('Structural Framing', 'CHS 100x4'), Constraints: { 'Reference Level': 'Level 1', 'Start Level Offset': '0.000 mm' }, Structural: { 'Structural Usage': 'Vertical Bracing' } }),
@@ -119,7 +120,7 @@ const PLANS = {
     'show me all framing': { action: 'list', category: SF, filters: [] },
     'framing except purlins': { action: 'list', category: SF, filters: [{ properties: [USAGE], op: 'not_equals', value: 'Purlin' }] },
     // Your real failures, with the plans gpt-4o-mini actually produced:
-    'everything on level 2 (llm picked one level key)': { action: 'list', category: null, filters: [{ properties: ['Constraints.Reference Level'], op: 'equals', value: 'Level 2' }] },
+    'everything on level 2, exactly': { action: 'list', category: null, filters: [{ properties: ['Constraints.Reference Level'], op: 'equals', value: 'Level 2' }] },
     'how many columns are on level 1?': { action: 'count', category: 'Structural Columns', filters: [{ properties: ['Constraints.Reference Level'], op: 'equals', value: 'Level 1' }] },
     'show me the light gauge joists': { action: 'list', category: SF, filters: [{ properties: ['Element.Family'], op: 'equals', value: 'Light Gauge Joists' }] },
     'columns used as joists': { action: 'list', category: 'Structural Columns', filters: [{ properties: [USAGE], op: 'equals', value: 'Joist' }] },
@@ -217,7 +218,7 @@ class FakeOpenAI {
                 // v2 tier 2: the full prompt
                 calls.planner = (calls.planner || 0) + 1;
                 calls.lastPlannerPrompt = system;
-                const plan = PLANS[req.messages[1].content];
+                const plan = PLANS[req.messages[1].content.split('\n\n')[0]];   // the question; matched names follow it
                 return reply(plan === null ? null : plan || { action: 'clarify', message: 'Could you rephrase?' }, 1200, 60);
             }
             if (req.response_format) {
