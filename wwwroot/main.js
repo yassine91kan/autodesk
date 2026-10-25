@@ -32,6 +32,7 @@ initViewer(document.getElementById('preview')).then(viewer => {
             highlight(pendingSelection.ids, pendingSelection.owner);
             pendingSelection = null;
         }
+        sendPositions(viewer, currentUrn()).catch(err => console.warn('Element positions not sent.', err));
     });
     // Zones follow the selection as the camera moves.
     let zoneTimer = null;
@@ -232,6 +233,47 @@ loadAccount();
 // so the assistant always answers about the model you are looking at.
 function currentUrn() {
     return document.getElementById('models').value;
+}
+
+// ---------------------------------------------------------------------------
+// Element positions, for distance questions ("distance between the columns")
+// ---------------------------------------------------------------------------
+// The model's property data has no positions; the Viewer's geometry does. Once a model
+// has loaded, each element's bounding box (centre, min and max corners) is sent to the
+// server, in metres, keyed by externalId. The server keeps it in the model's index for
+// everyone, so this happens once per model: the page asks first and only sends if
+// there are none (a reload, or a second visitor, sends nothing).
+const METRES_PER_VIEWER_UNIT = { ft: 0.3048, feet: 0.3048, in: 0.0254, m: 1, cm: 0.01, mm: 0.001 };
+async function sendPositions(viewer, urn) {
+    const model = viewer.model;
+    if (!model || !urn) return;
+    const stored = await fetch(`/model_positions?urn=${encodeURIComponent(urn)}`).then(r => r.json());
+    if (stored.count > 0) return;
+
+    const unit = model.getUnitString?.() || model.getDisplayUnit?.() || 'm';
+    const scale = METRES_PER_VIEWER_UNIT[String(unit).toLowerCase()] ?? 1;
+    const tree = model.getInstanceTree();
+    const fragments = model.getFragmentList();
+    const idMap = await externalIdMap(model);          // externalId -> dbId (also used for highlighting)
+    const box = new THREE.Box3();
+    const part = new THREE.Box3();
+    const positions = {};
+    for (const [externalId, dbId] of Object.entries(idMap)) {
+        box.makeEmpty();
+        tree.enumNodeFragments(dbId, fragId => {
+            fragments.getWorldBounds(fragId, part);
+            box.union(part);
+        }, true);
+        if (box.isEmpty()) continue;                     // no geometry (e.g. a level or a grid)
+        const metres = v => [v.x, v.y, v.z].map(n => Math.round(n * scale * 1000) / 1000);
+        positions[externalId] = { center: metres(box.getCenter(new THREE.Vector3())), min: metres(box.min), max: metres(box.max) };
+    }
+    console.log(`Sending ${Object.keys(positions).length} element positions (viewer unit: ${unit}).`);
+    await fetch('/model_positions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urn, positions })
+    });
 }
 
 // ---------------------------------------------------------------------------

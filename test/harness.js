@@ -149,6 +149,9 @@ const PLANS = {
 // v2 tier 1 answers (small prompt). Questions not listed here answer "need_more",
 // which sends them on to tier 2 (PLANS above).
 const PLANS_TIER1 = {
+    // the LLM reports the words its plan doesn't use, and whether they matter
+    'list the different floors': { action: 'list', category: 'Floors', filters: [], ignored: [{ word: 'different', why: 'filler' }] },
+    'show me the curtain floors': { action: 'list', category: 'Floors', filters: [], ignored: [{ word: 'curtain', why: 'narrows' }] },
     'what can you help me with?': { action: 'reply', message: 'I can list, count and group elements in this model, filter them by properties like level or material, and locate elements.' },
     'where is element 3001?': { action: 'coordinates', elementId: 3001 },
     'where is element 3002?': { action: 'coordinates', elementId: 3002 },
@@ -203,7 +206,11 @@ class FakeOpenAI {
                 // v2 tier 0: intent only. Mimics what gpt-4o-mini answers.
                 calls.tier0 = (calls.tier0 || 0) + 1;
                 const q = req.messages[1].content.toLowerCase();
-                const action = /how many|number of/.test(q) ? 'count' : /\bper\b|\bby\b|most|what .* used/.test(q) ? 'group' : 'list';
+                const action = /your name|who are you|are you chatgpt|are you smart/.test(q) ? 'about'
+                    : /weather|football/.test(q) ? 'off_topic'
+                    : /separation/.test(q) ? 'distance'
+                    : /^volume of/.test(q) ? 'total'
+                    : /how many|number of/.test(q) ? 'count' : /\bper\b|\bby\b|most|what .* used/.test(q) ? 'group' : 'list';
                 return reply({ action }, 120, 10);
             }
             if (system.includes('CANDIDATES')) {

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<!--
+  mcp/viewer.html
+  ===========================================================================
+  The page Claude (or any MCP Apps client) shows inside the chat when the
+  show_model tool runs. routes/mcp.js serves it as the ui://aps/viewer.html
+  resource, with the ext-apps client library pasted in where APP_BUNDLE is.
+
+  It talks to the chat, not to our server:
+    tool result  ─► { urn, accessToken, externalIds }  ─► load + highlight
+    selection    ─► updateModelContext (externalIds)   ─► Claude can ask about it
+  ===========================================================================
+-->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>APS Viewer</title>
+    <link rel="stylesheet" href="https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/style.min.css">
+    <script src="https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.js"></script>
+    <style>
+        html, body { margin: 0; height: 100%; background: #f4f4f4; font-family: system-ui, sans-serif; }
+        #viewer { position: relative; width: 100%; height: 520px; }
+        #status { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #555; font-size: 14px; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="viewer"><div id="status">Waiting for a model…</div></div>
+
+    <script>/*APP_BUNDLE*/</script>
+    <script>
+        const statusBox = document.getElementById('status');
+        const showStatus = text => { statusBox.textContent = text; statusBox.style.display = text ? 'flex' : 'none'; };
+
+        const app = new McpApp({ name: 'APS Viewer', version: '1.0.0' });
+
+        let viewer = null;          // created once, reused for every model
+        let loadedUrn = null;
+        let token = null;           // { accessToken, expiresIn }
+
+        // The Viewer asks for a token when it starts and again before it expires.
+        // The first one came with the tool result; later ones from the app-only tool.
+        async function getAccessToken(callback) {
+            if (!token) {
+                const result = await app.callServerTool({ name: 'refresh_viewer_token', arguments: {} });
+                token = result.structuredContent;
+            }
+            callback(token.accessToken, token.expiresIn);
+            token = null; // used once: the next request fetches a fresh one
+        }
+
+        function startViewer() {
+            return new Promise(resolve => {
+                // env and api must be given here: inside the chat's iframe the Viewer can't
+                // work them out, and asks the iframe's own address for the model instead.
+                // AutodeskProduction2 + streamingV2 = SVF2, as in the web app.
+                Autodesk.Viewing.Initializer({ env: 'AutodeskProduction2', api: 'streamingV2', getAccessToken }, () => {
+                    const instance = new Autodesk.Viewing.GuiViewer3D(document.getElementById('viewer'));
+                    instance.start();
+                    instance.setTheme('light-theme');
+                    instance.addEventListener(Autodesk.Viewing.SELECTION_CHANGED_EVENT, onSelection);
+                    resolve(instance);
+                });
+            });
+        }
+
+        function loadDocument(urn) {
+            return new Promise((resolve, reject) => {
+                Autodesk.Viewing.Document.load('urn:' + urn,
+                    doc => resolve(viewer.loadDocumentNode(doc, doc.getRoot().getDefaultGeometry())),
+                    (code, message) => reject(new Error(`${message || 'Could not load the model'} (code ${code})`)));
+            });
+        }
+
+        // SVF2 numbers elements differently from the server's index, so ids always
+        // travel as externalIds (Revit's UniqueId) and are translated here.
+        const externalIdMaps = new WeakMap();
+        function externalIdMap(model) {
+            if (!externalIdMaps.has(model)) {
+                externalIdMaps.set(model, new Promise(resolve => model.getExternalIdMapping(resolve, () => resolve({}))));
+            }
+            return externalIdMaps.get(model);
+        }
+
+        async function highlight(externalIds) {
+            const model = viewer.model;
+            if (!model) return;
+            if (!externalIds || externalIds.length === 0) {
+                viewer.isolate([]);
+                viewer.clearSelection();
+                return;
+            }
+            const map = await externalIdMap(model);
+            const ids = externalIds.map(id => map[id]).filter(id => id !== undefined);
+            viewer.isolate(ids);
+            viewer.fitToView(ids);
+        }
+
+        async function show({ urn, accessToken, expiresIn, externalIds }) {
+            try {
+                token = { accessToken, expiresIn };
+                if (!viewer) viewer = await startViewer();
+                if (urn !== loadedUrn) {
+                    showStatus('Loading model…');
+                    await loadDocument(urn);
+                    await new Promise(resolve => viewer.model?.isObjectTreeLoaded()
+                        ? resolve()
+                        : viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, resolve, { once: true }));
+                    loadedUrn = urn;
+                }
+                showStatus('');
+                await highlight(externalIds);
+            } catch (error) {
+                showStatus(error.message);
+            }
+        }
+
+        // Tell Claude what the user selected, so "what is this?" works.
+        async function onSelection() {
+            const model = viewer.model;
+            const dbIds = viewer.getSelection();
+            if (!model || dbIds.length === 0) {
+                return app.updateModelContext({ content: [{ type: 'text', text: 'Nothing is selected in the viewer.' }] });
+            }
+            const shown = dbIds.slice(0, 50);
+            model.getBulkProperties(shown, { propFilter: ['externalId', 'name'] }, results => {
+                const elements = results.map(r => ({ externalId: r.externalId, name: r.name }));
+                const more = dbIds.length > shown.length ? ` (first ${shown.length} of ${dbIds.length})` : '';
+                app.updateModelContext({
+                    content: [{
+                        type: 'text',
+                        text: `The user selected ${dbIds.length} element(s) in the viewer of model ${loadedUrn}${more}:\n` +
+                              elements.map(e => `- ${e.name} (externalId ${e.externalId})`).join('\n') +
+                              '\nUse get_elements with these externalIds for their properties.'
+                    }],
+                    structuredContent: { urn: loadedUrn, selected: elements }
+                });
+            });
+        }
+
+        app.ontoolresult = result => {
+            if (result.structuredContent?.urn) show(result.structuredContent);
+        };
+        app.connect();
+    </script>
+</body>
+</html>

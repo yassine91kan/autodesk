@@ -22,6 +22,8 @@
     "@langchain/core": "^0.3.77",
     "@langchain/langgraph": "^0.4.9",
     "@langchain/openai": "^0.6.13",
+    "@modelcontextprotocol/ext-apps": "^2.0.3",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@types/forge-viewer": "^7.69.9",
     "better-sqlite3": "^11.10.0",
     "body-parser": "^1.20.2",

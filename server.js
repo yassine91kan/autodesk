@@ -9,6 +9,10 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 // (for the secure cookie) and the visitor's real address (for the attempt limit).
 app.set('trust proxy', 1);
 
+// The MCP server for AI chats (Claude, Copilot). Before sign-in: those apps can't
+// use the login cookie, so it is protected by its secret address (MCP_KEY) instead.
+app.use(require('./routes/mcp.js'));
+
 // Sign-in first: nothing below (pages, files, APIs) is served without it.
 app.use(require('./routes/login.js'));
 

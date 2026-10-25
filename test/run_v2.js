@@ -94,7 +94,8 @@ const info = r => `[tier ${r.body.tier}, ${r.body.token?.currentRequest?.totalTo
     check('total per level, biggest first; 2 beams without a length reported', r.body.data.groups[0].value === 'Level 2' &&
         r.body.data.groups[0].totals[0].value === 15000 && /2 more have no Length/.test(r.body.answer), info(r));
     r = await ask('total length of the walls');
-    check('nothing to add up -> says so instead of "0 mm"', r.body.action === 'total' && /None of the/.test(r.body.answer), info(r));
+    check('nothing to add up -> says the walls have no Length, instead of "0 mm"', r.body.action === 'clarify' &&
+        /Walls in this model have no Length value/.test(r.body.answer) && r.body.token.currentRequest.totalTokens === 0, info(r));
 
     log('\n=== Follow-up questions: built on the previous plan of the same sheet ===');
     const sheet = { conversationId: 'sheet-1' };
@@ -122,6 +123,71 @@ const info = r => `[tier ${r.body.tier}, ${r.body.token?.currentRequest?.totalTo
         r.body.followUp === true && calls.lastTier1Message.includes('PREVIOUS PLAN') && calls.lastTier1Message.includes('steel beams on level 2'),
         calls.lastTier1Message.split('\n').slice(-3).join('\n'));
 
+    log('\n=== The assistant itself, and words the LLM says it ignored ===');
+    r = await ask('what is your name?');
+    check('"what is your name?" -> answered as Augmented by code, after only the tiny intent prompt',
+        r.body.action === 'reply' && /^I'm Augmented/.test(r.body.answer) && r.body.tier === 0 && r.body.token.currentRequest.totalTokens === 130, info(r));
+    r = await ask('are you smart?');
+    check('"are you smart?" -> small talk about the assistant, the same fixed answer, no tier 1',
+        r.body.tier === 0 && /^I'm Augmented/.test(r.body.answer) && r.body.token.currentRequest.totalTokens === 130, info(r));
+    r = await ask('how is the weather in sydney?');
+    check('"weather in Sydney" -> off-topic, a fixed polite answer after only the intent prompt (was 5,070 tokens)',
+        r.body.tier === 0 && /only answer questions about the BIM model/.test(r.body.answer) && r.body.token.currentRequest.totalTokens === 130, info(r));
+    r = await ask('what materials are used?');
+    check('a question with only a property name asks the intent prompt ONCE, then answers in code',
+        r.body.action === 'group' && r.body.token.currentRequest.totalTokens === 130, info(r));
+    r = await ask('list the different floors');
+    check('"different" reported by the LLM as filler -> the floors are listed (was: asked back)',
+        r.body.tier === 1 && same(r.body.objectIds, [2001, 2002]), info(r));
+    r = await ask('show me the curtain floors');
+    check('"curtain" reported as narrowing -> NOT answered with all floors', r.body.action === 'clarify', info(r));
+
+    log('\n=== Distances, from the positions the viewer sends ===');
+    r = await ask('distance between the beams');
+    check('before the viewer sent positions -> says so (0 tokens)', /don't have the element positions/.test(r.body.answer) && r.body.token.currentRequest.totalTokens === 0, info(r));
+    // Beam centres in metres: 3001 (0,0) 3002 (6,0) 3003 (6,8) 3004 (20,0); 3005 and 3006 have no geometry.
+    r = await api('POST', '/api/model_positions', { positions: { 'ext-3001': [0, 0, 3], 'ext-3002': [6, 0, 3], 'ext-3003': [6, 8, 3], 'ext-3004': [20, 0, 0], 'not-in-model': [1, 1, 1] } });
+    check('positions stored, unknown externalIds dropped', r.body.count === 4, JSON.stringify(r.body));
+    r = await api('POST', '/api/model_positions', { positions: { 'ext-3001': [999, 999, 999] } });
+    check('a second upload cannot overwrite them', r.body.count === 4, JSON.stringify(r.body));
+    r = await api('GET', '/api/model_positions');
+    check('after a reload, the page finds them already in the model\'s positions table (sends nothing)', r.body.count === 4, JSON.stringify(r.body));
+    {
+        // The box format the page sends: { center, min, max }, stored in the "positions" table.
+        const Database = require('better-sqlite3');
+        const spatial = require('../augmented/spatial');
+        const db = new Database(':memory:');
+        db.exec(`CREATE TABLE elements (objectid INTEGER PRIMARY KEY, external_id TEXT);
+                 CREATE TABLE positions (objectid INTEGER PRIMARY KEY, cx REAL, cy REAL, cz REAL,
+                     min_x REAL, min_y REAL, min_z REAL, max_x REAL, max_y REAL, max_z REAL);
+                 INSERT INTO elements VALUES (1, 'a'), (2, 'b');`);
+        spatial.setPositions(db, { a: { center: [1, 2, 3], min: [0, 1, 0], max: [2, 3, 6] }, b: { center: [1, 2] } });
+        const stored = spatial.getPositions(db);
+        check('box format stored (centre, min, max); a malformed one skipped', stored.size === 1 &&
+            same(stored.get('a'), { center: [1, 2, 3], min: [0, 1, 0], max: [2, 3, 6] }), JSON.stringify([...stored]));
+    }
+    r = await ask('distance between the beams');
+    check('spacing to the nearest neighbour: smallest 6 m, typical 8 m, largest 14 m; 2 beams without a position reported',
+        r.body.action === 'spatial' && /smallest 6 m, typical 8 m, largest 14 m/.test(r.body.answer) && /2 have no position/.test(r.body.answer) &&
+        r.body.token.currentRequest.totalTokens === 0, info(r));
+    r = await ask('what is the distance between 3001 and 3003?');
+    check('two elements: 10 m apart (6 by 8 on plan), 0 m in height', /are 10 m apart/.test(r.body.answer) && /0 m in height/.test(r.body.answer) &&
+        same(r.body.objectIds, [3001, 3003]), info(r));
+    r = await ask('separation between the beams');
+    check('a distance phrased in words code doesn\'t know -> the intent check says "distance", code measures it (no tier 1)',
+        r.body.action === 'spatial' && /smallest 6 m/.test(r.body.answer) && r.body.tier === 0, info(r));
+    r = await ask('volume of the steel beams?');
+    check('a total without "total" or "what" -> the intent check says "total", code adds it up (no tier 1)',
+        r.body.action === 'total' && r.body.tier === 0 && r.body.token.calls.length === 1, info(r));
+    r = await ask('distance between 999 and 9999');
+    check('ids not in the model -> the text reaches the page (was: an empty bubble)',
+        typeof r.body.message === 'string' && /couldn't find element 999/.test(r.body.message), JSON.stringify(r.body.message));
+    // Second model: 3001 and 3002 stacked at the same plan point, 3003 5 m away.
+    await api('POST', '/api/model_positions', { urn: SECOND_URN, positions: { 'ext-3001': [0, 0, 0], 'ext-3002': [0, 0, 4], 'ext-3003': [5, 0, 0] } });
+    r = await ask('distance between the beams', { urn: SECOND_URN });
+    check('stacked elements are one location: 5 m, not "smallest 0 m"', /at 2 locations on plan/.test(r.body.answer) &&
+        /smallest 5 m, typical 5 m, largest 5 m/.test(r.body.answer) && /rough guide/.test(r.body.answer), info(r));
+
     log('\n=== Tier 1: small prompt with only the matched names ===');
     r = await ask('beams with a start level offset of 200 mm');
     check('numbers compare as numbers: "200 mm" = "200.000 mm" (fix C)', r.body.tier === 1 && same(r.body.objectIds, [3001]), info(r));
@@ -139,7 +205,8 @@ const info = r => `[tier ${r.body.tier}, ${r.body.token?.currentRequest?.totalTo
     log('\n=== Tier 2: tier 1 said "need more" -> full prompt ===');
     r = await ask('beams with a start offset above 100 mm');
     check('numeric filter > 100 mm', r.body.tier === 2 && same(r.body.objectIds, [3001]), info(r));
-    check('tier 2 token report adds up BOTH calls (tier 1 + tier 2)', r.body.token.calls.length === 2 && r.body.token.currentRequest.totalTokens === 450 + 1260, JSON.stringify(r.body.token.calls));
+    check('tier 2 token report adds up ALL calls (intent check + tier 1 + tier 2)', r.body.token.calls.length === 3 &&
+        r.body.token.currentRequest.totalTokens === 130 + 450 + 1260, JSON.stringify(r.body.token.calls));
     r = await ask('show me elements on level 7');
     check('Level 7 does not exist -> suggests real levels', r.body.action === 'clarify' && r.body.answer.includes('Level 1'), info(r));
     r = await ask('group beams by fire rating');

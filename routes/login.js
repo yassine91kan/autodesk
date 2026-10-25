@@ -42,7 +42,7 @@ const PUBLIC_PATHS = new Set([
 // What guests may do besides reading pages (GET): ask questions and send the Viewer's
 // coordinates. Everything else (uploading a model, the older LangChain assistant, whose
 // tokens aren't counted) needs signing in.
-const GUEST_WRITES = new Set(['POST /ask_agent_simple', 'PUT /ask_agent_simple', 'POST /login', 'POST /logout']);
+const GUEST_WRITES = new Set(['POST /ask_agent_simple', 'PUT /ask_agent_simple', 'POST /model_positions', 'POST /login', 'POST /logout']);
 
 // Slows down password guessing: after 10 wrong passwords from one address,
 // that address must wait 15 minutes.

@@ -78,6 +78,27 @@ service.getPublicToken = async () => {
     return publicToken;
 };
 
+// For the viewer inside AI chats (routes/mcp.js). That token is handed to another
+// app's page, so it may only view models: viewables:read, never data:read
+// (which could also download the source files).
+let viewerToken = null;
+let viewerTokenExp = 0;
+
+service.getViewerToken = async () => {
+    const now = Date.now();
+
+    if (viewerToken && now < viewerTokenExp) {
+        return { access_token: viewerToken, expires_in: Math.floor((viewerTokenExp - now) / 1000) };
+    }
+
+    const data = await authenticate(['viewables:read']);
+
+    viewerToken = data.access_token;
+    viewerTokenExp = now + (data.expires_in - 60) * 1000;
+
+    return { access_token: viewerToken, expires_in: data.expires_in - 60 };
+};
+
 // ====================
 // BUCKET
 // ====================
