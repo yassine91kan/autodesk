@@ -2,3 +2,6 @@
 node_modules
 # Windows shell crash logs
 *.stackdump
+
+# Saved model indexes when DATA_DIR points inside the project (e.g. DATA_DIR=./data)
+data/

@@ -1,6 +1,7 @@
 const express = require('express');
 const formidable = require('express-formidable');
 const { listObjects, uploadObject, translateObject, getManifest, urnify } = require('../services/aps.js');
+const { forgetModel } = require('../augmented/store');
 
 let router = express.Router();
 
@@ -49,6 +50,9 @@ router.post('/api/models', formidable(), async function (req, res, next) {
     try {
         const obj = await uploadObject(file.name, file.path);
         await translateObject(urnify(obj.objectId), req.fields['model-zip-entrypoint']);
+        // Same file name = same urn: drop the old version's saved index, so the next
+        // question indexes the new one (augmented/store.js).
+        forgetModel(urnify(obj.objectId));
         res.json({
             name: obj.objectKey,
             urn: urnify(obj.objectId)

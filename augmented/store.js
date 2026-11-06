@@ -1,10 +1,18 @@
 // augmented/store.js
 // ===========================================================================
-// 2. MODEL STORE - puts a downloaded model into SQLite (one in-memory database
-// per model), describes what it contains (its "vocabulary"), keeps loaded
-// models in memory, and stores the Viewer's coordinates per user.
+// 2. MODEL STORE - puts a downloaded model into SQLite (one database per model),
+// describes what it contains (its "vocabulary"), keeps loaded models in memory,
+// and stores the Viewer's coordinates per user.
+//
+// With DATA_DIR set (on Render: /var/data, the persistent disk), each model's
+// database is SAVED as a file and reopened after a restart or deploy, instead of
+// downloading and rebuilding it from Autodesk. Without DATA_DIR (your PC, the
+// tests) databases live in memory only, as before.
 // ===========================================================================
 
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 const Database = require('better-sqlite3');
 const {
     ModelNotReadyError, UnsupportedModelError, NAME_PATHS, PLACEHOLDER_VALUE, MAX_LISTED_VALUES,
@@ -16,6 +24,63 @@ const {
 const {
     buildDictionary
 } = require('./matcher');
+
+// ---------------------------------------------------------------- index files
+// Raise this number whenever the tables change (a new column, a new table): saved
+// files of an older version are then rebuilt, never read with the wrong layout.
+const SCHEMA_VERSION = 1;
+
+// The folder for index files, or null = keep databases in memory only.
+// (Read on every call, so a test can set DATA_DIR before using the store.)
+// If DATA_DIR is set but can't be written (e.g. the disk isn't attached), the app keeps
+// working in memory and says so in the log, instead of failing every model load.
+const unwritable = new Set();
+function indexDir() {
+    if (!process.env.DATA_DIR) return null;
+    const dir = path.join(process.env.DATA_DIR, 'indexes');
+    if (unwritable.has(dir)) return null;
+    try {
+        fs.mkdirSync(dir, { recursive: true });
+        fs.accessSync(dir, fs.constants.W_OK);
+        return dir;
+    } catch (error) {
+        unwritable.add(dir);
+        console.error(`DATA_DIR ${process.env.DATA_DIR} can't be written (${error.message}): keeping model indexes in memory only.`);
+        return null;
+    }
+}
+
+// The file for one model view: "<hash of the urn>_<guid>.sqlite". URNs are long base64
+// text, so the file name uses a short hash of it; the guid is already safe (letters,
+// digits, dashes). Starting with the urn's hash lets forgetModel find all of a model's files.
+const urnHash = urn => crypto.createHash('sha1').update(urn).digest('hex').slice(0, 16);
+function indexFile(urn, guid) {
+    const dir = indexDir();
+    return dir ? path.join(dir, `${urnHash(urn)}_${guid}.sqlite`) : null;
+}
+
+// Opens a saved index if it's valid: the right model, and this code's schema version.
+// An old or broken file is deleted (so it gets rebuilt) and null is returned.
+function openSavedIndex(file, key) {
+    if (!file || !fs.existsSync(file)) return null;
+    let db = null;
+    try {
+        db = new Database(file);   // (opens even a garbage file: SQLite only notices at the first query)
+        const meta = Object.fromEntries(db.prepare('SELECT key, value FROM meta').all().map(row => [row.key, row.value]));
+        if (Number(meta.schema_version) === SCHEMA_VERSION && meta.model === key) {
+            db.pragma('journal_mode = WAL');   // readers and the occasional writer don't block each other
+            return db;
+        }
+        console.log(`Index ${path.basename(file)} is from an older version: rebuilding it.`);
+    } catch (error) {
+        console.warn(`Index ${path.basename(file)} can't be read (${error.message}): rebuilding it.`);
+    }
+    // Close it BEFORE deleting: an open file can't be deleted on Windows, and a forgotten
+    // open file is a leak everywhere.
+    if (db) db.close();
+    fs.rmSync(file, { force: true });
+    return null;
+}
 
 const loadedModels = new Map();       // "urn:guid" -> finished model object
 const loadingModels = new Map();      // "urn:guid" -> Promise while a download is in progress
@@ -86,8 +151,16 @@ function readTree(tree) {
 }
 
 // Builds the SQLite database for one model.
-function buildDatabase(collection, tree) {
-    const db = new Database(':memory:'); // ':memory:' = lives in RAM, gone when the server stops
+// `file`: where to build it. ':memory:' (the default) lives in RAM and is gone when the
+// server stops; a file path builds it on disk (see getModel).
+function buildDatabase(collection, tree, file = ':memory:') {
+    const db = new Database(file);
+    if (file !== ':memory:') {
+        // Building a TEMPORARY file (see getModel): SQLite's crash protection would only
+        // slow it down, since a half-built .tmp file is thrown away anyway. About 2x faster.
+        db.pragma('journal_mode = OFF');
+        db.pragma('synchronous = OFF');
+    }
 
     // Two tables are enough:
     //   elements   - one row per real element, with its category
@@ -127,6 +200,10 @@ function buildDatabase(collection, tree) {
             min_x REAL, min_y REAL, min_z REAL,
             max_x REAL, max_y REAL, max_z REAL
         );
+
+        -- About this file: which model it is, when it was built, and the schema
+        -- version of the code that built it (see SCHEMA_VERSION).
+        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);
     `);
 
     const treeInfoById = readTree(tree);
@@ -308,21 +385,53 @@ async function getModel(urn, guid) {
 
     // Same trick as the token: store the Promise so parallel requests share one download.
     const promise = (async () => {
-        const { collection, tree } = await fetchModelData(urn, guid);
-        const db = buildDatabase(collection, tree);
+        // 1. A saved index on disk? Open it: no download, no rebuilding.
+        const file = indexFile(urn, guid);
+        let db = openSavedIndex(file, key);
+        const source = db ? 'disk' : 'autodesk';   // where this model came from (shown by /model_status)
 
-        const elementCount = db.prepare('SELECT COUNT(*) AS c FROM elements').get().c;
-        if (elementCount === 0) {
-            db.close();
-            // Throwing means we never reach loadedModels.set below, so nothing
-            // empty gets cached: the next request simply tries again.
-            if (collection.length > 0) {
-                // Objects arrived, but none is a "Name [id]" element: not a model we can query.
-                throw new UnsupportedModelError('This model has no elements the assistant can query. It currently works with Revit models.');
+        // 2. Otherwise download it from Autodesk and build it.
+        if (!db) {
+            const { collection, tree } = await fetchModelData(urn, guid);
+            // On disk: build into a temporary file, rename it at the end. A crash halfway
+            // leaves only the .tmp file (ignored and replaced next time), never a broken index.
+            const temporary = file && `${file}.tmp`;
+            if (file) {
+                fs.mkdirSync(path.dirname(file), { recursive: true });
+                fs.rmSync(temporary, { force: true });
             }
-            throw new ModelNotReadyError('The model has no elements yet. APS may still be processing it.');
+            db = buildDatabase(collection, tree, temporary || ':memory:');
+
+            const count = db.prepare('SELECT COUNT(*) AS c FROM elements').get().c;
+            if (count === 0) {
+                db.close();
+                if (temporary) fs.rmSync(temporary, { force: true });
+                // Throwing means we never reach loadedModels.set below, so nothing
+                // empty gets cached: the next request simply tries again.
+                if (collection.length > 0) {
+                    // Objects arrived, but none is a "Name [id]" element: not a model we can query.
+                    throw new UnsupportedModelError('This model has no elements the assistant can query. It currently works with Revit models.');
+                }
+                throw new ModelNotReadyError('The model has no elements yet. APS may still be processing it.');
+            }
+
+            const writeMeta = db.prepare('INSERT INTO meta VALUES (?, ?)');
+            writeMeta.run('schema_version', String(SCHEMA_VERSION));
+            writeMeta.run('model', key);
+            writeMeta.run('built_at', new Date().toISOString());
+
+            if (file) {
+                // Close before renaming (Windows can't rename an open file), then reopen.
+                db.close();
+                fs.renameSync(temporary, file);
+                db = new Database(file);
+                db.pragma('journal_mode = WAL');
+            }
         }
 
+        // 3. The vocabulary and dictionary are rebuilt from the database either way:
+        //    they're quick to make (seconds at most) and live in memory.
+        const elementCount = db.prepare('SELECT COUNT(*) AS c FROM elements').get().c;
         const vocabulary = buildVocabulary(db);
         const model = {
             key,
@@ -332,6 +441,7 @@ async function getModel(urn, guid) {
             vocabulary,
             dictionary: buildDictionary(db, vocabulary), // word -> model name lookup (section 2b)
             elementCount,
+            source,
             loadedAt: new Date().toISOString()
         };
         loadedModels.set(key, model); // only successful loads are cached
@@ -372,7 +482,32 @@ function getCoordinates(model, id, userId) {
     return position ? { objectId, position } : null;
 }
 
+// A model was uploaded again (a new version): forget its index in memory AND on disk,
+// so the next question builds it from the new version. Called by routes/models.js.
+// (Our bucket only changes through our own upload, so this keeps every index current.)
+function forgetModel(urn) {
+    for (const [key, model] of loadedModels) {
+        if (model.urn === urn) {
+            model.db.close();
+            loadedModels.delete(key);
+        }
+    }
+    const dir = indexDir();
+    if (!dir || !fs.existsSync(dir)) return;
+    for (const name of fs.readdirSync(dir)) {
+        if (name.startsWith(`${urnHash(urn)}_`)) fs.rmSync(path.join(dir, name), { force: true });
+    }
+}
+
+// Closes every loaded model and empties memory, as a restart would. Saved files stay.
+// (Used by the tests to check that a "restarted" server reopens files instead of downloading.)
+function unloadModels() {
+    for (const model of loadedModels.values()) model.db.close();
+    loadedModels.clear();
+}
+
 module.exports = {
     loadedModels, loadingModels, coordinatesByUser, cleanElementName, isRealElement, parseNumber,
-    readTree, buildDatabase, buildVocabulary, getModel, setCoordinates, getCoordinates
+    readTree, buildDatabase, buildVocabulary, getModel, setCoordinates, getCoordinates,
+    SCHEMA_VERSION, indexFile, forgetModel, unloadModels
 };

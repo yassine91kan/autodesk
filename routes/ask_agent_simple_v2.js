@@ -301,7 +301,8 @@ router.get('/model_status', async (req, res) => {
         const resolved = await resolveModel(req.query);
         urn = resolved.urn;
         const model = await getModel(resolved.urn, resolved.guid);
-        res.json({ ready: true, urn, modelName: modelNameFromUrn(urn), elementCount: model.elementCount, loadedAt: model.loadedAt });
+        // source: 'disk' = reopened from its saved index file, 'autodesk' = downloaded and built
+        res.json({ ready: true, urn, modelName: modelNameFromUrn(urn), elementCount: model.elementCount, loadedAt: model.loadedAt, source: model.source });
     } catch (error) {
         const status = httpStatus(error);
         if (status === 500) console.error('model_status error:', error);
