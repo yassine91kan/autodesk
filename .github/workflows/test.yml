@@ -1,0 +1,31 @@
+# Runs the free tests on every push to main and on every pull request.
+# Render waits for this to pass before deploying (Render: Settings > Auto-Deploy >
+# "After CI Checks Pass"), so a push that breaks a test never reaches testers.
+#
+# The tests use a FAKE Autodesk and a FAKE OpenAI (test/harness.js): no real keys,
+# no tokens, no cost. The values below only exist because config.js insists on them.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APS_CLIENT_ID: ci-fake
+      APS_CLIENT_SECRET: ci-fake
+      OPENAI_API_KEY: ci-fake
+      OPENAIKEY: ci-fake
+      PUPPETEER_SKIP_DOWNLOAD: 'true'   # the tests don't need puppeteer's 150 MB browser
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test

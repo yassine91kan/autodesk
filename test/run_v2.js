@@ -278,5 +278,6 @@ const info = r => `[tier ${r.body.tier}, ${r.body.token?.currentRequest?.totalTo
 
     log(`\nQuestions per tier: tier 0 = ${tierCount[0]}, tier 1 = ${tierCount[1]}, tier 2 = ${tierCount[2]}`);
     log(`${pass} passed, ${fail} failed`);
+    process.exitCode = fail ? 1 : 0;   // a failure must fail the run (GitHub Actions checks this)
     server.close();
 })().catch(e => { log('HARNESS ERROR', e); process.exit(1); });

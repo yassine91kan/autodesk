@@ -9,6 +9,9 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 // (for the secure cookie) and the visitor's real address (for the attempt limit).
 app.set('trust proxy', 1);
 
+// Render's health check (/healthz). Before sign-in: Render has no login cookie.
+app.use(require('./routes/health.js'));
+
 // The MCP server for AI chats (Claude, Copilot). Before sign-in: those apps can't
 // use the login cookie, so it is protected by its secret address (MCP_KEY) instead.
 app.use(require('./routes/mcp.js'));
@@ -22,7 +25,10 @@ app.use(require('./routes/auth.js'));
 app.use(require('./routes/models.js'));
 // app.use(require('./routes/openai.js'));
 // app.use(require('./routes/langchain.js'));
-app.use(require('./routes/langchain_great.js'));
+// Switched off (not deleted): the old LangChain chatbot ("Type 1" on the page, also
+// commented out in wwwroot/index.html). Loading it built a vector store with OpenAI
+// embeddings at every start, costing memory and startup time. Uncomment both to use it.
+// app.use(require('./routes/langchain_great.js'));
 // app.use(require('./routes/aps_agent_simple.js'));
 // app.use(require('./routes/ask_agent_simple_claude.js'));
 app.use(require('./routes/ask_agent_simple_v2.js'));

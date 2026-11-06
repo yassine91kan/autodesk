@@ -10,11 +10,13 @@
 //     a safety cap on the OpenAI bill, whatever someone tries.
 //   - Every budget starts again at midnight UTC.
 //
-// The counts live in memory. That is simple and free, but they reset when the
-// server restarts (Heroku restarts apps about once a day) and each copy of the app
-// counts on its own. To keep counts across restarts, replace `store` below with
-// one backed by Redis or Postgres: nothing else has to change.
+// The counts live in memory and, with DATA_DIR set (Render's disk), in
+// DATA_DIR/state.sqlite too (augmented/state.js), so a restart or deploy doesn't
+// hand every guest a fresh budget. Each copy of the app still counts on its own:
+// fine with one server; several servers would need a shared database (Redis, Postgres).
 // ---------------------------------------------------------------------------
+
+const { savedMap } = require('../augmented/state');
 
 // 20,000 = about 20-25 questions. A GUEST_DAILY_TOKENS environment variable overrides it,
 // e.g. 2000 to try the limit locally without asking 25 questions.
@@ -28,16 +30,20 @@ const MAX_QUESTIONS_PER_MINUTE = 10;
 
 // ---------------------------------------------------------------- the store
 // "Which day is it, and how much has each key used today?" Keys look like
-// "guest:<id>", "ip:<address>" and "global".
+// "guest:<id>", "ip:<address>" and "global". The saved "#day" entry says which day
+// the saved counts belong to, so after a restart they're kept on the same day only.
+const DAY_KEY = '#day';
 const store = {
     day: null,
-    used: new Map(),
+    used: savedMap('usage', { maxInMemory: 10000 }),
     // Today's date in UTC, "2026-10-18": when it changes, every count starts again.
     today() {
         const day = new Date().toISOString().slice(0, 10);
+        if (this.day === null) this.day = this.used.get(DAY_KEY) ?? null;   // just started: the saved counts' day
         if (day !== this.day) {
             this.day = day;
             this.used.clear();
+            this.used.set(DAY_KEY, day);
         }
         return day;
     },

@@ -377,7 +377,12 @@ async function getModel(urn, guid) {
     const key = `${urn}:${guid}`;
 
     if (loadedModels.has(key)) {
-        return loadedModels.get(key);   // already loaded: instant
+        // Already loaded: instant. Delete + set moves it to the END of the Map, so the
+        // Map's order is always "least recently used first" (see keepLoadedLimit).
+        const model = loadedModels.get(key);
+        loadedModels.delete(key);
+        loadedModels.set(key, model);
+        return model;
     }
     if (loadingModels.has(key)) {
         return loadingModels.get(key);  // someone else is loading it right now: wait for them
@@ -445,6 +450,12 @@ async function getModel(urn, guid) {
             loadedAt: new Date().toISOString()
         };
         loadedModels.set(key, model); // only successful loads are cached
+        keepLoadedLimit();
+        const megabytes = bytes => Math.round(bytes / 1048576);
+        const memory = process.memoryUsage();
+        console.log(`Model ${key.slice(-36)} loaded from ${source}: ${elementCount} elements. ` +
+            `Models in memory: ${loadedModels.size}/${maxLoadedModels()}. ` +
+            `Memory: ${megabytes(memory.rss)} MB total, ${megabytes(memory.heapUsed)} MB JavaScript.`);
         return model;
     })();
 
@@ -453,6 +464,36 @@ async function getModel(urn, guid) {
         return await promise;
     } finally {
         loadingModels.delete(key); // done (success or failure): stop sharing this Promise
+    }
+}
+
+// ------------------------------------------------------ limit on loaded models
+// Each loaded model keeps its vocabulary and dictionary in memory (the database itself
+// is on disk). To stay inside the server's memory, at most MAX_LOADED_MODELS (default 2)
+// stay loaded; the least recently used one is dropped. Its saved file stays on disk, so
+// the next question about it reopens it (about 2 s for Seaport), with no download.
+// (Read on every call, so it can be changed in Render's environment and tests can set it.)
+function maxLoadedModels() {
+    const limit = parseInt(process.env.MAX_LOADED_MODELS, 10);
+    return limit >= 1 ? limit : 2;
+}
+
+// A question may still be using a dropped model (e.g. waiting for OpenAI), so its
+// database is closed a minute later rather than straight away.
+// Until then it waits in droppedModels, so forgetModel/unloadModels can close it at once.
+const CLOSE_DELAY_MS = 60 * 1000;
+const droppedModels = new Set();
+function closeModel(model) {
+    droppedModels.delete(model);
+    if (model.db.open) model.db.close();
+}
+function keepLoadedLimit() {
+    while (loadedModels.size > maxLoadedModels()) {
+        const [oldestKey, oldest] = loadedModels.entries().next().value;   // first = least recently used
+        loadedModels.delete(oldestKey);
+        droppedModels.add(oldest);
+        console.log(`Model ${oldestKey.slice(-36)} dropped from memory (limit ${maxLoadedModels()}); it reopens from disk when asked again.`);
+        setTimeout(() => closeModel(oldest), CLOSE_DELAY_MS).unref();
     }
 }
 
@@ -488,9 +529,12 @@ function getCoordinates(model, id, userId) {
 function forgetModel(urn) {
     for (const [key, model] of loadedModels) {
         if (model.urn === urn) {
-            model.db.close();
+            closeModel(model);
             loadedModels.delete(key);
         }
+    }
+    for (const model of droppedModels) {
+        if (model.urn === urn) closeModel(model);   // its file is about to be deleted
     }
     const dir = indexDir();
     if (!dir || !fs.existsSync(dir)) return;
@@ -502,12 +546,12 @@ function forgetModel(urn) {
 // Closes every loaded model and empties memory, as a restart would. Saved files stay.
 // (Used by the tests to check that a "restarted" server reopens files instead of downloading.)
 function unloadModels() {
-    for (const model of loadedModels.values()) model.db.close();
+    for (const model of [...loadedModels.values(), ...droppedModels]) closeModel(model);
     loadedModels.clear();
 }
 
 module.exports = {
     loadedModels, loadingModels, coordinatesByUser, cleanElementName, isRealElement, parseNumber,
     readTree, buildDatabase, buildVocabulary, getModel, setCoordinates, getCoordinates,
-    SCHEMA_VERSION, indexFile, forgetModel, unloadModels
+    SCHEMA_VERSION, indexFile, forgetModel, unloadModels, maxLoadedModels
 };

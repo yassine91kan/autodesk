@@ -157,5 +157,6 @@ const guestCookieOf = r => (r.headers.get('set-cookie') || '').split(',').map(c 
     check('local development without APP_PASSWORD -> open', r.status === 200);
 
     console.log(`\n${pass} passed, ${fail} failed`);
+    process.exitCode = fail ? 1 : 0;   // a failure must fail the run (GitHub Actions checks this)
     server.close();
 })().catch(e => { console.error('TEST ERROR', e); process.exit(1); });

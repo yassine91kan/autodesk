@@ -17,6 +17,7 @@
 
 const express = require('express');
 const usage = require('./usage');   // daily token budgets per visitor
+const { savedMap } = require('../augmented/state');
 const {
     ModelNotReadyError, UnsupportedModelError, PlannerError, BadRequestError, remember, placeholders
 } = require('../augmented/shared');
@@ -54,8 +55,9 @@ const userOf = req => req.user?.id || 'local';
 // The last plan that ran, per user + model + sheet, for follow-up questions:
 // "userId|urn:guid|sheetId" -> { question, plan, at }. The page sends a new sheet id
 // when you press New sheet or pick another model, which starts afresh.
-const lastPlans = new Map();
+// Saved on Render's disk too (augmented/state.js), so a deploy doesn't cut a conversation.
 const FOLLOW_UP_MINUTES = 30;   // after 30 quiet minutes a question starts afresh
+const lastPlans = savedMap('followups', { maxAgeMs: FOLLOW_UP_MINUTES * 60 * 1000 });
 const SHEET_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 function conversationKey(req, urn, guid) {
     const sheet = SHEET_ID_PATTERN.test(String(req.body?.conversationId || '')) ? req.body.conversationId : 'default';
@@ -201,7 +203,7 @@ router.post('/ask_agent_simple', async (req, res) => {
         const foundSomething = result.data?.count > 0 || result.data?.groups?.length > 0;
         if (checked.ok && ['list', 'count', 'group', 'rank', 'total'].includes(action) && foundSomething) {
             const asked = outcome.followUp && previous ? `${previous.question} / ${question}` : question;
-            remember(lastPlans, key, { question: asked.slice(-500), plan: outcome.plan, at: Date.now() });
+            lastPlans.set(key, { question: asked.slice(-500), plan: outcome.plan, at: Date.now() });
         }
         remember(lastResults, `${userOf(req)}|${urn}:${guid}`, result.objectIds);
 
