@@ -1,6 +1,10 @@
 // Test harness: runs the router unchanged, with APS + OpenAI stubbed out.
 const Module = require('module');
 const express = require('express');
+
+// The hybrid planner is the app's default. run_v2, run_disk, run_log and run_login test the
+// TIERED planner, so it's chosen here unless a test asked for another (run_hybrid sets "hybrid").
+if (!process.env.PLANNER) process.env.PLANNER = 'tiered';
 const axios = require('axios');
 
 const calls = { auth: 0, metadata: 0, tree: 0, classifier: 0, agentLLM: 0 };
@@ -193,6 +197,21 @@ function agentStep(messages) {
     return answer('I can help with BIM questions.');
 }
 
+// What the fake OpenAI writes for the hybrid's SQL lane (test/run_hybrid.js), per question.
+const SQL_ANSWERS = {
+    'beams that are not steel': { sql: "SELECT objectid FROM elements_clean WHERE category = 'Structural Framing' AND (material_class IS NULL OR material_class <> 'steel')", reading: 'Framing whose material is not steel.' },
+    'and on level 12?': { sql: "SELECT objectid FROM elements_clean WHERE category = 'Structural Framing' AND (material_class IS NULL OR material_class <> 'steel') AND level = 'Level 12'", reading: 'The same, on Level 12.' },
+    'exclude the level 1 ones': { sql: "SELECT objectid FROM elements_clean WHERE category = 'Structural Framing' AND (material_class IS NULL OR material_class <> 'steel') AND level <> 'Level 1'", reading: 'The same, without Level 1.' },
+    'count framing per level and material': { sql: "SELECT level, material_class, COUNT(*) AS count FROM elements_clean WHERE category = 'Structural Framing' GROUP BY 1, 2", reading: 'Framing by level and material.' },
+    'delete the walls': { sql: 'DELETE FROM elements_clean' },
+    'broken query': { sql: 'SELECT nope FROM elements_clean' },
+    'tell me a joke': { reply: 'I only answer questions about the model.' }
+};
+const SQL_RETRIES = {
+    'delete the walls': { reply: 'I can only read the model, not change it.' },
+    'broken query': { sql: "SELECT COUNT(*) AS count FROM elements_clean WHERE category = 'Walls'" }
+};
+
 class FakeOpenAI {
     constructor() {
         this.chat = { completions: { create: async (req) => {
@@ -202,6 +221,16 @@ class FakeOpenAI {
                 const content = json === null ? '{not json' : JSON.stringify(json);
                 return { choices: [{ message: { content } }], usage: { prompt_tokens: prompt, completion_tokens: completion, total_tokens: prompt + completion } };
             };
+            if (system.startsWith('You are Augmented, an assistant that answers questions about a Revit building model by writing ONE SQLite query')) {
+                // The hybrid's SQL lane (augmented/sqlplanner.js): canned answers per question.
+                calls.sql = (calls.sql || 0) + 1;
+                const user = req.messages[1].content;
+                calls.lastSqlUser = user;
+                const question = (user.match(/New question \(may refine the previous one\): (.*)/) || [null, user.split('\n')[0]])[1];
+                const retry = /was refused or failed/.test(user);
+                const answer = (retry ? SQL_RETRIES : SQL_ANSWERS)[question] || { clarify: 'Could you rephrase?' };
+                return reply(answer, 1300, 60);
+            }
             if (system.startsWith('Classify a question')) {
                 // v2 tier 0: intent only. Mimics what gpt-4o-mini answers.
                 calls.tier0 = (calls.tier0 || 0) + 1;

@@ -138,7 +138,7 @@
 
             <form class="query login-form" id="loginForm" method="post" action="/login">
               <!-- Where to go after signing in (filled from the address by the script below). -->
-              <input type="hidden" name="next" id="next" value="/" />
+              <input type="hidden" name="next" id="next" value="/app" />
               <label class="caps" for="password">Access password</label>
               <div class="query__row">
                 <div class="login-field">
@@ -193,8 +193,8 @@
       // The parts the server can't fill in: where to return to (including the "#model.rvt"
       // part, which browsers never send to the server), messages, and small field behaviours.
       const params = new URLSearchParams(location.search);
-      const next = params.get('next') || '/';
-      document.getElementById('next').value = next.startsWith('/') ? next + location.hash : '/';
+      const next = params.get('next') || '/app';
+      document.getElementById('next').value = next.startsWith('/') ? next + location.hash : '/app';
 
       const password = document.getElementById('password');
       const messages = {
@@ -202,7 +202,8 @@
         locked: 'Too many attempts from this connection. Wait 15 minutes, then try again.',
         expired: 'Your session ended. Sign in again to continue where you were.',
         limit: 'You have used today\'s free questions. Sign in to keep asking, or come back tomorrow.',
-        member: 'This part of Augmented needs signing in: uploading models and the other assistants.'
+        member: 'This part of Augmented needs signing in: uploading models and the other assistants.',
+        upload: 'Uploading Revit models is for signed-in users. Sign in, then upload your model.'
       };
       const error = messages[params.get('error')];
       if (error) {

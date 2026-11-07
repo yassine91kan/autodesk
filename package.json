@@ -7,7 +7,7 @@
     "node": "22.x"
   },
   "scripts": {
-    "test": "node test/run_v2.js && node test/run_login.js && node test/run_disk.js",
+    "test": "node test/run_v2.js && node test/run_login.js && node test/run_disk.js && node test/run_log.js && node test/run_clean.js && node test/run_hybrid.js",
     "start": "nodemon server.js"
   },
   "keywords": [

@@ -19,6 +19,9 @@ const path = require('path');
 const Module = require('module');
 const express = require('express');
 
+// This dry run measures the TIERED planner's code (the hybrid is the app's default).
+process.env.PLANNER = process.env.PLANNER || 'tiered';
+
 const arg = (name, fallback) => (process.argv.indexOf(name) > 0 ? process.argv[process.argv.indexOf(name) + 1] : fallback);
 const CASES_FILE = path.resolve(arg('--cases', path.join(__dirname, 'eval-cases-rstbasic.json')));
 

@@ -8,7 +8,9 @@ const app = express();
 app.set('trust proxy', 1);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(require('../routes/login.js'));
-app.use(express.static(path.join(__dirname, '..', 'wwwroot')));
+// The pages as server.js serves them: / = landing page, /app = the app (routes/pages.js).
+app.use(require('../routes/pages.js'));
+app.use(express.static(path.join(__dirname, '..', 'wwwroot'), { index: false }));
 // A stand-in for the chatbot: checks the budget like the real route, "uses" 6,000
 // tokens per question, and says WHO asked, so the tests can see users kept apart.
 const usage = require('../routes/usage.js');
@@ -19,6 +21,8 @@ app.post('/ask_agent_simple', (req, res) => {
     res.json({ success: true, user: req.user.id, answer: 'model data', budget: usage.budgetOf(req) });
 });
 app.post('/api/models', (req, res) => res.json({ success: true, uploaded: true }));
+app.post('/feedback', (req, res) => res.json({ gate: 'passed' }));   // stand-in: only the gate is tested here
+app.use(require('../routes/admin.js'));
 
 let base, pass = 0, fail = 0;
 function check(name, cond, detail = '') {
@@ -44,9 +48,15 @@ const guestCookieOf = r => (r.headers.get('set-cookie') || '').split(',').map(c 
 
     console.log('\n=== Guests: open the link and ask, no password ===');
     r = await get('/', HTML);
-    check('opening the app -> the app itself, no redirect', r.status === 200 && (await r.text()).includes('Augmented'), `${r.status}`);
+    check('"/" is the landing page', r.status === 200 && (await r.text()).includes('What you can ask'), `${r.status}`);
+    r = await get('/app', HTML);
+    check('opening the app (/app) -> the app itself, no redirect, no .html', r.status === 200 && (await r.text()).includes('main.js'), `${r.status}`);
     const guestSet = r.headers.get('set-cookie') || '';
     check('...and the browser gets a guest cookie (HttpOnly, 1 year)', /augmented_guest=/.test(guestSet) && /HttpOnly/.test(guestSet) && /Max-Age=31536000/.test(guestSet), guestSet);
+    r = await get('/landing.html', HTML);
+    check('old address /landing.html -> 301 to /', r.status === 301 && r.headers.get('location') === '/', `${r.status} ${r.headers.get('location')}`);
+    r = await get('/index.html', HTML);
+    check('old address /index.html -> 301 to /app', r.status === 301 && r.headers.get('location') === '/app', `${r.status} ${r.headers.get('location')}`);
     r = await get('/login', HTML);
     const page = await r.text();
     check('sign-in page loads', r.status === 200 && page.includes('Sign in') && page.includes('name="password"'));
@@ -103,15 +113,15 @@ const guestCookieOf = r => (r.headers.get('set-cookie') || '').split(',').map(c 
     console.log('\n=== Signing in ===');
     r = await post('/login', { password: 'wrong', next: '/' });
     check('wrong password -> back to sign-in with a message', r.status === 303 && r.headers.get('location').startsWith('/login?error=wrong'), r.headers.get('location'));
-    r = await post('/login', { password: 'correct horse', next: '/#rstbasicsampleproject.rvt' });
+    r = await post('/login', { password: 'correct horse', next: '/app#rstbasicsampleproject.rvt' });
     const cookie = (r.headers.get('set-cookie') || '').split(';')[0];
-    check('right password -> back to the page asked for, model included', r.status === 303 && r.headers.get('location') === '/#rstbasicsampleproject.rvt', r.headers.get('location'));
+    check('right password -> back to the page asked for, model included', r.status === 303 && r.headers.get('location') === '/app#rstbasicsampleproject.rvt', r.headers.get('location'));
     check('cookie is HttpOnly, SameSite=Lax, 7 days', /HttpOnly/.test(r.headers.get('set-cookie')) && /SameSite=Lax/.test(r.headers.get('set-cookie')) && /Max-Age=604800/.test(r.headers.get('set-cookie')), r.headers.get('set-cookie'));
     r = await post('/login', { password: 'correct horse', next: '//evil.example.com' });
-    check('"next" pointing to another site is ignored -> /', r.headers.get('location') === '/', r.headers.get('location'));
+    check('"next" pointing to another site is ignored -> the app', r.headers.get('location') === '/app', r.headers.get('location'));
 
     console.log('\n=== Signed in ===');
-    r = await get('/', { ...HTML, Cookie: cookie });
+    r = await get('/app', { ...HTML, Cookie: cookie });
     check('the app opens', r.status === 200 && (await r.text()).includes('Augmented'));
     r = await fetch(base + '/ask_agent_simple', { method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: cookie }, body: '{}' });
     const member = await r.json();
@@ -127,7 +137,15 @@ const guestCookieOf = r => (r.headers.get('set-cookie') || '').split(',').map(c 
     const me = await r.json();
     check('/api/me says "guest", with the budget', me.kind === 'guest' && me.budget.limit === 20000, JSON.stringify(me));
     r = await get('/login', { ...HTML, Cookie: cookie });
-    check('visiting /login when signed in -> straight to the app', r.status === 302 && r.headers.get('location') === '/');
+    check('visiting /login when signed in -> straight to the app', r.status === 302 && r.headers.get('location') === '/app');
+
+    console.log('\n=== Question log: 👍/👎 and the admin page ===');
+    r = await fetch(base + '/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: guestB }, body: '{}' });
+    check('guests may send 👍/👎 (not stopped by the sign-in gate)', r.status === 200 && (await r.json()).gate === 'passed', `status ${r.status}`);
+    r = await get('/admin/questions', { ...HTML, Cookie: guestB });
+    check('guests can\'t open the question log (403)', r.status === 403, `status ${r.status}`);
+    r = await get('/admin/questions', { ...HTML, Cookie: cookie });
+    check('signed in: the question log opens', r.status === 200 && (await r.text()).includes('Question log'), `status ${r.status}`);
 
     console.log('\n=== Forged cookies ===');
     const [expiry, signature] = cookie.split('=')[1].split('.');
@@ -139,14 +157,14 @@ const guestCookieOf = r => (r.headers.get('set-cookie') || '').split(',').map(c 
 
     console.log('\n=== Logging out ===');
     r = await post('/logout', {}, { Cookie: cookie });
-    check('log out -> back to the app as a guest, cookie deleted', r.status === 303 && r.headers.get('location') === '/' && /Max-Age=0/.test(r.headers.get('set-cookie')));
+    check('log out -> back to the app as a guest, cookie deleted', r.status === 303 && r.headers.get('location') === '/app' && /Max-Age=0/.test(r.headers.get('set-cookie')));
 
     console.log('\n=== Guessing ===');
     for (let i = 0; i < 10; i++) await post('/login', { password: `guess ${i}` }, { 'X-Forwarded-For': '203.0.113.9' });
     r = await post('/login', { password: 'correct horse' }, { 'X-Forwarded-For': '203.0.113.9' });
     check('after 10 wrong passwords, even the right one waits 15 min', r.headers.get('location').startsWith('/login?error=locked'), r.headers.get('location'));
     r = await post('/login', { password: 'correct horse' }, { 'X-Forwarded-For': '198.51.100.4' });
-    check('...but only for that address', r.headers.get('location') === '/');
+    check('...but only for that address', r.headers.get('location') === '/app');
 
     console.log('\n=== Misconfigured server ===');
     process.env.APP_PASSWORD = ''; process.env.NODE_ENV = 'production';

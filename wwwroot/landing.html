@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Augmented: ask your building model</title>
+  <meta name="description" content="Ask a Revit model a question in plain English. Get the exact number from the model data, and see the elements highlighted in 3D." />
+  <link rel="icon" href="assets/images/favicon.svg" />
+  <!-- How a shared link looks in chat apps, email and social posts -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Augmented: ask your building model" />
+  <meta property="og:description" content="Ask a Revit model a question in plain English. Get the exact number from the model data, and see the elements highlighted in 3D." />
+  <meta name="theme-color" content="#faf9f5" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1c1b18" media="(prefers-color-scheme: dark)" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=Montserrat:wght@600&display=swap" />
+  <style>
+    :root {
+      --ivory: #faf9f5;      /* page */
+      --pampas: #f0eee6;     /* alternate bands */
+      --ink: #141413;        /* text, and the closing band */
+      --ink-2: #5e5d59;      /* secondary text */
+      --clay: #c15f3c;       /* the answer: highlighted elements, the call to action */
+      --clay-fill: rgba(217, 119, 87, 0.22);
+      --clay-hover: #a9502f;
+      --on-clay: #ffffff;    /* text on a clay button (5.6:1) */
+      --sky: #6a9bcc;        /* the question and its query */
+      --sky-text: #3d6f9f;   /* the same blue, deep enough for small text (5:1 on ivory) */
+      --cloudy: #b0aea5;     /* the unselected model */
+      --rule: #dedcd2;
+      --band-dark: #141413;  /* the closing band */
+      --on-dark: #faf9f5;
+      --on-dark-2: #b0aea5;
+      --display: "Barlow Semi Condensed", "Arial Narrow", sans-serif;
+      --body: "Barlow", "Segoe UI", system-ui, sans-serif;
+      --gutter: clamp(16px, 2.5vw, 32px);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --ivory: #1c1b18; --pampas: #24231f; --ink: #ecebe4; --ink-2: #b0aea5;
+        --clay: #e08a6b; --clay-fill: rgba(224, 138, 107, 0.24); --clay-hover: #eba184; --on-clay: #141413;
+        --sky: #8db4dc; --sky-text: #8db4dc; --cloudy: #6b6a64; --rule: #3a3934;
+        --band-dark: #0f0f0e;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--ivory); scroll-behavior: smooth; }
+    body { margin: 0; background: var(--ivory); color: var(--ink); font: 400 17px/1.6 var(--body); -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+    :focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; border-radius: 2px; }
+    /* The browser's own surfaces, in the page's palette */
+    ::selection { background: var(--clay-fill); color: var(--ink); }
+    html { scrollbar-color: var(--cloudy) var(--ivory); accent-color: var(--clay); caret-color: var(--sky); }
+    .wrap { max-width: 1360px; margin: 0 auto; padding: 0 var(--gutter); }
+    .band { padding: clamp(56px, 8vw, 104px) 0; }
+    .band.tint { background: var(--pampas); }
+
+    /* ---------- Header ---------- */
+    .masthead { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 68px; }
+    /* The Augmented logo, as on the app and sign-in pages: the mark plus the wordmark
+       (wide geometric capitals, from the supplied logo). */
+    .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); }
+    .logo__mark { display: block; height: 34px; width: auto; }
+    .logo__word { font: 600 17px "Montserrat", "Segoe UI", sans-serif; letter-spacing: 0.18em; text-transform: uppercase; white-space: nowrap; }
+    .masthead nav { display: flex; align-items: center; gap: 26px; font: 500 16px/1 var(--display); }
+    .masthead nav a { text-decoration: none; color: var(--ink-2); }
+    .masthead nav a:hover { color: var(--ink); }
+    .masthead nav .app { color: var(--ink); border: 1.5px solid var(--ink); border-radius: 999px; padding: 9px 16px; white-space: nowrap; }
+    .masthead nav .app:hover { background: var(--pampas); }
+    /* EN | FR */
+    .lang { display: inline-flex; padding: 3px; border: 1.5px solid var(--rule); border-radius: 999px; }
+    .lang button { font: 600 14px/1 var(--display); color: var(--ink-2); background: none; border: 0; border-radius: 999px; padding: 7px 11px; cursor: pointer; }
+    .lang button:hover { color: var(--ink); }
+    .lang button[aria-pressed="true"] { background: var(--ink); color: var(--ivory); }
+
+    /* ---------- Hero ---------- */
+    .hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: center; padding-top: clamp(24px, 4vw, 48px); padding-bottom: clamp(56px, 8vw, 96px); }   /* top/bottom only: .wrap keeps the side padding */
+    h1 { font: 600 clamp(44px, 5.6vw, 74px)/0.98 var(--display); letter-spacing: -0.015em; margin: 0 0 24px; max-width: 18ch; text-wrap: balance; }
+    .lede { font-size: clamp(18px, 1.7vw, 21px); color: var(--ink-2); max-width: 36ch; margin: 0 0 32px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .btn { display: inline-flex; align-items: center; min-height: 50px; padding: 0 26px; font: 600 18px/1 var(--display); text-decoration: none; border: 1.5px solid var(--ink); border-radius: 999px; transition: background-color 160ms ease; }
+    .btn-primary { background: var(--clay); border-color: var(--clay); color: var(--on-clay); }
+    .btn-primary:hover { background: var(--clay-hover); border-color: var(--clay-hover); }
+    .btn-quiet:hover { background: var(--pampas); }
+    .note { margin-top: 20px; font-size: 14.5px; color: var(--ink-2); max-width: 44ch; }
+
+    /* The animated model */
+    .stage { position: relative; margin: 0; }
+    .stage svg { display: block; width: 100%; height: auto; overflow: visible; }
+    .el { stroke: var(--cloudy); stroke-width: 1.4; fill: none; stroke-linecap: round; transition: stroke 420ms ease, stroke-width 420ms ease, fill 420ms ease, opacity 420ms ease; }
+    .el.slab { fill: rgba(176, 174, 165, 0.10); stroke-width: 0.9; }
+    .el.wall { fill: rgba(176, 174, 165, 0.16); stroke-width: 1; }
+    .el.col { stroke-width: 1.8; }
+    .el.on { stroke: var(--clay); stroke-width: 2.8; }
+    .el.slab.on, .el.wall.on { fill: var(--clay-fill); stroke-width: 1.6; }
+    .model.dim .el:not(.on) { opacity: 0.45; }
+    .lvl { font: 500 11px var(--display); fill: var(--ink-2); }
+
+    .query {
+      position: absolute; left: 0; bottom: 2%; width: min(78%, 420px);
+      background: var(--ivory); border: 1px solid var(--rule); border-radius: 14px;
+      padding: 16px 18px 14px; box-shadow: 0 18px 40px -24px rgba(20, 20, 19, 0.35);
+    }
+    .q-ask { font: 600 19px/1.35 var(--display); min-height: 1.35em; }
+    .q-ask .caret { display: inline-block; width: 2px; height: 1.05em; background: var(--sky); vertical-align: -0.15em; margin-left: 2px; animation: blink 1s steps(1) infinite; }
+    /* How the question was understood: tags that appear one by one */
+    .q-read { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; min-height: 27px; }
+    .chip { font: 500 13.5px/1 var(--display); color: var(--sky-text); background: color-mix(in srgb, var(--sky) 14%, transparent);
+      border: 1px solid transparent; border-radius: 6px; padding: 6px 9px; opacity: 0; transform: translateY(3px); transition: opacity 260ms ease, transform 260ms ease; }
+    .chip.show { opacity: 1; transform: none; }
+    .chip.missing { color: var(--ink-2); background: transparent; border: 1px dashed var(--cloudy); }
+    .q-answer { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--rule); font-size: 16px; line-height: 1.4; min-height: 2.8em; opacity: 0; transform: translateY(4px); transition: opacity 360ms ease, transform 360ms ease; }
+    .q-answer strong { color: var(--clay); font-weight: 600; }
+    .show { opacity: 1 !important; transform: none !important; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ---------- Section headings ---------- */
+    h2 { font: 600 clamp(30px, 3.6vw, 46px)/1.08 var(--display); letter-spacing: -0.01em; margin: 0 0 16px; max-width: 24ch; text-wrap: balance; }
+    .intro { color: var(--ink-2); font-size: 18px; max-width: 60ch; margin: 0 0 40px; }
+
+    /* The kinds of questions, each with example questions you could type */
+    .kinds { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: clamp(20px, 3vw, 40px); border-top: 1.5px solid var(--ink); }
+    .kinds article { padding: 22px 0 22px; border-bottom: 1px solid var(--rule); }
+    .kinds .icon { width: 28px; height: 28px; fill: none; stroke: var(--clay); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 12px; }
+    .kinds h3 { font: 600 21px/1.2 var(--display); margin: 0 0 4px; }
+    .kinds p { margin: 0; color: var(--ink-2); font-size: 15.5px; }
+    /* An example question, styled like the question typed in the hero's query card */
+    .kinds .example { display: inline-block; margin-top: 12px; padding: 5px 12px; font: 500 16px/1.35 var(--display); color: var(--sky-text);
+      background: color-mix(in srgb, var(--sky) 13%, transparent); border-radius: 8px; }
+
+    /* How an answer is made: a real sequence, so it is numbered */
+    .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(20px, 3vw, 40px); }
+    .steps .n { font: 700 56px/1 var(--display); color: var(--clay); display: block; margin-bottom: 14px; }
+    .steps h3 { font: 600 22px/1.2 var(--display); margin: 0 0 8px; }
+    .steps p { margin: 0; color: var(--ink-2); font-size: 16px; }
+
+    .scope { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(24px, 5vw, 72px); align-items: start; }
+    .scope .intro { margin-bottom: 0; }
+    .scope ul { margin: 0; padding: 0; list-style: none; }
+    .scope li { padding: 14px 0; border-top: 1px solid var(--rule); color: var(--ink-2); font-size: 17px; }
+    .scope li:last-child { border-bottom: 1px solid var(--rule); }
+    /* "Not in the data": a small drawn not-allowed sign, in the icons' stroke style */
+    .scope .no li { display: flex; gap: 12px; align-items: baseline; }
+    .scope .no li::before { content: ""; flex: none; width: 13px; height: 13px; border: 1.5px solid var(--cloudy); border-radius: 50%; transform: translateY(1px);
+      background: linear-gradient(135deg, transparent calc(50% - 0.75px), var(--cloudy) calc(50% - 0.75px), var(--cloudy) calc(50% + 0.75px), transparent calc(50% + 0.75px)); }
+
+    /* Closing band */
+    .closing { background: var(--band-dark); color: var(--on-dark); }
+    .closing .wrap { display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: center; }
+    .closing h2 { margin-bottom: 10px; }
+    .closing p { margin: 0; color: var(--on-dark-2); max-width: 52ch; font-size: 18px; }
+
+    footer { padding: 28px 0 36px; font-size: 14px; color: var(--ink-2); }
+    footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+
+    /* ---------- Smaller screens ---------- */
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; }
+      .steps, .kinds { grid-template-columns: 1fr 1fr; }
+      .closing .wrap { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      /* Phones: the logo and the language switch; the hero's own button opens the app. */
+      .masthead nav a { display: none; }
+      .lang button { min-width: 44px; min-height: 40px; }   /* comfortable to tap */
+      .logo__word { font-size: 15px; letter-spacing: 0.16em; }
+      .logo__mark { height: 30px; }
+      .steps, .scope, .kinds { grid-template-columns: 1fr; }
+      .query { position: relative; width: 100%; bottom: auto; margin-top: -18%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .el, .chip, .q-answer { transition: none; }
+      .q-ask .caret { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap masthead">
+      <a class="logo" href="/" aria-label="Augmented, home">
+        <!-- Ink mark on the light page; the original ivory mark in dark mode. -->
+        <picture>
+          <source srcset="assets/images/augmented-mark.svg" media="(prefers-color-scheme: dark)" />
+          <img class="logo__mark" src="assets/images/augmented-mark-light.svg" width="47" height="36" alt="" />
+        </picture>
+        <span class="logo__word">Augmented</span>
+      </a>
+      <nav aria-label="Main">
+        <a href="#how">How it works</a>
+        <a href="#scope">Limits</a>
+        <a href="/login">Sign in</a>
+        <div class="lang" role="group" aria-label="Language / Langue">
+          <button type="button" data-lang="en" lang="en">EN</button>
+          <button type="button" data-lang="fr" lang="fr">FR</button>
+        </div>
+        <a class="app" href="/app">Open the app</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap hero">
+      <div>
+        <h1>Ask your building model a question.</h1>
+        <p class="lede">Type it the way you'd ask a colleague. Augmented answers with the exact number from the Revit data and highlights every element it counted in 3D.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="/app">Open the sample model</a>
+          <a class="btn btn-quiet" href="#how">See how answers are made</a>
+        </div>
+        <p class="note">No sign-up needed to try it. Works with Revit models through Autodesk Platform Services.</p>
+      </div>
+
+      <figure class="stage" aria-label="Animation: a question is typed, Augmented writes a query, and the matching elements of a building frame are highlighted with the answer.">
+        <svg viewBox="0 0 560 470" role="img" aria-hidden="true"><g class="model" id="model"></g></svg>
+        <!-- Decorative: the figure's label describes it; screen readers shouldn't hear it typed letter by letter. -->
+        <div class="query" aria-hidden="true">
+          <div class="q-ask"><span id="ask"></span><span class="caret"></span></div>
+          <div class="q-read" id="read"></div>
+          <div class="q-answer" id="answer"></div>
+        </div>
+      </figure>
+    </div>
+
+    <section class="band tint" aria-labelledby="kinds-title">
+      <div class="wrap">
+        <h2 id="kinds-title">What you can ask</h2>
+        <p class="intro">Plain questions in your own words. Every answer highlights the elements it counted in 3D.</p>
+        <div class="kinds">
+          <article>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>
+            <h3>Counts and lists</h3>
+            <p>Any category, anywhere in the model.</p>
+            <p class="example">How many columns are there?</p>
+          </article>
+          <article>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3a1.4 1.4 0 0 1 0 2l-6.7 6.7a1.4 1.4 0 0 1-2 0Z"/><circle cx="8" cy="8" r="1.4"/></svg>
+            <h3>Properties</h3>
+            <p>Level, material, family, type, function.</p>
+            <p class="example">Steel beams on level 2</p>
+          </article>
+          <article>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16.5 16.5 3l4.5 4.5L7.5 21Z"/><path d="m7.5 12 2 2M10.5 9l2 2M13.5 6l2 2"/></svg>
+            <h3>Sizes, in any unit</h3>
+            <p>Metric and imperial, converted for you.</p>
+            <p class="example">Doors wider than 3 ft</p>
+          </article>
+          <article>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 4.5H6l6.5 7.5L6 19.5h12"/></svg>
+            <h3>Quantities</h3>
+            <p>Totals and averages, ready for take-off.</p>
+            <p class="example">Total volume of the concrete</p>
+          </article>
+          <article>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6.5 20v-5M11.5 20V9M16.5 20V4"/></svg>
+            <h3>Rankings and breakdowns</h3>
+            <p>Top elements, or grouped per level or type.</p>
+            <p class="example">The 5 longest beams</p>
+          </article>
+          <article>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M3 8v8M21 8v8"/><path d="m6.5 9.5-2.5 2.5 2.5 2.5M17.5 9.5l2.5 2.5-2.5 2.5"/></svg>
+            <h3>Spatial intelligence</h3>
+            <p>Spacing from positions in the 3D view.</p>
+            <p class="example">Spacing between the columns?</p>
+          </article>
+          <article>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.6 3.1 8 7.5 9.5 4.4-1.5 7.5-4.9 7.5-9.5V6Z"/><path d="m8.8 12 2.3 2.3 4.3-4.6"/></svg>
+            <h3>Model checks</h3>
+            <p>Missing materials, marks or levels.</p>
+            <p class="example">Elements with no material</p>
+          </article>
+          <article>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H9l-3.5 3v-3H4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1Z"/><path d="M19 9.5h1a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-1v3l-3.5-3H11a1 1 0 0 1-1-1v-1"/></svg>
+            <h3>Follow-ups</h3>
+            <p>Refine the last answer, like a conversation.</p>
+            <p class="example">And on level 3?</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="how" class="band" aria-labelledby="how-title">
+      <div class="wrap">
+        <h2 id="how-title">How an answer is made</h2>
+        <p class="intro">The AI never invents a number. It only helps turn your words into a query; the numbers come from the model.</p>
+        <ol class="steps">
+          <li><span class="n" aria-hidden="true">1</span><h3>The model is read once</h3><p>Every element's properties are cleaned into one table: units converted, Revit's naming untangled, empty values marked as not set.</p></li>
+          <li><span class="n" aria-hidden="true">2</span><h3>Your question becomes a query</h3><p>Plain questions are matched in code. Anything subtler is written as a query by AI, using only names that exist in your model.</p></li>
+          <li><span class="n" aria-hidden="true">3</span><h3>The query is checked</h3><p>It may only read the model table, one query at a time. Anything that would change data is refused before it runs.</p></li>
+          <li><span class="n" aria-hidden="true">4</span><h3>You see the evidence</h3><p>The answer, the elements highlighted in 3D, and where each value came from in Revit. Rate it, and wrong answers are learned from.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="scope" class="band tint" aria-labelledby="scope-title">
+      <div class="wrap">
+        <div class="scope">
+          <div>
+            <h2 id="scope-title">What it can't answer, and says so</h2>
+            <p class="intro">Augmented answers from the properties Revit exports and the element positions in the 3D view. When a question needs data that isn't there, you get a straight answer instead of a guess.</p>
+          </div>
+          <ul class="no">
+            <li>Which elements are connected or support each other</li>
+            <li>Clashes and overlaps</li>
+            <li>Grid lines and building orientation</li>
+            <li>Level elevations, when the model doesn't export them</li>
+            <li>Changing the model: it only reads</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="band closing" aria-labelledby="closing-title">
+      <div class="wrap">
+        <div>
+          <h2 id="closing-title">Try it on the sample model</h2>
+          <p>The Revit structural sample is loaded and ready. Try any of the questions above, or your own.</p>
+        </div>
+        <a class="btn btn-primary" href="/app">Open the sample model</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>© 2026 Augmented</span>
+      <span>Augmented reads model data through Autodesk Platform Services.</span>
+      <span>Questions are logged for 90 days to improve answers.</span>
+    </div>
+  </footer>
+
+  <script>
+  (() => {
+    // ---------- The frame: an isometric structural model drawn in SVG ----------
+    const NS = 'http://www.w3.org/2000/svg';
+    const model = document.getElementById('model');
+    const S = 44, OX = 250, OY = 128, C = Math.cos(Math.PI / 6), SN = Math.sin(Math.PI / 6);
+    const P = (x, y, z) => [OX + (x - y) * C * S, OY + (x + y) * SN * S - z * S];
+    const LEVELS = { foundation: 0, l1: 1.75, l2: 3.5 };
+    const NX = 4, NY = 3;   // bays
+
+    const add = (tag, attrs, cls) => {
+      const el = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+      el.setAttribute('class', `el ${cls}`);
+      model.appendChild(el);
+      return el;
+    };
+    const line = (a, b, cls, data) => Object.assign(add('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1] }, cls).dataset, data);
+    const poly = (pts, cls, data) => Object.assign(add('polygon', { points: pts.map(p => p.join(',')).join(' ') }, cls).dataset, data);
+
+    // slabs (concrete): foundation slab and level 1 slab
+    for (const [lvl, z] of [['foundation', 0], ['l1', LEVELS.l1]]) {
+      poly([P(0, 0, z), P(NX, 0, z), P(NX, NY, z), P(0, NY, z)], 'slab', { kind: 'slab', level: lvl, mat: 'concrete' });
+    }
+    // concrete walls on two edges at the foundation
+    poly([P(0, 0, 0), P(0, NY, 0), P(0, NY, 1.0), P(0, 0, 1.0)], 'wall', { kind: 'wall', mat: 'concrete' });
+    poly([P(0, NY, 0), P(NX, NY, 0), P(NX, NY, 1.0), P(0, NY, 1.0)], 'wall', { kind: 'wall', mat: 'concrete' });
+    // columns (steel)
+    for (let x = 0; x <= NX; x++) for (let y = 0; y <= NY; y++) {
+      line(P(x, y, 0), P(x, y, LEVELS.l2), 'col', { kind: 'col', mat: 'steel' });
+    }
+    // beams: level 1 timber, level 2 steel
+    for (const [lvl, z, mat] of [['l1', LEVELS.l1, 'timber'], ['l2', LEVELS.l2, 'steel']]) {
+      for (let y = 0; y <= NY; y++) for (let x = 0; x < NX; x++) line(P(x, y, z), P(x + 1, y, z), 'beam', { kind: 'beam', level: lvl, mat });
+      for (let x = 0; x <= NX; x++) for (let y = 0; y < NY; y++) line(P(x, y, z), P(x, y + 1, z), 'beam', { kind: 'beam', level: lvl, mat });
+    }
+    // ---------- English / French ----------
+    // Every text on the page, by its English wording -> French. The English stays in the
+    // HTML (search engines and no-script readers get it); switching only swaps the words.
+    const FR = {
+      'How it works': 'Fonctionnement', 'Limits': 'Limites', 'Sign in': 'Se connecter', 'Open the app': 'Ouvrir l’application',
+      'Ask your building model a question.': 'Posez une question à votre maquette.',
+      'Type it the way you\'d ask a colleague. Augmented answers with the exact number from the Revit data and highlights every element it counted in 3D.':
+        'Écrivez-la comme vous la poseriez à un collègue. Augmented répond avec le chiffre exact tiré des données Revit et met en évidence en 3D chaque élément compté.',
+      'Open the sample model': 'Ouvrir la maquette d’exemple',
+      'See how answers are made': 'Voir comment les réponses sont construites',
+      'No sign-up needed to try it. Works with Revit models through Autodesk Platform Services.':
+        'Aucune inscription pour l’essayer. Fonctionne avec les maquettes Revit via Autodesk Platform Services.',
+      'What you can ask': 'Ce que vous pouvez demander',
+      'Plain questions in your own words. Every answer highlights the elements it counted in 3D.':
+        'Des questions simples, avec vos propres mots. Chaque réponse met en évidence en 3D les éléments comptés.',
+      'Counts and lists': 'Comptages et listes', 'Any category, anywhere in the model.': 'Toute catégorie, partout dans la maquette.',
+      'How many columns are there?': 'Combien y a-t-il de poteaux ?',
+      'Properties': 'Propriétés', 'Level, material, family, type, function.': 'Niveau, matériau, famille, type, fonction.',
+      'Steel beams on level 2': 'Poutres en acier au niveau 2',
+      'Sizes, in any unit': 'Dimensions, dans toute unité', 'Metric and imperial, converted for you.': 'Métrique et impérial, convertis pour vous.',
+      'Doors wider than 3 ft': 'Portes de plus de 90 cm de large',
+      'Quantities': 'Quantités', 'Totals and averages, ready for take-off.': 'Totaux et moyennes, prêts pour le métré.',
+      'Total volume of the concrete': 'Volume total du béton',
+      'Rankings and breakdowns': 'Classements et répartitions', 'Top elements, or grouped per level or type.': 'Les plus grands éléments, ou regroupés par niveau ou type.',
+      'The 5 longest beams': 'Les 5 poutres les plus longues',
+      'Spatial intelligence': 'Intelligence spatiale', 'Spacing from positions in the 3D view.': 'Entraxes calculés depuis la vue 3D.',
+      'Spacing between the columns?': 'Entraxe entre les poteaux ?',
+      'Model checks': 'Contrôles de la maquette', 'Missing materials, marks or levels.': 'Matériaux, repères ou niveaux manquants.',
+      'Elements with no material': 'Éléments sans matériau',
+      'Follow-ups': 'Questions de suivi', 'Refine the last answer, like a conversation.': 'Affinez la dernière réponse, comme dans une conversation.',
+      'And on level 3?': 'Et au niveau 3 ?',
+      'How an answer is made': 'Comment une réponse est construite',
+      'The AI never invents a number. It only helps turn your words into a query; the numbers come from the model.':
+        'L’IA n’invente jamais un chiffre. Elle aide seulement à traduire vos mots en requête ; les chiffres viennent de la maquette.',
+      'The model is read once': 'La maquette est lue une fois',
+      'Every element\'s properties are cleaned into one table: units converted, Revit\'s naming untangled, empty values marked as not set.':
+        'Les propriétés de chaque élément sont nettoyées dans une seule table : unités converties, nommage Revit démêlé, valeurs vides marquées comme non renseignées.',
+      'Your question becomes a query': 'Votre question devient une requête',
+      'Plain questions are matched in code. Anything subtler is written as a query by AI, using only names that exist in your model.':
+        'Les questions simples sont reconnues par le code. Les plus subtiles sont traduites en requête par l’IA, avec uniquement des noms qui existent dans votre maquette.',
+      'The query is checked': 'La requête est vérifiée',
+      'It may only read the model table, one query at a time. Anything that would change data is refused before it runs.':
+        'Elle ne peut que lire la table de la maquette, une requête à la fois. Tout ce qui modifierait des données est refusé avant d’être exécuté.',
+      'You see the evidence': 'Vous voyez les preuves',
+      'The answer, the elements highlighted in 3D, and where each value came from in Revit. Rate it, and wrong answers are learned from.':
+        'La réponse, les éléments mis en évidence en 3D et l’origine de chaque valeur dans Revit. Notez-la : les mauvaises réponses servent à progresser.',
+      'What it can\'t answer, and says so': 'Ce qu’il ne sait pas faire, et le dit',
+      'Augmented answers from the properties Revit exports and the element positions in the 3D view. When a question needs data that isn\'t there, you get a straight answer instead of a guess.':
+        'Augmented répond à partir des propriétés exportées par Revit et de la position des éléments dans la vue 3D. Quand une question demande des données absentes, vous obtenez une réponse franche plutôt qu’une supposition.',
+      'Which elements are connected or support each other': 'Quels éléments sont assemblés ou se portent mutuellement',
+      'Clashes and overlaps': 'Conflits et chevauchements',
+      'Grid lines and building orientation': 'Files de la trame et orientation du bâtiment',
+      'Level elevations, when the model doesn\'t export them': 'Altitudes des niveaux, quand la maquette ne les exporte pas',
+      'Changing the model: it only reads': 'Modifier la maquette : il ne fait que lire',
+      'Try it on the sample model': 'Essayez-le sur la maquette d’exemple',
+      'The Revit structural sample is loaded and ready. Try any of the questions above, or your own.':
+        'L’exemple structure de Revit est chargé et prêt. Essayez les questions ci-dessus, ou les vôtres.',
+      'Augmented reads model data through Autodesk Platform Services.': 'Augmented lit les données de la maquette via Autodesk Platform Services.',
+      'Questions are logged for 90 days to improve answers.': 'Les questions sont conservées 90 jours pour améliorer les réponses.'
+    };
+    // Texts that aren't element text: the tab title, the description, screen-reader labels.
+    const META = {
+      en: { title: 'Augmented: ask your building model', home: 'Augmented, home', nav: 'Main',
+            figure: 'Animation: a question is typed, Augmented writes a query, and the matching elements of a building frame are highlighted with the answer.' },
+      fr: { title: 'Augmented : interrogez votre maquette', home: 'Augmented, accueil', nav: 'Principal',
+            figure: 'Animation : une question est saisie, Augmented écrit une requête, et les éléments correspondants d’une ossature sont mis en évidence avec la réponse.' }
+    };
+    const LEVEL_NAMES = { en: ['Foundation', 'Level 1', 'Level 2'], fr: ['Fondation', 'Niveau 1', 'Niveau 2'] };
+    let lang = 'en';
+
+    // level names, as in the viewer
+    const levelLabels = [['Foundation', 0], ['Level 1', LEVELS.l1], ['Level 2', LEVELS.l2]].map(([name, z]) => {
+      const [x, y] = P(NX, 0, z);
+      const t = document.createElementNS(NS, 'text');
+      t.setAttribute('x', x + 14); t.setAttribute('y', y + 4); t.setAttribute('class', 'lvl'); t.textContent = name;
+      model.appendChild(t);
+      return t;
+    });
+
+    // ---------- The scenes: real questions and answers from the sample project ----------
+    // `read`: how the question was understood, shown as tags (never the query itself).
+    // A tag starting with "!" is something the model data doesn't have (shown dashed).
+    const SCENES = [
+      { en: { ask: 'Steel beams on level 2', read: ['Beams', 'Level 2', 'Steel'], answer: 'Found <strong>17</strong> steel framing members on Level 2.' },
+        fr: { ask: 'Poutres en acier au niveau 2', read: ['Poutres', 'Niveau 2', 'Acier'], answer: '<strong>17</strong> éléments d’ossature en acier au niveau 2.' },
+        pick: d => d.kind === 'beam' && d.level === 'l2' },
+      { en: { ask: 'Walls thicker than 200 mm', read: ['Walls', 'Thicker than 200 mm'], answer: '<strong>9</strong> walls, all 280 mm thick.' },
+        fr: { ask: 'Murs de plus de 200 mm d’épaisseur', read: ['Murs', 'Épaisseur > 200 mm'], answer: '<strong>9</strong> murs, tous de 280 mm d’épaisseur.' },
+        pick: d => d.kind === 'wall' },
+      { en: { ask: 'Total volume of the concrete elements', read: ['Concrete', 'Volume', 'Total'], answer: 'Total volume: <strong>215.875 m³</strong> across 17 elements.' },
+        fr: { ask: 'Volume total des éléments en béton', read: ['Béton', 'Volume', 'Total'], answer: 'Volume total : <strong>215,875 m³</strong> sur 17 éléments.' },
+        pick: d => d.mat === 'concrete' },
+      { en: { ask: 'Which columns support the beams on level 2?', read: ['Columns', '!Supports: not in the data'], answer: 'The model data doesn’t include connections, so I can’t answer that exactly. I can list the columns on Level 2.' },
+        fr: { ask: 'Quels poteaux portent les poutres du niveau 2 ?', read: ['Poteaux', '!Appuis : absents des données'], answer: 'Les données de la maquette ne contiennent pas les assemblages : je ne peux pas répondre exactement. Je peux lister les poteaux du niveau 2.' },
+        pick: () => false }
+    ];
+
+    const els = [...model.querySelectorAll('.el')];
+    const ask = document.getElementById('ask');
+    const read = document.getElementById('read');
+    const answer = document.getElementById('answer');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+
+    function highlight(scene) {
+      let any = false;
+      els.forEach(el => { const on = scene.pick(el.dataset); el.classList.toggle('on', on); any = any || on; });
+      model.classList.toggle('dim', any);
+    }
+    function clear() {
+      els.forEach(el => el.classList.remove('on'));
+      model.classList.remove('dim');
+      read.replaceChildren();
+      answer.classList.remove('show');
+    }
+    // The tags of "how I understood it"; `shown` = visible at once (no stagger).
+    function makeTags(scene, shown) {
+      read.replaceChildren(...scene[lang].read.map(text => {
+        const tag = document.createElement('span');
+        const missing = text.startsWith('!');
+        tag.className = `chip${missing ? ' missing' : ''}${shown ? ' show' : ''}`;
+        tag.textContent = missing ? text.slice(1) : text;
+        return tag;
+      }));
+      return [...read.children];
+    }
+    // The scene on screen, so switching language can rewrite it at once.
+    let current = null, answered = false;
+    function showStatic(scene) {
+      current = scene; answered = true;
+      ask.textContent = scene[lang].ask; makeTags(scene, true); answer.innerHTML = scene[lang].answer;
+      answer.classList.add('show'); highlight(scene);
+    }
+
+    // ---------- Switching language ----------
+    const TEXTS = 'nav a, h1, h2, h3, p, li, .btn, footer span';
+    function applyLanguage(next) {
+      lang = next === 'fr' ? 'fr' : 'en';
+      document.documentElement.lang = lang;
+      document.querySelectorAll(TEXTS).forEach(el => {
+        if (el.children.length) return;                       // only plain text elements
+        const en = el.dataset.en ?? el.textContent.trim();
+        if (!(en in FR)) return;
+        el.dataset.en = en;
+        el.textContent = lang === 'fr' ? FR[en] : en;
+      });
+      document.title = META[lang].title;
+      document.querySelector('.logo').setAttribute('aria-label', META[lang].home);
+      document.querySelector('.masthead nav').setAttribute('aria-label', META[lang].nav);
+      document.querySelector('.stage').setAttribute('aria-label', META[lang].figure);
+      levelLabels.forEach((t, i) => { t.textContent = LEVEL_NAMES[lang][i]; });
+      document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+      if (current && answered) {                              // the answer on screen, in the new language
+        ask.textContent = current[lang].ask; answer.innerHTML = current[lang].answer;
+        makeTags(current, true);
+      }
+      try { localStorage.setItem('augmented-lang', lang); } catch { /* private window: not remembered */ }
+    }
+    let saved = null;
+    try { saved = localStorage.getItem('augmented-lang'); } catch { /* not available */ }
+    applyLanguage(saved || ((navigator.language || '').toLowerCase().startsWith('fr') ? 'fr' : 'en'));
+    document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => applyLanguage(b.dataset.lang)));
+
+    if (reduced) { showStatic(SCENES[0]); return; }
+
+    (async function loop() {
+      for (let i = 0; ; i = (i + 1) % SCENES.length) {
+        const scene = SCENES[i];
+        current = scene; answered = false;
+        clear();
+        ask.textContent = ''; answer.innerHTML = '';
+        await wait(500);
+        const text = scene[lang].ask;                         // the language when this question starts
+        for (const ch of text) { ask.textContent += ch; await wait(42 + Math.random() * 38); }
+        await wait(380);
+        // How it was understood: one tag after another
+        for (const tag of makeTags(scene, false)) { await wait(170); tag.classList.add('show'); }
+        await wait(450);
+        highlight(scene);
+        await wait(250);
+        answer.innerHTML = scene[lang].answer;
+        answer.classList.add('show');
+        answered = true;
+        await wait(3600);
+      }
+    })();
+  })();
+  </script>
+</body>
+</html>

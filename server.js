@@ -20,9 +20,13 @@ app.use(require('./routes/mcp.js'));
 app.use(require('./routes/login.js'));
 
 // app.use(bodyParser.json());
-app.use(express.static('wwwroot'));
+// The pages at clean addresses: "/" = landing page, "/app" = the app (routes/pages.js).
+app.use(require('./routes/pages.js'));
+// Files (scripts, styles, images). index: false: "/" is the landing page now, not index.html.
+app.use(express.static('wwwroot', { index: false }));
 app.use(require('./routes/auth.js'));
 app.use(require('./routes/models.js'));
+app.use(require('./routes/admin.js'));   // /admin/questions: the question log, signed-in users only
 // app.use(require('./routes/openai.js'));
 // app.use(require('./routes/langchain.js'));
 // Switched off (not deleted): the old LangChain chatbot ("Type 1" on the page, also

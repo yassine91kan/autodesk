@@ -89,7 +89,14 @@ async function setupModelUpload(viewer) {
     const upload = document.getElementById('upload');
     const input = document.getElementById('input');
     const models = document.getElementById('models');
-    upload.onclick = () => input.click();
+    // Only signed-in users may upload. Check BEFORE the file picker opens: otherwise a
+    // guest picks a (large) Revit file, sends it, and only then gets refused.
+    // (The server refuses guest uploads too: routes/login.js.)
+    upload.onclick = async () => {
+        await accountReady;
+        if (account.kind !== 'member') return showUploadNeedsSignIn();
+        input.click();
+    };
     input.onchange = async () => {
         const file = input.files[0];
         let data = new FormData();
@@ -103,7 +110,10 @@ async function setupModelUpload(viewer) {
         showNotification(`Uploading ${file.name}. Do not reload the page.`);
         try {
             const resp = await fetch('/api/models', { method: 'POST', body: data });
-            if (resp.status === 401) return signInAgain('member');   // guests can't upload
+            if (resp.status === 401) {                // signed out meanwhile (session expired)
+                clearNotification();
+                return showUploadNeedsSignIn();
+            }
             if (!resp.ok) {
                 throw new Error(await resp.text());
             }
@@ -199,13 +209,21 @@ function setModelName(name) {
     badge.title = label;
 }
 
+// A guest clicked Upload: say why it can't happen, on the page, with a way to sign in.
+// (The file picker never opens, so no file is sent. The server refuses guest uploads too.)
+function showUploadNeedsSignIn() {
+    showToast('Sign in to upload',
+        'Uploading Revit models is for signed-in users. You can keep asking questions about the models already here.',
+        { label: 'Sign in', href: signInUrl('upload') }, 'alert');
+}
+
 // The server answered 401 (this needs signing in): go to the sign-in page and come
 // back to this model afterwards. `reason` picks the message the sign-in page shows.
 function signInAgain(reason = 'member') {
     location.assign(signInUrl(reason));
 }
 function signInUrl(reason) {
-    return `/login?error=${reason}&next=${encodeURIComponent('/' + location.hash)}`;
+    return `/login?error=${reason}&next=${encodeURIComponent('/app' + location.hash)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -226,8 +244,12 @@ async function loadAccount() {
     signIn.hidden = !isGuest;
     signIn.href = signInUrl('');
     document.getElementById('logOut').hidden = isGuest;
+    // Guests see that uploading needs signing in before they click.
+    const upload = document.getElementById('upload');
+    upload.title = isGuest ? 'Sign in to upload a Revit model' : 'Upload a new model';
 }
-loadAccount();
+// The upload button waits for this, so a click right after the page opens is checked too.
+const accountReady = loadAccount();
 
 // The model chosen in the dropdown. Every question and status check is sent with it,
 // so the assistant always answers about the model you are looking at.
@@ -784,6 +806,59 @@ async function renderElements(entry, body, data) {
     renderRows();
 }
 
+// 👍/👎 under an answer, saved in the question log (POST /feedback). A 👎 is saved at
+// once, then asks in one optional line what was wrong (sent again with the note).
+function addFeedback(body, questionId) {
+    const bar = el('div', 'feedback');
+    const label = el('span', 'entry__hint', 'Was this right?');
+    const save = (vote, note) => fetch('/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId, vote, note })
+    }).then(r => r.ok).catch(() => false);
+
+    const button = (vote, text, title) => {
+        const b = el('button', 'btn-line', text);
+        b.type = 'button';
+        b.title = title;
+        b.setAttribute('aria-label', title);
+        b.addEventListener('click', () => choose(vote, b));
+        return b;
+    };
+    const up = button('up', '👍', 'Right answer');
+    const down = button('down', '👎', 'Wrong answer');
+    bar.append(label, up, down);
+    body.append(bar);
+
+    async function choose(vote, pressed) {
+        up.disabled = down.disabled = true;
+        pressed.setAttribute('aria-pressed', 'true');
+        const saved = await save(vote);
+        if (!saved) { label.textContent = 'Could not save your rating, sorry.'; return; }
+        if (vote === 'up') { label.textContent = 'Thanks!'; return; }
+
+        label.textContent = 'Thanks. What was wrong?';
+        const form = el('form', 'feedback__form');
+        const input = el('input');
+        input.type = 'text';
+        input.maxLength = 300;
+        input.placeholder = 'Optional, e.g. "wrong level"';
+        input.setAttribute('aria-label', 'What was wrong with this answer');
+        const send = el('button', 'btn-line', 'Send');
+        send.type = 'submit';
+        form.append(input, send);
+        bar.append(form);
+        input.focus();
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+            const note = input.value.trim();
+            form.remove();
+            if (!note) { label.textContent = 'Thanks, noted.'; return; }
+            label.textContent = (await save('down', note)) ? 'Thanks, noted.' : 'Could not save your note, sorry.';
+        });
+    }
+}
+
 // Questions above this many tokens (prompt + answer, all LLM calls) get a notice.
 const TOKEN_WARNING = 2000;
 
@@ -811,19 +886,28 @@ function warnAboutBudget(budget) {
 
 // A small notice in the corner that closes itself after 8 s (or with its × button).
 // Unlike showNotification it doesn't cover the model, so work can go on.
+// `action` (optional): { label, href } for a link button in the notice, e.g. "Sign in".
+// `role`: 'status' for information, 'alert' for something the user tried that didn't work.
 let toastTimer;
-function showToast(title, message) {
+function showToast(title, message, action = null, role = 'status') {
     document.querySelector('.toast')?.remove();
     clearTimeout(toastTimer);
     const toast = el('div', 'toast');
-    toast.setAttribute('role', 'status');   // screen readers announce it without moving focus
+    toast.setAttribute('role', role);   // screen readers announce it without moving focus
     const close = el('button', 'toast__close', '×');
     close.type = 'button';
     close.setAttribute('aria-label', 'Close');
     close.addEventListener('click', () => toast.remove());
-    toast.append(el('strong', 'toast__title', title), el('p', 'toast__text', message), close);
+    toast.append(el('strong', 'toast__title', title), el('p', 'toast__text', message));
+    if (action) {
+        const link = el('a', 'btn-line toast__action', action.label);
+        link.href = action.href;
+        toast.append(link);
+    }
+    toast.append(close);
     document.body.append(toast);
-    toastTimer = setTimeout(() => toast.remove(), 8000);
+    // A notice with a button stays longer: the user may want to read it and act.
+    toastTimer = setTimeout(() => toast.remove(), action ? 12000 : 8000);
 }
 
 function setBusy(value) {
@@ -881,6 +965,7 @@ async function ask(prompt) {
             note.append(el('span', 'caps', 'Follow-up'), el('span', null, 'Built on your previous question. Press New sheet to start afresh.'));
             body.prepend(note);
         }
+        if (data.questionId) addFeedback(body, data.questionId);
     } catch (err) {
         console.error('Query failed:', err);
         renderError(entry, body, err.message || 'Check your connection and try again.', () => {

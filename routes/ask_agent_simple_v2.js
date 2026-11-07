@@ -34,6 +34,9 @@ const {
     runPlan
 } = require('../augmented/engine');
 const { setPositions, positionCount } = require('../augmented/spatial');
+const { logQuestion, rateAnswer, planOf, MAX_NOTE_LENGTH } = require('../augmented/questionlog');
+const { fillHeightsFromPositions } = require('../augmented/clean');
+const { answerHybrid, elementsMessage, forgetCachedPlan } = require('../augmented/hybrid');
 
 const router = express.Router();
 
@@ -146,20 +149,81 @@ function sendError(res, error) {
     return res.status(status).json({ success: false, message: error.message });
 }
 
+// Sends a hybrid answer in the same shape as the tiered planner's, so the page works unchanged.
+function sendHybrid(req, res, { hybrid, question, model, key, urn, guid, logged }) {
+    const tokens = { promptTokens: 0, cachedTokens: 0, completionTokens: 0, totalTokens: 0 };
+    for (const call of hybrid.calls || []) {
+        for (const field of Object.keys(tokens)) tokens[field] += call[field] || 0;
+    }
+    usage.recordAfter(req, tokens.totalTokens);
+    console.log(`HYBRID ${hybrid.lane} | ${tokens.totalTokens} tokens | SQL: ${hybrid.sql || '-'}`);
+
+    const ids = hybrid.ids || [];
+    const form = hybrid.read?.form;
+    const action = hybrid.kind === 'elements' ? (form === 'count' || form === 'rank' ? form : 'list')
+        : hybrid.kind === 'table' ? (form === 'sum' || form === 'avg' ? 'total' : 'group')
+        : hybrid.kind === 'value' ? 'total'
+        : hybrid.kind === 'reply' ? 'reply' : 'clarify';
+    const elements = hybrid.kind === 'elements' ? elementsMessage(model.db, ids, hybrid.values, hybrid.valueColumn) : null;
+
+    // A follow-up builds on the last answer that found something (as in the tiered planner).
+    const foundSomething = ids.length > 0 || (hybrid.rows?.length || 0) > 0;
+    if (hybrid.sql && foundSomething) {
+        lastPlans.set(key, { question: question.slice(-500), sql: hybrid.sql, at: Date.now() });
+    }
+    remember(lastResults, `${userOf(req)}|${urn}:${guid}`, ids.slice(0, 500));
+
+    const plan = { lane: hybrid.lane, sql: hybrid.sql || null, reading: hybrid.reading || null, cacheKey: hybrid.cacheKey || null };
+    const questionId = logged({
+        followUp: Boolean(hybrid.followUp), tier: hybrid.lane === 'sql' ? 3 : 0, action, plan,
+        answer: hybrid.answer, resultCount: hybrid.count ?? ids.length, tokens: tokens.totalTokens
+    });
+    return res.json({
+        success: true,
+        questionId,
+        action,
+        answer: hybrid.answer,
+        objectIds: ids.slice(0, 500),
+        message: elements || hybrid.answer,
+        data: elements || (hybrid.rows ? { rows: hybrid.rows.slice(0, 200) } : null),
+        tier: hybrid.lane === 'sql' ? 3 : 0,   // 0 = code (gate or template), 3 = OpenAI wrote the SQL
+        lane: hybrid.lane,                     // gate | template | sql
+        followUp: Boolean(hybrid.followUp),
+        plan,
+        token: { currentRequest: tokens, calls: hybrid.calls || [] },
+        budget: usage.budgetOf(req),
+        cache: { modelLoadedAt: model.loadedAt, modelElementCount: model.elementCount }
+    });
+}
+
 // Main chat endpoint.
 router.post('/ask_agent_simple', async (req, res) => {
+    // What the question log records (augmented/questionlog.js). Filled in as the
+    // question goes along, so even a failure halfway is logged with what is known.
+    const started = Date.now();
+    const record = {
+        userId: userOf(req),
+        userKind: req.user?.kind || 'member',
+        sheet: SHEET_ID_PATTERN.test(String(req.body?.conversationId || '')) ? req.body.conversationId : null,
+        question: String(req.body?.prompt || '').trim()
+    };
+    const logged = fields => logQuestion({ ...record, ...fields, durationMs: Date.now() - started });
+
     try {
-        const question = String(req.body?.prompt || '').trim();
+        const question = record.question;
         if (!question) {
             return res.status(400).json({ success: false, message: 'A prompt is required.' });
         }
         if (question.length > MAX_QUESTION_LENGTH) {
-            return res.status(400).json({ success: false, message: `Please keep questions under ${MAX_QUESTION_LENGTH} characters.` });
+            const message = `Please keep questions under ${MAX_QUESTION_LENGTH} characters.`;
+            logged({ error: message });
+            return res.status(400).json({ success: false, message });
         }
 
         // 0. Is this visitor still within today's budget (and not asking too fast)?
         const refused = usage.checkBefore(req);
         if (refused) {
+            logged({ error: refused.message });
             return res.status(refused.status).json({
                 success: false, limitReached: Boolean(refused.limitReached), message: refused.message, budget: usage.budgetOf(req)
             });
@@ -168,6 +232,7 @@ router.post('/ask_agent_simple', async (req, res) => {
         // 1. Which model (the one chosen in the page's dropdown), then load it
         //    (downloaded once, then served from memory).
         const { urn, guid } = await resolveModel(req.body);
+        record.model = modelNameFromUrn(urn);
         const model = await getModel(urn, guid);
 
         // 2. Match the words to model names, pick the cheapest tier that can answer,
@@ -175,7 +240,19 @@ router.post('/ask_agent_simple', async (req, res) => {
         const key = conversationKey(req, urn, guid);
         const last = lastPlans.get(key);
         const previous = last && Date.now() - last.at < FOLLOW_UP_MINUTES * 60 * 1000 ? last : null;
-        const outcome = await answerQuestion(question, model, previous);
+
+        // The hybrid planner (augmented/hybrid.js) answers by default. PLANNER=tiered in the
+        // environment switches back to the tiered planner below, which also still answers
+        // spacing questions (the hybrid's "old" lane).
+        if (process.env.PLANNER !== 'tiered') {
+            const hybrid = await answerHybrid(question, model, previous ? { question: previous.question, sql: previous.sql ?? null } : null);
+            if (hybrid.lane !== 'old') {
+                return sendHybrid(req, res, { hybrid, question, model, key, urn, guid, logged });
+            }
+        }
+
+        // (A previous answer from the hybrid has SQL but no plan: then this starts afresh.)
+        const outcome = await answerQuestion(question, model, previous?.plan ? previous : null);
         const { checked } = outcome;
 
         // Add up the tokens of every LLM call this question needed (1 or 2).
@@ -207,8 +284,19 @@ router.post('/ask_agent_simple', async (req, res) => {
         }
         remember(lastResults, `${userOf(req)}|${urn}:${guid}`, result.objectIds);
 
+        const questionId = logged({
+            followUp: outcome.followUp,
+            tier: outcome.tier,
+            action,
+            plan: outcome.plan,
+            answer: result.answer,
+            resultCount: result.data?.count ?? result.objectIds?.length ?? null,
+            tokens: tokens.totalTokens
+        });
+
         return res.json({
             success: true,
+            questionId,                  // for 👍/👎 (POST /feedback); null if the log couldn't be written
             action,                      // list | count | group | rank | total | coordinates | clarify | reply
             answer: result.answer,       // text to show in the chat
             objectIds: result.objectIds, // ids to highlight in the Viewer
@@ -229,7 +317,36 @@ router.post('/ask_agent_simple', async (req, res) => {
             cache: { modelLoadedAt: model.loadedAt, modelElementCount: model.elementCount }
         });
     } catch (error) {
+        // The log keeps the real reason (a 500's details only go to the console otherwise).
+        logged({ error: `${httpStatus(error)}: ${error.message}` });
         return sendError(res, error);
+    }
+});
+
+// 👍/👎 on an answer: { questionId, vote: 'up' | 'down', note? }. Only the person who
+// asked may rate it (augmented/questionlog.js checks).
+router.post('/feedback', (req, res) => {
+    const questionId = Number(req.body?.questionId);
+    const vote = { up: 1, down: -1 }[req.body?.vote];
+    if (!Number.isInteger(questionId) || questionId < 1 || !vote) {
+        return res.status(400).json({ success: false, message: 'Send a questionId and a vote of "up" or "down".' });
+    }
+    const note = typeof req.body?.note === 'string' ? req.body.note.trim() : '';
+    if (note.length > MAX_NOTE_LENGTH) {
+        return res.status(400).json({ success: false, message: `Please keep the note under ${MAX_NOTE_LENGTH} characters.` });
+    }
+    try {
+        const outcome = rateAnswer(questionId, userOf(req), vote, note);
+        if (outcome === 'not-found') return res.status(404).json({ success: false, message: 'That question is not in the log.' });
+        if (outcome === 'not-yours') return res.status(403).json({ success: false, message: 'You can only rate your own answers.' });
+        // A 👎 on an answer that came from (or went into) the plan cache: forget that plan,
+        // so the next person asking gets a fresh one instead of the same bad query.
+        const plan = vote === -1 ? planOf(questionId) : null;
+        if (plan?.cacheKey) forgetCachedPlan(plan.cacheKey);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('feedback error:', error);
+        res.status(500).json({ success: false, message: 'Something went wrong on the server.' });
     }
 });
 
@@ -288,7 +405,9 @@ router.post('/model_positions', async (req, res) => {
     try {
         const { urn, guid } = await resolveModel(req.body);
         const model = await getModel(urn, guid);
-        res.json({ success: true, count: setPositions(model.db, req.body?.positions) });
+        const count = setPositions(model.db, req.body?.positions);
+        fillHeightsFromPositions(model.db);   // columns have no height property: take it from the 3D box
+        res.json({ success: true, count });
     } catch (error) {
         return sendError(res, error);
     }

@@ -24,11 +24,14 @@ const {
 const {
     buildDictionary
 } = require('./matcher');
+const { buildCleanTable } = require('./clean');
 
 // ---------------------------------------------------------------- index files
 // Raise this number whenever the tables change (a new column, a new table): saved
 // files of an older version are then rebuilt, never read with the wrong layout.
-const SCHEMA_VERSION = 1;
+// 2: the clean table (elements_clean + clean_sources, augmented/clean.js).
+// 3: its "function" column (Exterior / Interior...).
+const SCHEMA_VERSION = 3;
 
 // The folder for index files, or null = keep databases in memory only.
 // (Read on every call, so a test can set DATA_DIR before using the store.)
@@ -262,6 +265,8 @@ function buildDatabase(collection, tree, file = ':memory:') {
     });
     insertAll(); // nothing is written until we actually call the transaction function
 
+    // The same data as one plain table in proper units, easy to query (augmented/clean.js).
+    buildCleanTable(db);
     return db;
 }
 

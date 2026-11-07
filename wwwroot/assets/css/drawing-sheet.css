@@ -462,6 +462,7 @@ a.btn-bar { text-decoration: none; }
   color: var(--accent);
 }
 .toast__text { margin: 4px 0 0; font-size: 13px; color: var(--ink-2); }
+.toast__action { display: inline-block; margin-top: 10px; text-decoration: none; color: var(--ink); }
 .toast__close {
   position: absolute;
   top: 6px;
@@ -697,6 +698,32 @@ a.btn-bar { text-decoration: none; }
 .btn-line:hover { background: var(--hover); }
 
 .entry__note { color: var(--ink); }
+
+/* 👍/👎 under each answer (main.js addFeedback) */
+.feedback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--rule);
+}
+.feedback .btn-line { padding: 2px 8px; }
+.feedback .btn-line:disabled { opacity: 0.45; cursor: default; }
+.feedback .btn-line[aria-pressed="true"] { opacity: 1; background: var(--pressed); }
+.feedback__form { display: flex; flex: 1 1 220px; gap: 6px; }
+.feedback__form input {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 8px;
+  border: 1px solid var(--construct);
+  border-radius: 2px;
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
 
 .msg__body.is-error {
   padding: 10px 12px;

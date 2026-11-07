@@ -128,6 +128,7 @@ const status = () => api('GET', '/api/model_status');
     healthServer.close();
     store.unloadModels();
     state.closeState();
+    require('../augmented/questionlog').closeLog();
     fs.rmSync(process.env.DATA_DIR, { recursive: true, force: true });
     process.exit(fail ? 1 : 0);
 })().catch(e => { log('TEST ERROR', e); process.exit(1); });

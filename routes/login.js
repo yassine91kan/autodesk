@@ -42,7 +42,7 @@ const PUBLIC_PATHS = new Set([
 // What guests may do besides reading pages (GET): ask questions and send the Viewer's
 // coordinates. Everything else (uploading a model, the older LangChain assistant, whose
 // tokens aren't counted) needs signing in.
-const GUEST_WRITES = new Set(['POST /ask_agent_simple', 'PUT /ask_agent_simple', 'POST /model_positions', 'POST /login', 'POST /logout']);
+const GUEST_WRITES = new Set(['POST /ask_agent_simple', 'PUT /ask_agent_simple', 'POST /model_positions', 'POST /feedback', 'POST /login', 'POST /logout']);
 
 // Slows down password guessing: after 10 wrong passwords from one address,
 // that address must wait 15 minutes.
@@ -121,9 +121,11 @@ function setSessionCookie(req, res, value, maxAgeSeconds) {
 }
 
 // Only allow returning to a page of THIS site ("/..."), never "//other-site.com".
+// No (valid) page given: the app (/app; "/" is the landing page, routes/pages.js).
+const APP_PAGE = '/app';
 function safeNext(next) {
     const value = typeof next === 'string' ? next : '';
-    return value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\') ? value : '/';
+    return value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\') ? value : APP_PAGE;
 }
 
 function isLocked(ip) {
@@ -173,7 +175,7 @@ router.post('/login', (req, res) => {
 
 router.post('/logout', (req, res) => {
     setSessionCookie(req, res, '', 0); // Max-Age=0 deletes the cookie
-    res.redirect(303, '/');             // back to the app, as a guest again
+    res.redirect(303, APP_PAGE);        // back to the app, as a guest again
 });
 
 // ---------------------------------------------------------------- the gate
