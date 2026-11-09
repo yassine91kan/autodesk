@@ -36,8 +36,14 @@ const NOT_IN_DATA = [
 ];
 const CAN_INSTEAD = 'I can count, list, add up and compare elements by category, level, material, type and size, and measure spacing between elements.';
 
+// Questions about the assistant itself ("are you smart?", "who are you?"): a fixed, honest
+// answer from code, instead of whatever OpenAI improvises (0 tokens, the same every time).
+const ABOUT_ME = /^\s*(?:hi|hello|hey)?[\s,!]*(?:who|what) are you\b|\bare you (?:smart|clever|intelligent|an? (?:ai|bot|robot|human|person|chatbot)|human|real|chatgpt|gpt)\b|\b(?:tell me )?about (?:you|yourself)\b|^\s*what (?:can|do) you do\b|^\s*how do you work\b|\bwho (?:made|built|created) you\b|\bwhat(?:'s| is) your name\b/;
+const ABOUT_ANSWER = 'I\'m Augmented, an assistant for this building model. I answer from the model\'s own data: I can count, list, add up and compare elements by category, level, material, type and size, and measure spacing between elements. I never invent a number: every answer comes from the model, and the elements I counted are highlighted in 3D. I can\'t see connections, clashes, grid lines or level elevations, and I never change the model.';
+
 function gate(question) {
     const lower = question.toLowerCase();
+    if (ABOUT_ME.test(lower)) return { lane: 'gate', kind: 'reply', answer: ABOUT_ANSWER };
     // First: data that doesn't exist ("closest to the SELECTED beam" can't be answered either).
     const hit = NOT_IN_DATA.find(([pattern]) => pattern.test(lower));
     if (hit) {
@@ -64,7 +70,7 @@ const RANK_COLUMNS = {
     heaviest: ['weight_kg', 'desc'], lightest: ['weight_kg', 'asc'],
     largest: ['volume_m3', 'desc'], biggest: ['volume_m3', 'desc'], smallest: ['volume_m3', 'asc'],
     widest: ['width_mm', 'desc'], narrowest: ['width_mm', 'asc'],
-    tallest: ['height_m', 'desc'], thickest: ['thickness_mm', 'desc'], thinnest: ['thickness_mm', 'asc']
+    tallest: ['height_m', 'desc'], highest: ['height_m', 'desc'], thickest: ['thickness_mm', 'desc'], thinnest: ['thickness_mm', 'asc']
 };
 const MATERIAL_CLASS_WORDS = {
     concrete: 'concrete', steel: 'steel', timber: 'timber', wood: 'timber', wooden: 'timber', lumber: 'timber', softwood: 'timber',
@@ -240,7 +246,13 @@ function readPlain(question, model) {
                 model.db.prepare('SELECT COUNT(*) n FROM elements_clean WHERE type = ? AND (family IS NULL OR family <> ?)').get(entries[0].value, entries[0].value).n === 0) {
                 entries = entries.filter(e => e.kind === 'family');
             }
-            if (entries.length > 1) return null;   // e.g. "foundation" = a category AND a level: OpenAI decides
+            // "Foundation(s)" is a category (the footings) AND a level name. After "on / at"
+            // ("walls on foundation") it's the level; otherwise ("show the foundations") the category.
+            if (entries.length === 2 && entries.some(e => e.kind === 'category') && entries.some(e => e.kind === 'level')) {
+                const onLevel = ['on', 'at'].includes(words[i - 1]) || (words[i - 1] === 'the' && ['on', 'at'].includes(words[i - 2]));
+                entries = entries.filter(e => e.kind === (onLevel ? 'level' : 'category'));
+            }
+            if (entries.length > 1) return null;   // still two meanings: OpenAI decides
             found[entries[0].kind].push(entries[0].value);
             i += n;
             matched = true;
@@ -314,8 +326,12 @@ function readPlain(question, model) {
     const hasFilter = filters.category || filters.level || filters.material || filters.type || filters.family || filters.families ||
         filters.function || filters.comparisons.length;
 
+    // "What is the volume / area / weight of the concrete walls?" asks for one total.
+    if (measure && !aggregate && !rank && !groupBy && ['area_m2', 'volume_m3', 'weight_kg'].includes(measure) &&
+        /\b(area|volume|weight|tonnage)\s+of\b/i.test(question)) aggregate = 'sum';
+
     if (rank) {
-        // "the door with the largest WIDTH": a size word ranks by the measure the question names.
+        // "the door with the largest WIDTH\": a size word ranks by the measure the question names.
         if (measure && ['largest', 'biggest', 'smallest'].includes(rank.word)) rank.column = measure;
         rank.column = rank.column || measure;
         if (!rank.column || groupBy || aggregate) return null;
@@ -357,6 +373,7 @@ function quantity(value, column) {
 
 // The SQL of a plain question: { sql, params, answer(rows) }.
 function buildTemplate(read, db) {
+    const compared = [];   // the columns compared ("thicker than 200 mm" -> thickness_mm)
     const where = [];
     const params = [];
     if (read.category) { where.push('category = ?'); params.push(read.category); }
@@ -378,6 +395,7 @@ function buildTemplate(read, db) {
         }
         where.push(`${column} ${c.op} ?`);
         params.push(c.value);
+        compared.push(column);
     }
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const and = extra => (where.length ? `${whereSql} AND ${extra}` : `WHERE ${extra}`);
@@ -386,14 +404,17 @@ function buildTemplate(read, db) {
     switch (read.form) {
         case 'count':
         case 'list': {
-            const sql = `SELECT objectid FROM elements_clean ${whereSql} ORDER BY level, objectid`;
-            const ids = db.prepare(sql).all(...params).map(r => r.objectid);
+            // "walls thicker than 200 mm": each wall's thickness is shown in the table.
+            const shown = compared[0] || null;
+            const sql = `SELECT objectid${shown ? `, ${shown} AS value` : ''} FROM elements_clean ${whereSql} ORDER BY level, objectid`;
+            const found = db.prepare(sql).all(...params);
+            const ids = found.map(r => r.objectid);
             // "30 Structural Columns", but "1 element (Structural Columns on Level 1)"
             const amount = ids.length === 1 ? `1 element (${subject})` : `${ids.length} ${subject}`;
             const answer = read.form === 'count'
                 ? `There ${ids.length === 1 ? 'is' : 'are'} ${amount}.`
                 : `Found ${amount}.`;
-            return { sql, params, ids, count: ids.length, answer, kind: 'elements' };
+            return { sql, params, ids, count: ids.length, answer, kind: 'elements', values: shown ? found : null, valueColumn: shown };
         }
         case 'sum':
         case 'avg': {
@@ -504,14 +525,14 @@ async function answerHybrid(question, model, previous = null) {
         const checked = checkSql(model.db, cached.sql);   // checked again: the cache is data, not trusted code
         if (checked.stmt) {
             const { rows, columns, total } = runChecked(model.db, checked);
-            return { lane: 'cache', calls: [], ...shapeResult(rows, cached.reading, columns, total),
+            return { lane: 'cache', calls: [], ...shapeResult(rows, cached.reading, columns, total, cached.label),
                 sql: checked.sql, reading: cached.reading, cacheKey: key };
         }
         planCache.delete(key);   // no longer valid: ask OpenAI again
     }
 
     const result = await answerWithSql(question, model, null);
-    if (result.sql) planCache.set(key, { sql: result.sql, reading: result.reading || null });
+    if (result.sql) planCache.set(key, { sql: result.sql, reading: result.reading || null, label: result.label || null });
     else if (result.kind === 'reply') planCache.set(key, { reply: result.answer });   // not "clarify": the user may rephrase
     return { lane: 'sql', followUp: false, ...result, cacheKey: key };
 }
@@ -519,15 +540,17 @@ async function answerHybrid(question, model, previous = null) {
 // The element list the page shows (same shape as the tiered planner's): at most
 // MAX_RETURNED_ELEMENTS, with externalId so SVF2 viewers can find them.
 function elementsMessage(db, ids, values = null, valueColumn = null) {
+    if (valueColumn && !COLUMN_UNITS[valueColumn]) valueColumn = null;
     const shown = ids.slice(0, MAX_RETURNED_ELEMENTS);
     const byId = new Map(shown.length ? db.prepare(`SELECT objectid, external_id, name FROM elements_clean WHERE objectid IN (${shown.map(() => '?').join(', ')})`)
         .all(...shown).map(row => [row.objectid, row]) : []);
     const valueOf = new Map((values || []).map(v => [v.objectid, v.value]));
     return {
         count: ids.length,
+        valueName: valueColumn ? COLUMN_NAMES[valueColumn] : null,   // the table's value column ("thickness")
         elements: shown.map(id => ({ id, externalId: byId.get(id)?.external_id ?? null, name: byId.get(id)?.name ?? String(id),
-            value: valueOf.get(id) ?? null, unit: valueColumn ? COLUMN_UNITS[valueColumn] : null }))
+            value: valueColumn ? (valueOf.get(id) ?? null) : null, unit: valueColumn ? COLUMN_UNITS[valueColumn] : null }))
     };
 }
 
-module.exports = { answerHybrid, readPlain, readComparisons, buildTemplate, gate, elementsMessage, isFollowUpQuestion, namesOf, forgetCachedPlan, cacheKey };
+module.exports = { ABOUT_ME, ABOUT_ANSWER, answerHybrid, readPlain, readComparisons, buildTemplate, gate, elementsMessage, isFollowUpQuestion, namesOf, forgetCachedPlan, cacheKey };

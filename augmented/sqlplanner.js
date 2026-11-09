@@ -63,9 +63,13 @@ ${COLUMN_NOTES.map(c => `- ${c}`).join('\n')}
 Units are in the column names: convert the question's units (6 m -> length_m > 6; 300 mm -> width_mm > 300; 20 ft -> length_m > 6.096; 1 m3 -> volume_m3 > 1).
 
 Return ONLY JSON, one of:
-{"sql": "SELECT ...", "reading": "<one short sentence: how you read the question>"}
+{"sql": "SELECT ...", "reading": "<one short sentence: how you read the question>", "label": "<what the result is, in plain words>"}
 {"reply": "<short answer in words>"}    when the table can't answer it: connections, supports, hosts, assemblies, grids, clashes, orientation (north), the element selected in the viewer, viewer actions, or questions not about the model
 {"clarify": "<one short question>"}     only when the question is too vague to choose (e.g. "large" with no size)
+
+"label" is read by the user right after the number, so write it in their words, never column names:
+- a set of elements: a plural noun phrase, e.g. "walls thicker than 200 mm", "steel beams on Level 2"
+- a single number: what it is, with its unit, e.g. "total volume of the concrete elements (m³)", "columns on Level 1"
 
 Rules for the SQL:
 - When the answer is a set of elements (show, find, list, which), SELECT objectid and the columns that matter.
@@ -75,6 +79,9 @@ Rules for the SQL:
 - "structural" = is_structural = 1 only (Revit's own flag): don't add categories to it. "missing" / "no ..." = IS NULL. Use only the columns above; never invent names.
 - "horizontal members" = Structural Framing; "vertical members" = Structural Columns (plus Columns if listed).
 - Viewer actions (highlight, isolate, clear the selection, add to the schedule) happen automatically for every answer: ignore those words and answer the data part. "Highlight these" after a previous question = run the previous query again.
+- "The highest / longest / largest X" (no number given): return EVERY element tied at the top value, e.g. WHERE height_m = (SELECT MAX(height_m) FROM elements_clean WHERE ...), never LIMIT 1. "Highest" of an element means its height_m.
+- "The area / volume / weight of X" means one total: SUM(...) over X, not a list.
+- "Foundations" / "footings" is the Structural Foundations category, unless the question says "on" or "at" a level named Foundation.
 - Never use a level as a stand-in for an elevation: the table has no elevations, so for "highest / lowest elevation" reply that elevations aren't in the model data (heights are in height_m).
 - If a name in the question exists nowhere below (a level, mark, type or material), reply that it doesn't exist and name a few that do.
 
@@ -121,21 +128,36 @@ function runChecked(db, checked) {
 // Turns the rows into a result like today's: element ids to highlight, a count, and text.
 // `columns` = the query's column names (known even when no row came back); `total` = the
 // true number of results when more than MAX_ROWS exist.
-function shapeResult(rows, reading, columns = rows[0] ? Object.keys(rows[0]) : [], total = null) {
+// `label` = OpenAI's plain words for the result ("walls thicker than 200 mm"): the answer
+// reads "Found 9 walls thicker than 200 mm." instead of "Found 9 elements. <reading>".
+const round = value => (typeof value === 'number' ? Math.round(value * 1000) / 1000 : value);
+const cleanLabel = label => String(label || '').trim().replace(/[.\s]+$/, '').slice(0, 160);
+function shapeResult(rows, reading, columns = rows[0] ? Object.keys(rows[0]) : [], total = null, label = null) {
+    label = cleanLabel(label);
     if (rows.length === 0) {
         return { kind: columns.includes('objectid') ? 'elements' : 'table', ids: [], rows, count: 0,
-            answer: `Nothing found. ${reading || ''}`.trim() };
+            answer: label ? `No ${label} found.` : `Nothing found. ${reading || ''}`.trim() };
     }
     if ('objectid' in rows[0]) {
         const ids = [...new Set(rows.map(r => r.objectid))];
         const count = Math.max(total ?? 0, ids.length);
         const shown = count > ids.length ? ` (the first ${ids.length} are listed)` : '';
-        return { kind: 'elements', ids, count, rows, answer: `Found ${count} element${count === 1 ? '' : 's'}${shown}. ${reading || ''}`.trim() };
+        // The first size column of the query goes in the table next to each element.
+        const valueColumn = columns.find(c => NUMBER_COLUMNS.includes(c)) || null;
+        const values = valueColumn ? rows.map(r => ({ objectid: r.objectid, value: r[valueColumn] })) : null;
+        const answer = label
+            ? (count === 1 ? `Found 1 element (${label})${shown}.` : `Found ${count} ${label}${shown}.`)
+            : `Found ${count} element${count === 1 ? '' : 's'}${shown}. ${reading || ''}`.trim();
+        return { kind: 'elements', ids, count, rows, answer, values, valueColumn };
     }
     if (rows.length === 1 && Object.keys(rows[0]).length === 1) {
         const [column, value] = Object.entries(rows[0])[0];
-        return { kind: 'value', ids: [], value, count: /count/i.test(column) ? value : null, rows,
-            answer: `${column}: ${typeof value === 'number' ? Math.round(value * 1000) / 1000 : value}. ${reading || ''}`.trim() };
+        const isCount = /count/i.test(column);
+        let answer;
+        if (label && isCount) answer = `There ${value === 1 ? 'is' : 'are'} ${round(value)} ${label}.`;
+        else if (label) answer = `${label[0].toUpperCase()}${label.slice(1)}: ${round(value)}.`;
+        else answer = `${column}: ${round(value)}. ${reading || ''}`.trim();
+        return { kind: 'value', ids: [], value, count: isCount ? value : null, rows, answer };
     }
     const lines = rows.slice(0, 50).map(r => Object.values(r).map(v => typeof v === 'number' ? Math.round(v * 1000) / 1000 : v).join(' | '));
     return { kind: 'table', ids: [], rows, count: null,
@@ -163,7 +185,8 @@ async function answerWithSql(question, model, previous = null) {
         if (checked.stmt) {
             try {
                 const { rows, columns, total } = runChecked(db, checked);
-                return { ...shapeResult(rows, json.reading, columns, total), sql: checked.sql, reading: json.reading || null, calls };
+                return { ...shapeResult(rows, json.reading, columns, total, json.label), sql: checked.sql, reading: json.reading || null,
+                    label: json.label || null, calls };
             } catch (error) {
                 checked.error = error.message;
             }
@@ -173,4 +196,4 @@ async function answerWithSql(question, model, previous = null) {
     return { kind: 'clarify', ids: [], rows: [], count: null, answer: 'Sorry, I couldn\'t build a working query for that. Could you rephrase it?', calls };
 }
 
-module.exports = { answerWithSql, describeCleanTable, checkSql, runChecked, shapeResult, SQL_PROMPT, MAX_ROWS };
+module.exports = { NUMBER_COLUMNS, answerWithSql, describeCleanTable, checkSql, runChecked, shapeResult, SQL_PROMPT, MAX_ROWS };

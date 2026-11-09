@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-07T12:00:00Z",
+  "title": "Design System: Augmented",
+  "scope": "Landing page only (wwwroot/landing.html). The app (index.html) and login.html use the older drawing-sheet system in wwwroot/assets/css/drawing-sheet.css, not recorded here.",
+  "extensions": {
+    "colorMeta": {
+      "clay": { "role": "primary", "displayName": "Accent Clay", "canonical": "#c15f3c", "tonalRamp": ["#3a1a0f", "#5c2a18", "#7f3b22", "#a9502f", "#c15f3c", "#d77d5d", "#e8957a", "#f6d5c8"] },
+      "clay-deep": { "role": "primary", "displayName": "Cut-Edge Clay", "canonical": "#a9502f", "tonalRamp": ["#3a1a0f", "#5c2a18", "#7f3b22", "#a9502f", "#c15f3c", "#d77d5d", "#e8957a", "#f6d5c8"] },
+      "clay-light": { "role": "primary", "displayName": "Lit Clay", "canonical": "#e8957a", "tonalRamp": ["#3a1a0f", "#5c2a18", "#7f3b22", "#a9502f", "#c15f3c", "#d77d5d", "#e8957a", "#f6d5c8"] },
+      "sky-deep": { "role": "secondary", "displayName": "Mandatory-Sign Blue", "canonical": "#3d6f9f", "tonalRamp": ["#142c43", "#1f3f5f", "#2d5780", "#3d6f9f", "#6a9bcc", "#8db4dc", "#b6d0ea", "#e3edf7"] },
+      "sky-text-dark": { "role": "secondary", "displayName": "Sign Blue on Dark Board", "canonical": "#8db4dc", "tonalRamp": ["#142c43", "#1f3f5f", "#2d5780", "#3d6f9f", "#6a9bcc", "#8db4dc", "#b6d0ea", "#e3edf7"] },
+      "ink-solid": { "role": "neutral", "displayName": "Print Ink", "canonical": "#0a0a09", "tonalRamp": ["#0a0a09", "#141413", "#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2"] },
+      "ink": { "role": "neutral", "displayName": "Board Ink", "canonical": "#141413", "tonalRamp": ["#0a0a09", "#141413", "#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2"] },
+      "ivory": { "role": "neutral", "displayName": "Sign Ivory", "canonical": "#faf9f5", "tonalRamp": ["#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2", "#ecebe4", "#f0eee6", "#faf9f5"] },
+      "cloudy": { "role": "neutral", "displayName": "Cloudy", "canonical": "#b0aea5", "tonalRamp": ["#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2", "#ecebe4", "#faf9f5"] },
+      "graphite": { "role": "neutral", "displayName": "Graphite", "canonical": "#5e5d59", "tonalRamp": ["#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2", "#ecebe4", "#faf9f5"] },
+      "board-rule": { "role": "neutral", "displayName": "Board Rule", "canonical": "#dedcd2", "tonalRamp": ["#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2", "#ecebe4", "#faf9f5"] },
+      "site": { "role": "neutral", "displayName": "Site Paper", "canonical": "#f0eee6", "tonalRamp": ["#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2", "#f0eee6", "#faf9f5"] },
+      "board-dark": { "role": "neutral", "displayName": "Board (dark mode)", "canonical": "#22211e", "tonalRamp": ["#0a0a09", "#141413", "#1c1b18", "#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5"] },
+      "board-text-dark": { "role": "neutral", "displayName": "Board Text and Pin (dark mode)", "canonical": "#ecebe4", "tonalRamp": ["#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2", "#ecebe4", "#f0eee6", "#faf9f5"] },
+      "board-rule-dark": { "role": "neutral", "displayName": "Board Rule (dark mode)", "canonical": "#3a3934", "tonalRamp": ["#0a0a09", "#141413", "#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2"] },
+      "site-dark": { "role": "neutral", "displayName": "Site (dark mode)", "canonical": "#1c1b18", "tonalRamp": ["#0a0a09", "#141413", "#1c1b18", "#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5"] },
+      "line-dark": { "role": "neutral", "displayName": "Frame Line (dark mode)", "canonical": "#6b6a64", "tonalRamp": ["#141413", "#22211e", "#3a3934", "#5e5d59", "#6b6a64", "#8a8880", "#b0aea5", "#dedcd2"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The hero question only; max 11ch, balanced." },
+      "headline-gate": { "displayName": "Gate Headline", "purpose": "The closing gate." },
+      "headline": { "displayName": "Headline", "purpose": "Titles on ink boards." },
+      "headline-band": { "displayName": "Band Headline", "purpose": "Uppercase titles in coloured sign bands." },
+      "numeral": { "displayName": "Step Numeral", "purpose": "Clay-light step numbers on the ink board." },
+      "title": { "displayName": "Title", "purpose": "Step titles." },
+      "sign-caption": { "displayName": "Sign Caption", "purpose": "Uppercase caption under a mandatory sign." },
+      "question": { "displayName": "Question", "purpose": "The demo question typing on the plate." },
+      "button": { "displayName": "Button", "purpose": "Entrance buttons." },
+      "nav": { "displayName": "Nav", "purpose": "Masthead links." },
+      "lede": { "displayName": "Lede", "purpose": "Hero paragraph, max 34ch." },
+      "body": { "displayName": "Body", "purpose": "Reading text, 46-58ch." },
+      "small": { "displayName": "Small", "purpose": "Hero note, sign descriptions." },
+      "fine-print": { "displayName": "Fine Print", "purpose": "Site information board." },
+      "label": { "displayName": "Label", "purpose": "Information-board field names only." },
+      "tag": { "displayName": "Understood Tag", "purpose": "How the question was understood." },
+      "wordmark": { "displayName": "Wordmark", "purpose": "AUGMENTED wordmark only." }
+    },
+    "shadows": [
+      { "name": "board", "value": "0 2px 0 rgba(10,10,9,.12), 0 22px 40px -24px rgba(10,10,9,.7)", "purpose": "Sign boards fixed onto the hoarding." },
+      { "name": "plate", "value": "0 18px 30px -16px rgba(10,10,9,.8)", "purpose": "Question plate at the foot of the window." },
+      { "name": "answer", "value": "0 14px 26px -16px rgba(10,10,9,.7)", "purpose": "Pinned answer label." },
+      { "name": "button", "value": "0 14px 24px -14px rgba(10,10,9,.75)", "purpose": "Entrance button at rest." },
+      { "name": "button-hover", "value": "0 18px 30px -14px rgba(10,10,9,.85)", "purpose": "Entrance button on hover." },
+      { "name": "cut-window", "value": "0 0 0 clamp(8px,1.1vw,14px) #a9502f, 0 0 0 calc(clamp(8px,1.1vw,14px) + 1px) rgba(10,10,9,.25); inner: inset 0 16px 30px -8px rgba(10,10,9,.5), inset 0 -2px 0 rgba(255,255,255,.06)", "purpose": "The viewing window cut into the hoarding." },
+      { "name": "cut-gate", "value": "inset 0 0 0 clamp(8px,1.1vw,14px) #a9502f, inset 0 18px 30px -12px rgba(0,0,0,.6)", "purpose": "The closing gate cut into the hoarding." }
+    ],
+    "motion": [
+      { "name": "beat", "value": "150ms", "purpose": "The one clock; every duration is a multiple, and the JS reads the same variable." },
+      { "name": "type", "value": "beat / 3 per character", "purpose": "Question typing." },
+      { "name": "iris-open", "value": "clip-path calc(var(--beat) * 3) cubic-bezier(.16,1,.3,1)", "purpose": "Scene opens through the window." },
+      { "name": "iris-close", "value": "clip-path calc(var(--beat) * 3) cubic-bezier(.7,0,.84,0)", "purpose": "Scene closes." },
+      { "name": "tag-stamp", "value": "scale 1.3 -> 1, calc(var(--beat) * .8) cubic-bezier(.2,1.4,.4,1)", "purpose": "Understood tags stamp in, one per beat." },
+      { "name": "light", "value": "calc(var(--beat) * 2) ease", "purpose": "Elements light; the rest dim to 40%." },
+      { "name": "leader", "value": "stroke-dashoffset calc(var(--beat) * 2) cubic-bezier(.16,1,.3,1)", "purpose": "Leader line draws to the lit centroid." },
+      { "name": "hold", "value": "26 beats", "purpose": "Answer hold before the iris closes." },
+      { "name": "ui", "value": "160ms ease", "purpose": "Button background and shadow; arrow shifts 4px in 200ms cubic-bezier(.2,.8,.2,1)." }
+    ],
+    "breakpoints": [
+      { "name": "phone", "value": "640px" },
+      { "name": "stack", "value": "900px" },
+      { "name": "narrow", "value": "1080px" }
+    ],
+    "background": {
+      "hoarding": "background-color: #c15f3c; background-image: linear-gradient(90deg, rgba(10,10,9,.2) 0 2px, rgba(255,255,255,.1) 2px 3px, transparent 3px); background-size: 300px 100%; background-position: calc(50% - 150px) 0;"
+    }
+  },
+  "components": [
+    {
+      "name": "Entrance Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary action on the pale ground: ink (ivory in dark mode), clay on hover.",
+      "html": "<a class=\"ds-btn\" href=\"#\"><span>Open the sample model</span><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 12h15M13 6l6 6-6 6\"/></svg></a>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; gap: 14px; min-height: 60px; padding: 0 26px 0 28px; font: 700 20px/1 \"Barlow Semi Condensed\", \"Arial Narrow\", sans-serif; letter-spacing: .01em; text-decoration: none; background: var(--ink-solid, #0a0a09); color: var(--ivory, #faf9f5); border-radius: 3px; box-shadow: 0 14px 24px -14px rgba(10,10,9,.75); transition: background-color 160ms ease, box-shadow 160ms ease; } .ds-btn svg { width: 22px; height: 22px; fill: none; stroke: var(--clay-light, #e8957a); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: transform 200ms cubic-bezier(.2,.8,.2,1); } .ds-btn:hover { background: #000; box-shadow: 0 18px 30px -14px rgba(10,10,9,.85); } .ds-btn:hover svg { transform: translateX(4px); } .ds-btn:focus-visible { outline: 3px solid var(--ink-solid, #0a0a09); outline-offset: 3px; }"
+    },
+    {
+      "name": "Ivory Button",
+      "kind": "button",
+      "refersTo": "button-ivory",
+      "description": "The same entrance button on ink (gate): ivory, ink label, clay arrow.",
+      "html": "<div class=\"ds-ink\"><a class=\"ds-btn-ivory\" href=\"#\"><span>Open the sample model</span><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 12h15M13 6l6 6-6 6\"/></svg></a></div>",
+      "css": ".ds-ink { background: #141413; padding: 32px; } .ds-btn-ivory { display: inline-flex; align-items: center; gap: 14px; min-height: 60px; padding: 0 26px 0 28px; font: 700 20px/1 \"Barlow Semi Condensed\", \"Arial Narrow\", sans-serif; text-decoration: none; background: var(--ivory, #faf9f5); color: var(--ink, #141413); border-radius: 3px; transition: background-color 160ms ease; } .ds-btn-ivory svg { width: 22px; height: 22px; fill: none; stroke: var(--clay, #c15f3c); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: transform 200ms cubic-bezier(.2,.8,.2,1); } .ds-btn-ivory:hover { background: #fff; } .ds-btn-ivory:hover svg { transform: translateX(4px); } .ds-btn-ivory:focus-visible { outline: 3px solid #faf9f5; outline-offset: 3px; }"
+    },
+    {
+      "name": "Masthead",
+      "kind": "nav",
+      "refersTo": "nav-app",
+      "description": "Nav on the clay, no bar: logo, condensed links, EN/FR toggle, ivory app button.",
+      "html": "<div class=\"ds-mast\"><span class=\"ds-word\">Augmented</span><nav><a href=\"#\">How it works</a><a href=\"#\">Limits</a><a href=\"#\">Sign in</a><span class=\"ds-lang\"><button aria-pressed=\"true\">EN</button><button aria-pressed=\"false\">FR</button></span><a class=\"ds-app\" href=\"#\">Open the app</a></nav></div>",
+      "css": ".ds-mast { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 76px; padding: 0 24px; background: #c15f3c; color: #0a0a09; } .ds-word { font: 600 17px \"Montserrat\", \"Segoe UI\", sans-serif; letter-spacing: .18em; text-transform: uppercase; } .ds-mast nav { display: flex; align-items: center; gap: 24px; font: 600 17px/1 \"Barlow Semi Condensed\", \"Arial Narrow\", sans-serif; } .ds-mast a { color: inherit; text-decoration: none; } .ds-mast a:not(.ds-app):hover { text-decoration: underline; text-underline-offset: .22em; text-decoration-thickness: 2px; } .ds-app { background: #faf9f5; color: #141413 !important; padding: 12px 16px; border-radius: 3px; box-shadow: 0 6px 14px -10px rgba(10,10,9,.7); transition: background-color 160ms ease; } .ds-app:hover { background: #fff; } .ds-lang { display: inline-flex; border: 2px solid #0a0a09; border-radius: 3px; } .ds-lang button { font: 700 14px/1 \"Barlow Semi Condensed\", sans-serif; letter-spacing: .04em; color: #0a0a09; background: none; border: 0; padding: 8px 11px; cursor: pointer; } .ds-lang button[aria-pressed=\"true\"] { background: #0a0a09; color: #faf9f5; } .ds-lang button[aria-pressed=\"false\"]:hover { background: rgba(10,10,9,.1); } .ds-mast :focus-visible { outline: 3px solid #0a0a09; outline-offset: 3px; }"
+    },
+    {
+      "name": "Sign Board with Band",
+      "kind": "card",
+      "refersTo": "board",
+      "description": "Ivory board fixed to the hoarding, opened by a blue (can) or clay (can't) band.",
+      "html": "<div class=\"ds-ground\"><div class=\"ds-board\"><div class=\"ds-band\"><h2>What you can ask</h2><p>Plain questions in your own words.</p></div><div class=\"ds-body\">Board content</div></div></div>",
+      "css": ".ds-ground { background: #c15f3c; padding: 32px; } .ds-board { background: #faf9f5; color: #141413; border-radius: 2px; overflow: hidden; box-shadow: 0 2px 0 rgba(10,10,9,.12), 0 22px 40px -24px rgba(10,10,9,.7); } .ds-band { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 32px; padding: 20px 32px; background: #3d6f9f; color: #faf9f5; } .ds-band h2 { font: 700 34px/1.05 \"Barlow Semi Condensed\", sans-serif; text-transform: uppercase; letter-spacing: .02em; margin: 0; } .ds-band p { margin: 0; font: 500 17px/1.45 \"Barlow\", sans-serif; } .ds-body { padding: 32px; font: 400 17px/1.55 \"Barlow\", sans-serif; }"
+    },
+    {
+      "name": "Mandatory Sign",
+      "kind": "custom",
+      "refersTo": "sign-do",
+      "description": "Blue disc with ivory pictogram, caption, description and a quoted example question.",
+      "html": "<div class=\"ds-rule\"><span class=\"ds-disc\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M9 6h11M9 12h11M9 18h11\"/><circle cx=\"4.5\" cy=\"6\" r=\"1.2\"/><circle cx=\"4.5\" cy=\"12\" r=\"1.2\"/><circle cx=\"4.5\" cy=\"18\" r=\"1.2\"/></svg></span><h3>Counts and lists</h3><p>Any category, anywhere in the model.</p><p class=\"ds-ex\">How many columns are there?</p></div>",
+      "css": ".ds-rule { display: flex; flex-direction: column; align-items: center; text-align: center; background: #faf9f5; padding: 24px; color: #141413; } .ds-disc { width: 96px; height: 96px; border-radius: 50%; background: #3d6f9f; display: grid; place-items: center; margin-bottom: 14px; } .ds-disc svg { width: 62%; height: 62%; fill: none; stroke: #faf9f5; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; } .ds-rule h3 { font: 700 21px/1.1 \"Barlow Semi Condensed\", sans-serif; text-transform: uppercase; letter-spacing: .02em; margin: 0 0 4px; } .ds-rule p { margin: 0; color: #5e5d59; font: 400 15px/1.4 \"Barlow\", sans-serif; max-width: 26ch; } .ds-rule .ds-ex { margin-top: 6px; color: #3d6f9f; font: 600 17px/1.3 \"Barlow Semi Condensed\", sans-serif; } .ds-ex::before { content: \"\\201C\"; } .ds-ex::after { content: \"\\201D\"; }"
+    },
+    {
+      "name": "Prohibition Sign Row",
+      "kind": "custom",
+      "refersTo": "board",
+      "description": "Clay ring and slash over a graphite pictogram, in a ruled list of what the data cannot answer.",
+      "html": "<ul class=\"ds-limits\"><li><svg viewBox=\"0 0 40 40\" aria-hidden=\"true\"><rect class=\"p\" x=\"11\" y=\"11\" width=\"11\" height=\"11\"/><rect class=\"p\" x=\"18\" y=\"18\" width=\"11\" height=\"11\"/><circle class=\"r\" cx=\"20\" cy=\"20\" r=\"17\"/><path class=\"r\" d=\"M8 8l24 24\"/></svg><span>Clashes and overlaps</span></li><li><svg viewBox=\"0 0 40 40\" aria-hidden=\"true\"><path class=\"p\" d=\"M15 10v20M25 10v20M10 15h20M10 25h20\"/><circle class=\"r\" cx=\"20\" cy=\"20\" r=\"17\"/><path class=\"r\" d=\"M8 8l24 24\"/></svg><span>Grid lines and building orientation</span></li></ul>",
+      "css": ".ds-limits { list-style: none; margin: 0; padding: 24px; background: #faf9f5; color: #141413; font: 400 17px/1.55 \"Barlow\", sans-serif; } .ds-limits li { display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #dedcd2; } .ds-limits li:last-child { border-bottom: 0; } .ds-limits svg { width: 40px; height: 40px; flex: none; } .ds-limits .p { fill: none; stroke: #141413; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; } .ds-limits .r { fill: none; stroke: #c15f3c; stroke-width: 2.6; }"
+    },
+    {
+      "name": "Question Plate and Tags",
+      "kind": "chip",
+      "refersTo": "question-plate",
+      "description": "Ink plate with the typed question and stamped understood tags; dashed clay-light when data is missing. Never the query.",
+      "html": "<div class=\"ds-plate\"><div class=\"ds-ask\">Which columns support the beams on level 2?<span class=\"ds-caret\"></span></div><div class=\"ds-read\"><span class=\"ds-tag\">Columns</span><span class=\"ds-tag ds-missing\">Supports: not in the data</span></div></div>",
+      "css": ".ds-plate { padding: 16px 20px 14px; background: #0a0a09; color: #faf9f5; border-radius: 3px; box-shadow: 0 18px 30px -16px rgba(10,10,9,.8); } .ds-ask { font: 600 24px/1.2 \"Barlow Semi Condensed\", sans-serif; } .ds-caret { display: inline-block; width: 3px; height: .95em; background: #e8957a; vertical-align: -.1em; margin-left: 2px; animation: ds-blink 900ms steps(1) infinite; } @keyframes ds-blink { 50% { opacity: 0; } } .ds-read { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; } .ds-tag { font: 600 13.5px/1 \"Barlow Semi Condensed\", sans-serif; letter-spacing: .02em; color: #faf9f5; border: 1.5px solid rgba(250,249,245,.55); border-radius: 2px; padding: 6px 8px; } .ds-missing { color: #e8957a; border: 1.5px dashed #e8957a; } @media (prefers-reduced-motion: reduce) { .ds-caret { animation: none; } }"
+    },
+    {
+      "name": "Pinned Answer Label",
+      "kind": "custom",
+      "refersTo": "answer-label",
+      "description": "Ivory label pinned to the lit elements; the number in large bold clay.",
+      "html": "<div class=\"ds-site\"><div class=\"ds-answer\"><strong>17</strong> steel framing members on Level 2.</div></div>",
+      "css": ".ds-site { background: #f0eee6; padding: 24px; } .ds-answer { display: inline-block; max-width: 280px; padding: 12px 14px 13px; background: #faf9f5; color: #141413; font: 500 15.5px/1.38 \"Barlow\", sans-serif; border-radius: 2px; box-shadow: 0 14px 26px -16px rgba(10,10,9,.7); } .ds-answer strong { display: inline-block; font: 700 1.5em/1 \"Barlow Semi Condensed\", sans-serif; color: #c15f3c; margin-right: 2px; }"
+    },
+    {
+      "name": "Site Information Board",
+      "kind": "card",
+      "refersTo": "board",
+      "description": "Footer: ink head, ruled 3-column label/value grid in fine print.",
+      "html": "<div class=\"ds-info\"><div class=\"ds-info-head\"><span>AUGMENTED</span><span>Open the app · How it works</span></div><dl class=\"ds-facts\"><div><dt>Reads</dt><dd>Revit models, through Autodesk Platform Services</dd></div><div><dt>Writes to the model</dt><dd>Never: it only reads</dd></div><div><dt>This page</dt><dd>English and French</dd></div></dl></div>",
+      "css": ".ds-info { background: #faf9f5; color: #141413; border-radius: 2px; font: 400 13.5px/1.4 \"Barlow\", sans-serif; box-shadow: 0 22px 40px -24px rgba(10,10,9,.7); overflow: hidden; } .ds-info-head { display: flex; justify-content: space-between; padding: 14px 24px; background: #141413; color: #faf9f5; font: 600 15px/1.3 \"Barlow Semi Condensed\", sans-serif; } .ds-facts { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); } .ds-facts > div { display: grid; grid-template-columns: 9.5em minmax(0,1fr); gap: 12px; padding: 10px 24px; border-bottom: 1px solid #dedcd2; border-right: 1px solid #dedcd2; } .ds-facts > div:nth-child(3n) { border-right: 0; } .ds-facts dt { font: 700 12px/1.5 \"Barlow Semi Condensed\", sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #5e5d59; } .ds-facts dd { margin: 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Site Hoarding",
+    "overview": "The page is the printed hoarding around a live building site. The product is what you watch through the round viewing window cut into it. Clay panels fill the page edge to edge, with a joint every 300px. Ivory sign boards are fixed to the panels, and the type is billboard-scale ink set in a condensed grotesque. The hoarding is loud and graphic. The window is the only place where the work shows: an isometric frame whose elements light up in clay while the answer is pinned to them.\n\nThe hierarchy is deliberately one-sided. The question is set huge, the answer much smaller, and a dense ruled site information board closes the page. Everything is printed: the clay, the seams and the signs stay the same in light and dark mode. Only the boards and the view through the window dim. The signage carries real content. Blue mandatory signs are what you can ask, clay ring-and-slash signs are what the data cannot answer, and the closing is a two-leaf ink gate set into the hoarding.\n\nThe owner has rejected two things for this surface: drawing-sheet frames and grids, and a black navigation bar across the top.",
+    "keyCharacteristics": [
+      "Clay field edge to edge, with a panel joint every 300px (a 2px dark gap and a 1px lit edge).",
+      "Condensed Barlow Semi Condensed headlines in ink at billboard scale; Barlow for reading.",
+      "Ivory boards fixed to the panels with soft drop shadows; the window and the gate are cut in with inset depth.",
+      "Site-signage grammar: blue discs for \"can\", clay ring-and-slash for \"can't\".",
+      "One clock (150ms beat) drives the whole demo.",
+      "Claude's palette only, pinned."
+    ],
+    "rules": [
+      { "name": "The Pinned Palette Rule", "body": "Claude's palette is the owner's commitment: clay, ink, ivory, sky and cloudy, plus their deepened or lightened steps. Do not add new hues.", "section": "colors" },
+      { "name": "The Ink-on-Clay Rule", "body": "Text printed on clay is always #0a0a09 (4.7:1 at body size). Do not set #141413, graphite or ivory text on clay.", "section": "colors" },
+      { "name": "The Printed Hoarding Rule", "body": "Clay, its joints and the coloured sign bands do not change in dark mode. Only the boards, the window's site, its lines and the pin change.", "section": "colors" },
+      { "name": "The One Shout Rule", "body": "The hero question is the only display-scale line in the first viewport. The answer is set at a fraction of that size.", "section": "typography" },
+      { "name": "The 300px Panel Rule", "body": "Hoarding joints repeat at exactly 300px, wide enough to read as panels rather than stripes. Do not tighten them.", "section": "layout" },
+      { "name": "The Fixed-or-Cut Rule", "body": "Every surface either stands on the hoarding (drop shadow) or is cut into it (inset). Nothing floats.", "section": "elevation" },
+      { "name": "The One Clock Rule", "body": "Every duration is a multiple of `--beat` (150ms), and the script reads the same variable. Typing runs at a third of a beat, tags land one per beat, the iris takes 3 beats and an answer holds for 26. With reduced motion, the first scene is shown static.", "section": "components" },
+      { "name": "The Exact Match Rule", "body": "The demo uses only real answers from the sample models, and the number of lit elements equals the number stated (17 level-2 beams, 9 walls, 17 concrete pieces).", "section": "components" },
+      { "name": "The Understood-not-Executed Rule", "body": "The demo shows how a question was understood, as tags. It never shows the query or the SQL.", "section": "components" }
+    ],
+    "dos": [
+      "Do set every piece of text on clay in print ink (#0a0a09).",
+      "Do keep the hoarding, its 300px joints and the sign bands the same in both colour schemes; dim only the boards and the window.",
+      "Do make every surface either fixed onto the hoarding (drop shadow) or cut into it (inset with a clay-deep edge).",
+      "Do use blue discs for what Augmented can do and clay ring-and-slash signs for what it cannot, each with real content.",
+      "Do time every animation in multiples of `--beat` (150ms) and provide a static reduced-motion state.",
+      "Do use only real sample-model answers, with lit elements matching the stated count."
+    ],
+    "donts": [
+      "Don't add drawing-sheet frames, title blocks or background grid lines to the landing page (the owner rejected them; that system belongs to the app pages).",
+      "Don't put an ink bar across the top of the page; the masthead sits on the clay.",
+      "Don't show the internal query or SQL anywhere public; show understood tags instead.",
+      "Don't introduce colours outside Claude's palette.",
+      "Don't add decorative hardware (bolts, screws, backing mats) to boards; they were removed in the finish review.",
+      "Don't set clay as text at body size on ivory; use it only for large bold numerals."
+    ]
+  }
+}

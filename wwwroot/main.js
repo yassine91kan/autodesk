@@ -702,9 +702,18 @@ function renderError(entry, body, message, retry) {
     body.append(again);
 }
 
+// 9.5 -> "9.5 m", 280 -> "280 mm", 12000 kg -> "12,000 kg"
+function formatValue(value, unit) {
+    if (value == null || value === '') return DASH;
+    const number = typeof value === 'number' ? value.toLocaleString('en-US', { maximumFractionDigits: 3 }) : String(value);
+    return unit ? `${number} ${unit}` : number;
+}
+
 async function renderElements(entry, body, data) {
     settle(body);
-    const elements = await toViewerIds((data.message.elements || []).map(e => ({ id: e.id, externalId: e.externalId, name: e.name })));
+    const elements = await toViewerIds((data.message.elements || []).map(e => ({ id: e.id, externalId: e.externalId, name: e.name, value: e.value, unit: e.unit })));
+    // "Walls thicker than 200 mm", "the longest beams": each element's measured value gets its own column.
+    const valueName = data.message.valueName || (elements.some(e => e.value != null) ? 'value' : null);
 
     if (elements.length === 0) {
         body.append(el('p', 'result-summary', 'No matching elements found in this model.'));
@@ -734,8 +743,12 @@ async function renderElements(entry, body, data) {
 
     const table = el('div', 'result-table');
     table.setAttribute('role', 'list');
+    if (valueName) table.classList.add('has-value');
     const header = el('div', 'result-table__head');
-    header.append(el('span', 'caps', 'Type'), el('span', 'caps', 'Level'), el('span', 'caps', 'ID'));
+    header.append(el('span', 'caps', 'Type'), el('span', 'caps', 'Level'));
+    if (valueName) header.append(el('span', 'caps result-table__value', valueName));
+    header.append(el('span', 'caps', 'ID'));
+    if (valueName) header.classList.add('has-value');
     body.append(header, table);
 
     let details = new Map();
@@ -751,7 +764,9 @@ async function renderElements(entry, body, data) {
             const type = el('span', 'result-item__name');
             type.append(el('span', null, info?.type || stripId(element.name)));
             if (info?.material) type.append(el('small', null, info.material));
-            row.append(type, el('span', 'result-item__level', info?.level || DASH), el('span', 'result-item__id', String(element.modelId ?? element.id)));
+            row.append(type, el('span', 'result-item__level', info?.level || DASH));
+            if (valueName) row.append(el('span', 'result-item__value', formatValue(element.value, element.unit)));
+            row.append(el('span', 'result-item__id', String(element.modelId ?? element.id)));
             row.addEventListener('click', () => {
                 table.querySelectorAll('[aria-pressed="true"]').forEach(other => other.setAttribute('aria-pressed', 'false'));
                 row.setAttribute('aria-pressed', 'true');

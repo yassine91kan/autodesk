@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="92" viewBox="0 0 120 92" fill="none">
+  <!-- Augmented mark for the CLAY hoarding (landing page): the same geometry as
+       augmented-mark-light.svg. On a clay ground the orange sliver and spark would
+       vanish, so they are printed in ivory instead; the A stays ink. -->
+  <defs>
+    <linearGradient id="aug-bar-clay" x1="12" y1="84" x2="74" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3a3935"/>
+      <stop offset="1" stop-color="#5e5d59"/>
+    </linearGradient>
+  </defs>
+  <path d="M17 77 51.5 18.5C55 12.5 63 12.5 66.5 18.5L101 77" stroke="#141413" stroke-width="19" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M10.5 79C8.5 71.5 12 65 19 61.5L66 41 72.5 51.5 29 84.5C21 90 12.5 87 10.5 79Z" fill="url(#aug-bar-clay)"/>
+  <path d="M66 41 77.5 56 72.5 51.5Z" fill="#faf9f5" fill-opacity="0.45"/>
+  <path d="M79.5 37 88 23.5 85.5 36Z" fill="#faf9f5"/>
+  <path d="M103 2.5C104.2 9.5 105.8 11 112.5 12.3 105.8 13.6 104.2 15 103 22 101.8 15 100.2 13.6 93.5 12.3 100.2 11 101.8 9.5 103 2.5Z" fill="#faf9f5"/>
+</svg>

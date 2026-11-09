@@ -1,0 +1,143 @@
+{
+  "title": "Choose the visual world for the Augmented landing page",
+  "question": "The roll assigned the Site Hoarding. Keep it, take an alternate, or re-roll. All directions keep Claude's palette, the EN/FR toggle and a question-and-answer demo.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "The Site Hoarding",
+      "kicker": "THE ROLL",
+      "lineage": "printed construction hoardings and site signage around live building sites",
+      "thesis": "The page is the hoarding around a live site, and the demo is what you see through its viewing window.",
+      "palette": ["#c15f3c", "#141413", "#faf9f5", "#6a9bcc", "#b0aea5"],
+      "materials": ["printed hoarding panels with seams", "a cut viewing window", "site safety signage"],
+      "viewport": "A clay hoarding panel with the question set at billboard scale; a round viewing window cut into it shows the 3D frame being asked and lit; the action reads as the site entrance.",
+      "risk": "Turns into a construction costume if the signage is decoration instead of carrying real content.",
+      "raised": [
+        { "from": "challenger-exploitation-sheet", "raise": "One shouting hierarchy: the question is set enormous, the answer at half that size, and a dense small-print project board anchors the foot." },
+        { "from": "challenger-rubber-hose", "raise": "Each demo question opens and closes through the viewing window itself, like an iris, instead of cross-fading." },
+        { "from": "challenger-tensegrity", "raise": "Answers are pinned to the elements they counted with leader lines, not floated in a card." },
+        { "from": "challenger-drum-machine", "raise": "One clock: typing, the understood tags, the lighting of elements and the answer all land on the same beat." }
+      ],
+      "wireframe": { "cols": 12, "rows": 10, "regions": [
+        { "label": "nav set into the top rail of the hoarding", "x": 0, "y": 0, "w": 12, "h": 1 },
+        { "label": "question at billboard scale on a clay panel", "x": 0, "y": 1, "w": 7, "h": 4, "accent": true },
+        { "label": "round viewing window: live 3D demo", "x": 7, "y": 1, "w": 5, "h": 6, "accent": true },
+        { "label": "answer pinned with a leader line + entrance action", "x": 0, "y": 5, "w": 7, "h": 2 },
+        { "label": "panel seam, then the signage section below", "x": 0, "y": 7, "w": 12, "h": 3 }
+      ] }
+    },
+    {
+      "id": "model-pick",
+      "label": "The Studio Scale Model",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "architects' card and timber scale models photographed under studio light",
+      "thesis": "The product is shown as a physical model on a studio table, and every answer lifts its elements out like model pieces.",
+      "palette": ["#f0eee6", "#141413", "#c15f3c", "#b0aea5"],
+      "materials": ["card and timber model", "soft studio light", "paper tags on pins"],
+      "viewport": "A large model on a calm ground; a question tag hangs from a pin and the matching pieces rise out of the model.",
+      "risk": "The closest to what this category usually ships: calm, crafted and easy to forget.",
+      "wireframe": { "cols": 12, "rows": 10, "regions": [
+        { "label": "quiet header", "x": 0, "y": 0, "w": 12, "h": 1 },
+        { "label": "the scale model, center stage", "x": 2, "y": 1, "w": 8, "h": 6, "accent": true },
+        { "label": "question tag + answer", "x": 0, "y": 7, "w": 6, "h": 2 },
+        { "label": "action", "x": 6, "y": 7, "w": 6, "h": 2 }
+      ] }
+    },
+    {
+      "id": "challenger-tensegrity",
+      "label": "Tensegrity Column",
+      "verdict": "declined",
+      "lineage": "kinetic tension sculptures",
+      "thesis": "Forces made visible: every answer traced along cords to its counterforce.",
+      "palette": ["#141413", "#f0eee6", "#c15f3c", "#b0aea5"],
+      "materials": ["carbon rods", "red tension cord"],
+      "viewport": "A breathing column with values pinned on leader lines.",
+      "case": "Engineers identify with it, but it implies structural analysis and connections Augmented cannot compute: fails product truth.",
+      "risk": "Promises load paths the product does not have.",
+      "kept": "Answers pinned to their elements with leader lines.",
+      "hero": "https://impeccable.style/worlds/cards/kinetic-sculpture-automata-tensegrity-breathing-column-hero.webp"
+    },
+    {
+      "id": "challenger-exploitation-sheet",
+      "label": "Double-feature one-sheet",
+      "verdict": "declined",
+      "lineage": "exploitation film combo posters",
+      "thesis": "Two titles shouting at different scales over a collage.",
+      "palette": ["#c15f3c", "#141413", "#faf9f5"],
+      "materials": ["misregistered offset", "halftone"],
+      "viewport": "A shouting sheet with a billing block at the foot.",
+      "case": "AEC professionals do not identify with ballyhoo, and the hype undercuts the honesty claim.",
+      "risk": "Reads as hype for a product that sells exactness.",
+      "kept": "Total hierarchy commitment and a dense small-print block at the foot.",
+      "hero": "https://impeccable.style/worlds/cards/posters-covers-sleeves-exploitation-combo-sheet-hero.webp"
+    },
+    {
+      "id": "challenger-rubber-hose",
+      "label": "Rubber-hose animation cel",
+      "verdict": "declined",
+      "lineage": "early sound-era cartoons",
+      "thesis": "Every gag opens and closes through an iris.",
+      "palette": ["#141413", "#faf9f5", "#b0aea5"],
+      "materials": ["cel ink", "gray wash"],
+      "viewport": "A rounded scene inside an oval iris.",
+      "case": "Playful in a field that buys precision; weak on both axes.",
+      "risk": "Makes a precision tool look like a toy.",
+      "kept": "Scenes that arrive through an iris.",
+      "hero": "https://impeccable.style/worlds/cards/pop-culture-shelf-rubber-hose-cel-hero.webp"
+    },
+    {
+      "id": "challenger-drum-machine",
+      "label": "Drum-machine step row",
+      "verdict": "declined",
+      "lineage": "early-80s rhythm machines",
+      "thesis": "A sixteen-step row under a chase light.",
+      "palette": ["#141413", "#c15f3c", "#6a9bcc", "#faf9f5"],
+      "materials": ["silkscreen panel", "lit step keys"],
+      "viewport": "A step row as the page's one unbroken line.",
+      "case": "No link to building models; the audience would not recognise it.",
+      "risk": "A music-gear costume on an engineering tool.",
+      "kept": "Everything locked to one clock.",
+      "hero": "https://impeccable.style/worlds/cards/signals-instruments-drum-machine-step-row-hero.webp"
+    },
+    {
+      "id": "challenger-minihompy",
+      "label": "Minihompy room",
+      "verdict": "declined",
+      "lineage": "Cyworld decoratable isometric rooms",
+      "thesis": "An isometric miniature room you furnish.",
+      "palette": ["#f0eee6", "#6a9bcc", "#c15f3c"],
+      "materials": ["pastel isometric tiles", "sticker furnishings"],
+      "viewport": "A pastel room as the profile.",
+      "case": "The isometric scene fits the demo, but the decorating ritual is foreign to the audience.",
+      "risk": "Reads as a social toy.",
+      "kept": "The scene stays whole at every size while panels restack around it.",
+      "hero": "https://impeccable.style/worlds/cards/cyworld-minihompy-room-hero.webp"
+    },
+    {
+      "id": "challenger-chromatophore",
+      "label": "Chromatophore skin",
+      "verdict": "declined",
+      "lineage": "cephalopod signalling",
+      "thesis": "Signals drawn directly onto a living surface.",
+      "palette": ["#f0eee6", "#c15f3c", "#6a9bcc"],
+      "materials": ["living pigment", "texture waves"],
+      "viewport": "A skin that changes pattern on demand.",
+      "case": "Beautiful but unrelated to buildings or models; loses both axes.",
+      "risk": "Pure spectacle, no product meaning.",
+      "kept": "Signals drawn directly onto the subject, not beside it.",
+      "hero": "https://impeccable.style/worlds/cards/reefs-bioluminescent-nocturnal-chromatophore-skin-language-hero.webp"
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "code" },
+  "canon": true,
+  "canonCard": {
+    "label": "The category standard",
+    "thesis": "What AI and AEC SaaS pages ship, executed impeccably.",
+    "palette": ["#faf9f5", "#141413", "#c15f3c"],
+    "materials": ["clean grid", "product screenshot"],
+    "viewport": "Headline and button beside a product screenshot, feature rows below.",
+    "risk": "Indistinguishable from the competition by design."
+  },
+  "steer": true
+}

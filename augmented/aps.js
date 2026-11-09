@@ -17,6 +17,14 @@ const MODEL_URL = 'https://developer.api.autodesk.com/modelderivative/v2/designd
 // that starts just before expiry doesn't fail half-way through.
 const TOKEN_REFRESH_BUFFER_MS = 60 * 1000;
 
+// Time limits for Autodesk calls, so a stuck request fails with a clear message instead
+// of hanging. Signing in is quick; a big model's property download can take a while.
+const AUTH_TIMEOUT_MS = 15 * 1000;
+const DOWNLOAD_TIMEOUT_MS = 90 * 1000;
+const TOO_SLOW = 'Autodesk took too long to answer. Please try again in a minute.';
+const isTimeout = error => error?.name === 'TimeoutError' || error?.name === 'AbortError' ||
+    error?.code === 'ECONNABORTED' || error?.code === 'ETIMEDOUT';
+
 // One token shared by the whole server. It's an *app* token ("2-legged"),
 // not tied to a user, so every request can reuse the same one.
 const token = {
@@ -36,14 +44,21 @@ async function requestNewToken() {
     // APS wants "clientId:clientSecret" encoded as base64 in a "Basic" header.
     const credentials = Buffer.from(`${APS_CLIENT_ID}:${APS_CLIENT_SECRET}`).toString('base64');
 
-    const response = await fetch(AUTH_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            Authorization: `Basic ${credentials}`
-        },
-        body
-    });
+    let response;
+    try {
+        response = await fetch(AUTH_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                Authorization: `Basic ${credentials}`
+            },
+            body,
+            signal: AbortSignal.timeout(AUTH_TIMEOUT_MS)
+        });
+    } catch (error) {
+        if (isTimeout(error)) throw new ModelNotReadyError(TOO_SLOW);
+        throw error;
+    }
 
     // fetch() does NOT throw on 401/500, so we have to check ourselves.
     if (!response.ok) {
@@ -78,9 +93,16 @@ async function getAccessToken() {
 // 202 means "accepted, still working on it": the body is NOT the data yet.
 // v1 treated that body as an empty model and cached it forever.
 async function getReadyJson(url, accessToken) {
-    const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-    });
+    let response;
+    try {
+        response = await axios.get(url, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+            timeout: DOWNLOAD_TIMEOUT_MS
+        });
+    } catch (error) {
+        if (isTimeout(error)) throw new ModelNotReadyError(TOO_SLOW);
+        throw error;
+    }
 
     if (response.status === 202) {
         throw new ModelNotReadyError('APS is still processing this model. Try again in a minute.');
@@ -130,6 +152,6 @@ async function fetchModelData(urn, guid) {
 }
 
 module.exports = {
-    AUTH_URL, MODEL_URL, TOKEN_REFRESH_BUFFER_MS, token, requestNewToken, getAccessToken,
+    AUTH_URL, MODEL_URL, TOKEN_REFRESH_BUFFER_MS, AUTH_TIMEOUT_MS, DOWNLOAD_TIMEOUT_MS, isTimeout, token, requestNewToken, getAccessToken,
     getReadyJson, findMainViewGuid, fetchModelData
 };

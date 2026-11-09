@@ -26,7 +26,11 @@ const {
     ask, validatePlan
 } = require('./engine');
 
-const openai = new OpenAI({ apiKey: OPENAIKEY });
+// Time limit per AI call. Without one, the OpenAI library waits up to 10 minutes and the
+// question just spins. 25 s is several times a normal reply (1-3 s); one quick retry
+// covers a dropped connection. After that the user gets "try again" instead of a hang.
+const OPENAI_TIMEOUT_MS = 25 * 1000;
+const openai = new OpenAI({ apiKey: OPENAIKEY, timeout: OPENAI_TIMEOUT_MS, maxRetries: 1 });
 // gpt-6-luna replaces gpt-4o-mini, which OpenAI shuts down on 14 Jan 2027.
 // It's OpenAI's most efficient model for short, high-volume tasks like ours.
 const PLANNER_MODEL = 'gpt-6-luna';
@@ -187,10 +191,21 @@ MODEL
 ${describeVocabulary(vocabulary)}`;
 }
 
+// What the user is told when the AI call itself fails (the details go to the console).
+function aiFailureMessage(error) {
+    console.error('OpenAI call failed:', error?.name, error?.status || '', error?.message);
+    // (By name, not instanceof: the tests replace the OpenAI library with a fake.)
+    if (error?.constructor?.name === 'APIConnectionTimeoutError' || /timed? ?out/i.test(error?.message || '')) return 'The AI service took too long to answer. Please try again in a moment.';
+    if (error?.status === 429) return 'The AI service is busy right now. Please try again in a minute.';
+    return 'The AI service could not be reached. Please try again in a moment.';
+}
+
 // One LLM call that must answer with JSON. Returns { json, usage }.
 // The answer is NOT trusted yet: validatePlan checks every plan before it runs.
 async function askForJson(systemPrompt, userMessage) {
-    const completion = await openai.chat.completions.create({
+    let completion;
+    try {
+        completion = await openai.chat.completions.create({
         model: PLANNER_MODEL,
         // Luna can "think" before answering (reasoning), which adds hidden tokens and delay.
         // Writing a small JSON plan doesn't need it, so it's switched off. That also keeps
@@ -202,7 +217,10 @@ async function askForJson(systemPrompt, userMessage) {
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userMessage }
         ]
-    });
+        });
+    } catch (error) {
+        throw new PlannerError(aiFailureMessage(error));
+    }
 
     const usage = {
         promptTokens: completion.usage?.prompt_tokens || 0,
@@ -568,7 +586,7 @@ async function answerQuestion(question, model, previous = null) {
 module.exports = {
     openai, PLANNER_MODEL, MAX_PROMPT_PROPERTIES, PER_CATEGORY, ALWAYS_IN_PROMPT,
     choosePromptProperties, describeUsedBy, describeProperty, describeVocabulary, buildSystemPrompt,
-    askForJson, INTENT_PROMPT, classifyIntent, CANDIDATES_PROMPT, MAX_CANDIDATE_PROPERTIES,
+    askForJson, aiFailureMessage, OPENAI_TIMEOUT_MS, INTENT_PROMPT, classifyIntent, CANDIDATES_PROMPT, MAX_CANDIDATE_PROPERTIES,
     describeCandidates, planWithCandidates, planQuery, missedIntent, ignoredWord,
     dropInventedFilters, answerQuestion
 };

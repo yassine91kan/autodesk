@@ -677,6 +677,11 @@ a.btn-bar { text-decoration: none; }
 .result-item__name small { color: var(--ink-2); font-size: 12px; }
 .result-item__level { color: var(--ink); }
 .result-item__id { color: var(--ink-2); font-variant-numeric: tabular-nums; text-align: right; }
+/* A measured value (thickness, length...) when the answer has one */
+.result-table__head.has-value,
+.result-table.has-value .result-item { grid-template-columns: minmax(0, 1fr) 84px 76px 56px; }
+.result-table__head .result-table__value { text-align: right; }
+.result-item__value { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 
 .entry__actions {
   display: flex;
