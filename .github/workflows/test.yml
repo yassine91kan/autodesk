@@ -21,6 +21,7 @@ jobs:
       OPENAI_API_KEY: ci-fake
       OPENAIKEY: ci-fake
       PUPPETEER_SKIP_DOWNLOAD: 'true'   # the tests don't need puppeteer's 150 MB browser
+      ONNXRUNTIME_NODE_INSTALL_CUDA: skip   # its GPU download is gone (404) and nothing here uses a GPU
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
