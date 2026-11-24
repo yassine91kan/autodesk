@@ -8,6 +8,11 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 // Heroku forwards requests through its router: trust it, so the app sees https
 // (for the secure cookie) and the visitor's real address (for the attempt limit).
 app.set('trust proxy', 1);
+app.disable('x-powered-by');   // don't announce "Express" in every response
+
+// One public address (the Render address moves to www.askaugmented.com), security
+// headers, robots.txt and the sitemap. First, so it applies to everything below.
+app.use(require('./routes/site.js'));
 
 // Render's health check (/healthz). Before sign-in: Render has no login cookie.
 app.use(require('./routes/health.js'));
@@ -27,6 +32,8 @@ app.use(express.static('wwwroot', { index: false }));
 app.use(require('./routes/auth.js'));
 app.use(require('./routes/models.js'));
 app.use(require('./routes/admin.js'));   // /admin/questions: the question log, signed-in users only
+app.use(require('./routes/contact.js')); // POST /contact (the landing page form, open to all); /admin/contacts
+// app.use(require('./routes/schedule4d.js')); // /4d: the 4D schedule demo. Switched off (not deleted) until it's ready.
 // app.use(require('./routes/openai.js'));
 // app.use(require('./routes/langchain.js'));
 // Switched off (not deleted): the old LangChain chatbot ("Type 1" on the page, also

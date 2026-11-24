@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ask Augmented: logo variations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500&family=Barlow+Semi+Condensed:wght@700&family=IBM+Plex+Mono:wght@400;500&family=Montserrat:wght@300;400;600;700&display=swap" />
+  <style>
+    /* A comparison sheet for the owner: not served by the site. Each variation keeps the
+       existing A mark and Montserrat wordmark, and adds "ask" for askaugmented.com. */
+    :root { --ground: #f0eee6; --ink: #141413; --ink-2: #5e5d59; --rule: #d3d0c5; --clay: #c15f3c; --clay-deep: #a9502f; --clay-light: #e8957a; --ivory: #faf9f5; --dark: #1c1b18; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--ground); color: var(--ink); font: 400 16px/1.5 "Barlow", system-ui, sans-serif; padding: 40px clamp(16px, 4vw, 56px) 80px; }
+    h1 { font: 700 44px/1 "Barlow Semi Condensed", sans-serif; margin: 0 0 8px; }
+    .intro { color: var(--ink-2); margin: 0 0 36px; max-width: 70ch; }
+    .variant { display: grid; grid-template-columns: 220px 1fr 1fr; border-top: 1px solid var(--rule); }
+    .variant:last-of-type { border-bottom: 1px solid var(--rule); }
+    .label { padding: 22px 16px 22px 0; }
+    .label b { display: block; font: 500 12px/1 "IBM Plex Mono", monospace; letter-spacing: 0.06em; color: var(--clay-deep); margin-bottom: 8px; }
+    .label span { font: 700 21px/1.1 "Barlow Semi Condensed", sans-serif; }
+    .label p { margin: 6px 0 0; color: var(--ink-2); font-size: 14px; }
+    .tile { display: flex; align-items: center; justify-content: center; min-height: 130px; padding: 24px; }
+    .tile.dark { background: var(--dark); color: var(--ivory); }
+
+    /* the shared mark + wordmark */
+    .logo { display: inline-flex; align-items: center; gap: 12px; color: inherit; }
+    .logo img { height: 34px; width: auto; }
+    .dark .mark-light { display: none; } .tile:not(.dark) .mark-dark, .header .mark-dark { display: none; }
+    .word { font: 600 18px "Montserrat", sans-serif; letter-spacing: 0.18em; text-transform: uppercase; white-space: nowrap; }
+
+    /* 1. ASK in clay, same weight */
+    .v1 .ask { color: var(--clay-deep); margin-right: 0.45em; }
+    .dark .v1 .ask { color: var(--clay-light); }
+    /* 2. ask light, AUGMENTED bold */
+    .v2 .ask { font-weight: 300; margin-right: 0.45em; }
+    /* 3. stacked: a small ASK above the wordmark */
+    .v3 .stack { display: grid; line-height: 1; }
+    .v3 .ask { font: 500 10.5px "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: 0.32em; color: var(--clay-deep); margin-bottom: 5px; }
+    .dark .v3 .ask { color: var(--clay-light); }
+    /* 4. a question tag: "ASK" in a clay speech tag before the wordmark */
+    .v4 .tag { position: relative; font: 600 12px/1 "Montserrat", sans-serif; text-transform: uppercase; letter-spacing: 0.16em; color: #fff; background: var(--clay-deep); padding: 6px 7px 6px 9px; border-radius: 3px; margin-right: 10px; }
+    .v4 .tag::after { content: ""; position: absolute; left: 8px; bottom: -5px; border: 5px solid transparent; border-top-color: var(--clay-deep); border-bottom: 0; }
+    /* 5. domain style, lowercase: askaugmented */
+    .v5 .word { text-transform: none; letter-spacing: 0.02em; font-weight: 600; font-size: 22px; }
+    .v5 .ask { color: var(--clay-deep); font-weight: 400; }
+    .dark .v5 .ask { color: var(--clay-light); }
+    /* 6. ASK + mark + AUGMENTED: the mark sits between, like a spoken pause */
+    .v6 .ask { color: var(--clay-deep); }
+    .dark .v6 .ask { color: var(--clay-light); }
+
+    /* in context: the site's header */
+    h2 { font: 700 30px/1 "Barlow Semi Condensed", sans-serif; margin: 56px 0 16px; }
+    .header { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 72px; padding: 0 28px; background: var(--ground); border: 1px solid var(--rule); margin-bottom: 10px; }
+    .nav { display: flex; align-items: center; gap: 22px; font: 400 12.5px/1 "IBM Plex Mono", monospace; letter-spacing: 0.05em; text-transform: uppercase; }
+    .nav .app { background: var(--ink); color: var(--ivory); padding: 11px 14px; }
+    .phone { width: 375px; max-width: 100%; height: 64px; padding: 0 16px; }
+    .phone .word { font-size: 14px; }
+    .phone img { height: 28px; }
+    @media (max-width: 860px) { .variant { grid-template-columns: 1fr; } .label { padding-bottom: 8px; } .nav span { display: none; } }
+  </style>
+</head>
+<body>
+  <h1>Ask Augmented: logo variations</h1>
+  <p class="intro">Six ways to add "ask" for askaugmented.com. Each keeps the A mark and the Montserrat wordmark from the app. Shown on the light page, on dark, and in the site header (desktop and phone) below.</p>
+
+  <template id="mark"><img class="mark-light" src="../wwwroot/assets/images/augmented-mark-light.svg" alt="" /><img class="mark-dark" src="../wwwroot/assets/images/augmented-mark.svg" alt="" /></template>
+
+  <section class="variant v1"><div class="label"><b>01</b><span>ASK in clay</span><p>One line, same letters; "ask" picks up the accent colour.</p></div>
+    <div class="tile"><span class="logo"><i data-mark></i><span class="word"><span class="ask">Ask</span>Augmented</span></span></div>
+    <div class="tile dark"><span class="logo"><i data-mark></i><span class="word"><span class="ask">Ask</span>Augmented</span></span></div></section>
+
+  <section class="variant v2"><div class="label"><b>02</b><span>Light ask, bold name</span><p>"Ask" as a quiet verb; the name keeps its weight.</p></div>
+    <div class="tile"><span class="logo"><i data-mark></i><span class="word"><span class="ask">Ask</span>Augmented</span></span></div>
+    <div class="tile dark"><span class="logo"><i data-mark></i><span class="word"><span class="ask">Ask</span>Augmented</span></span></div></section>
+
+  <section class="variant v3"><div class="label"><b>03</b><span>Stacked</span><p>A small spaced "ASK" above the name; the header height stays the same.</p></div>
+    <div class="tile"><span class="logo"><i data-mark></i><span class="stack"><span class="ask">Ask</span><span class="word">Augmented</span></span></span></div>
+    <div class="tile dark"><span class="logo"><i data-mark></i><span class="stack"><span class="ask">Ask</span><span class="word">Augmented</span></span></span></div></section>
+
+  <section class="variant v4"><div class="label"><b>04</b><span>Speech tag</span><p>"ASK" in a small clay speech tag: the question, then the name.</p></div>
+    <div class="tile"><span class="logo"><i data-mark></i><span class="tag">Ask</span><span class="word">Augmented</span></span></div>
+    <div class="tile dark"><span class="logo"><i data-mark></i><span class="tag">Ask</span><span class="word">Augmented</span></span></div></section>
+
+  <section class="variant v5"><div class="label"><b>05</b><span>Domain style</span><p>Lowercase, read as the address: askaugmented.</p></div>
+    <div class="tile"><span class="logo"><i data-mark></i><span class="word"><span class="ask">ask</span>augmented</span></span></div>
+    <div class="tile dark"><span class="logo"><i data-mark></i><span class="word"><span class="ask">ask</span>augmented</span></span></div></section>
+
+  <section class="variant v6"><div class="label"><b>06</b><span>Ask · mark · Augmented</span><p>The mark sits between the words, like a pause before the name.</p></div>
+    <div class="tile"><span class="logo"><span class="word ask">Ask</span><i data-mark></i><span class="word">Augmented</span></span></div>
+    <div class="tile dark"><span class="logo"><span class="word ask">Ask</span><i data-mark></i><span class="word">Augmented</span></span></div></section>
+
+  <h2>In the site header</h2>
+  <div id="headers"></div>
+
+  <script>
+    // Put the mark into every logo, then show each variation in a desktop and a phone header.
+    const mark = document.getElementById('mark').content;
+    document.querySelectorAll('[data-mark]').forEach(slot => slot.replaceWith(mark.cloneNode(true)));
+    const headers = document.getElementById('headers');
+    document.querySelectorAll('.variant').forEach(v => {
+      const logo = v.querySelector('.tile .logo');
+      for (const phone of [false, true]) {
+        const bar = document.createElement('div');
+        bar.className = `header ${[...v.classList].find(c => /^v\d$/.test(c))}${phone ? ' phone' : ''}`;
+        bar.append(logo.cloneNode(true));
+        const nav = document.createElement('div');
+        nav.className = 'nav';
+        nav.innerHTML = phone ? '<b class="app">→</b>' : '<span>What you can ask</span><span>How it works</span><span>Limits</span><b class="app">Open the app →</b>';
+        bar.append(nav);
+        headers.append(bar);
+      }
+    });
+  </script>
+</body>
+</html>

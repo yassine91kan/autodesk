@@ -208,6 +208,7 @@ Claude's palette on a pale ground: ink for print, clay for the one accent, one d
 ### Primary
 - **Accent Clay** (clay): the window rim, the gate's inset frame, lit elements, the count marker, the role card's top bar, hovered signs and icons, prohibition rings, button hover, focus rings and selection.
 - **Clay Ink** (clay-ink): clay as small text on the ground: [01] cell numbers, limit codes and nav hover. In dark mode it becomes clay-light.
+- **Clay Deep** (clay-deep, #a9502f in both schemes): the fill behind WHITE text: the demo's count marker, the app button's hover and text selection (5.4:1). White on plain clay (#c15f3c, about 4.2:1) is only allowed on large bold text, such as the 20px main buttons on hover.
 - **Lit Clay** (clay-light): clay on ink: the button arrow, the caret, the 001 log numbers, the answer number and dashed "missing" tags.
 - **Clay Fill** (clay-fill): the translucent fill of lit walls and slabs.
 
@@ -234,7 +235,7 @@ Claude's palette on a pale ground: ink for print, clay for the one accent, one d
 **Display Font:** Barlow Semi Condensed (with Arial Narrow)
 **Body Font:** Barlow (with Segoe UI, system-ui)
 **Label/Mono Font:** IBM Plex Mono (with ui-monospace, Cascadia Mono)
-**Wordmark:** Montserrat 600, tracked capitals, for the AUGMENTED wordmark only.
+**Wordmark:** "Ask Augmented" (askaugmented.com): a light ASK (Montserrat 300, 11px, +0.36em, uppercase, light grey #8a8880 (#9c9a92 in dark mode); #b0aea5 on the app's dark bar) stacked above AUGMENTED (Montserrat 600, tracked capitals), beside the A mark. Same lockup on the landing page, the app and sign-in. Montserrat is for the wordmark only.
 
 **Character:** A condensed sign-writer's grotesque that shouts, its plain sibling for reading, and a drawing-set mono that only labels.
 
@@ -314,6 +315,9 @@ Six cards ("Made for the people in the model"), 1px rule border on the ground: a
 
 ### Gate
 A two-leaf ink panel with a clay inset frame and a translucent ivory joint between the leaves: headline and copy on the left, the ivory button bottom-right. The leaves stack below 900px.
+
+### Contact form
+After the gate (#contact, linked from the header and footer): a statement and a mono spec list (Reply: by email; Languages) beside a two-column form. Mono uppercase labels above inputs on the site surface with a 1px rule border; focus turns the border clay with a 3px clay-fill ring; invalid fields get a clay-deep border and a plain message in the status line. Name, work email, company and role (optional), message; a hidden "website" field catches bots. The primary button sends it; success replaces the form with a site-surface panel naming the reply address. Messages go to POST /contact and are read at /admin/contacts (signed in), kept 12 months; no IP address is stored.
 
 ### Motion
 Reveal on scroll: 22px rise and fade over 700ms (`cubic-bezier(.16, 1, .3, 1)`), staggered 70ms within a row, then the class is removed so hover transitions take over. Hovers use 200–320ms with `cubic-bezier(.2, .8, .2, 1)` or the springy `cubic-bezier(.2, 1.4, .4, 1)`. Under `prefers-reduced-motion` all of it is off and the first scene is shown static.

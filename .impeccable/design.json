@@ -1,187 +1,198 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-07T12:00:00Z",
+  "generatedAt": "2026-11-08T12:00:00Z",
   "title": "Design System: Augmented",
-  "scope": "Landing page only (wwwroot/landing.html). The app (index.html) and login.html use the older drawing-sheet system in wwwroot/assets/css/drawing-sheet.css, not recorded here.",
+  "scope": "Landing page only (wwwroot/landing.html, variation C, the hybrid chosen 2026-11-08). The app (index.html) and login.html still use wwwroot/assets/css/drawing-sheet.css, not recorded here. Archived, unserved variants: design/landing-variants/landing-a-site-hoarding.html and landing-b-drawing-set.html. The page ships no raster images; .impeccable/review/c-full.png and c-top.png are review captures only.",
   "extensions": {
     "colorMeta": {
       "clay": { "role": "primary", "displayName": "Accent Clay", "canonical": "#c15f3c", "tonalRamp": ["#3a1a0f", "#5c2a18", "#7f3b22", "#a9502f", "#c15f3c", "#d77d5d", "#e8957a", "#f6d5c8"] },
-      "clay-deep": { "role": "primary", "displayName": "Cut-Edge Clay", "canonical": "#a9502f", "tonalRamp": ["#3a1a0f", "#5c2a18", "#7f3b22", "#a9502f", "#c15f3c", "#d77d5d", "#e8957a", "#f6d5c8"] },
+      "clay-ink": { "role": "primary", "displayName": "Clay Ink", "canonical": "#a9502f", "tonalRamp": ["#3a1a0f", "#5c2a18", "#7f3b22", "#a9502f", "#c15f3c", "#d77d5d", "#e8957a", "#f6d5c8"] },
       "clay-light": { "role": "primary", "displayName": "Lit Clay", "canonical": "#e8957a", "tonalRamp": ["#3a1a0f", "#5c2a18", "#7f3b22", "#a9502f", "#c15f3c", "#d77d5d", "#e8957a", "#f6d5c8"] },
-      "sky-deep": { "role": "secondary", "displayName": "Mandatory-Sign Blue", "canonical": "#3d6f9f", "tonalRamp": ["#142c43", "#1f3f5f", "#2d5780", "#3d6f9f", "#6a9bcc", "#8db4dc", "#b6d0ea", "#e3edf7"] },
-      "sky-text-dark": { "role": "secondary", "displayName": "Sign Blue on Dark Board", "canonical": "#8db4dc", "tonalRamp": ["#142c43", "#1f3f5f", "#2d5780", "#3d6f9f", "#6a9bcc", "#8db4dc", "#b6d0ea", "#e3edf7"] },
-      "ink-solid": { "role": "neutral", "displayName": "Print Ink", "canonical": "#0a0a09", "tonalRamp": ["#0a0a09", "#141413", "#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2"] },
-      "ink": { "role": "neutral", "displayName": "Board Ink", "canonical": "#141413", "tonalRamp": ["#0a0a09", "#141413", "#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2"] },
-      "ivory": { "role": "neutral", "displayName": "Sign Ivory", "canonical": "#faf9f5", "tonalRamp": ["#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2", "#ecebe4", "#f0eee6", "#faf9f5"] },
-      "cloudy": { "role": "neutral", "displayName": "Cloudy", "canonical": "#b0aea5", "tonalRamp": ["#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2", "#ecebe4", "#faf9f5"] },
-      "graphite": { "role": "neutral", "displayName": "Graphite", "canonical": "#5e5d59", "tonalRamp": ["#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2", "#ecebe4", "#faf9f5"] },
-      "board-rule": { "role": "neutral", "displayName": "Board Rule", "canonical": "#dedcd2", "tonalRamp": ["#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2", "#ecebe4", "#faf9f5"] },
-      "site": { "role": "neutral", "displayName": "Site Paper", "canonical": "#f0eee6", "tonalRamp": ["#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2", "#f0eee6", "#faf9f5"] },
-      "board-dark": { "role": "neutral", "displayName": "Board (dark mode)", "canonical": "#22211e", "tonalRamp": ["#0a0a09", "#141413", "#1c1b18", "#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5"] },
-      "board-text-dark": { "role": "neutral", "displayName": "Board Text and Pin (dark mode)", "canonical": "#ecebe4", "tonalRamp": ["#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2", "#ecebe4", "#f0eee6", "#faf9f5"] },
-      "board-rule-dark": { "role": "neutral", "displayName": "Board Rule (dark mode)", "canonical": "#3a3934", "tonalRamp": ["#0a0a09", "#141413", "#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5", "#dedcd2"] },
-      "site-dark": { "role": "neutral", "displayName": "Site (dark mode)", "canonical": "#1c1b18", "tonalRamp": ["#0a0a09", "#141413", "#1c1b18", "#22211e", "#3a3934", "#5e5d59", "#8a8880", "#b0aea5"] },
-      "line-dark": { "role": "neutral", "displayName": "Frame Line (dark mode)", "canonical": "#6b6a64", "tonalRamp": ["#141413", "#22211e", "#3a3934", "#5e5d59", "#6b6a64", "#8a8880", "#b0aea5", "#dedcd2"] }
+      "clay-fill": { "role": "primary", "displayName": "Clay Fill", "canonical": "rgba(193, 95, 60, 0.18)", "tonalRamp": ["#3a1a0f", "#5c2a18", "#7f3b22", "#a9502f", "#c15f3c", "#d77d5d", "#e8957a", "#f6d5c8"] },
+      "sky-deep": { "role": "secondary", "displayName": "Sign Blue", "canonical": "#3d6f9f", "tonalRamp": ["#142c43", "#1f3f5f", "#2d5780", "#3d6f9f", "#6a9bcc", "#8db4dc", "#b6d0ea", "#e3edf7"] },
+      "sky-text-dark": { "role": "secondary", "displayName": "Sign Blue Text (dark mode)", "canonical": "#8db4dc", "tonalRamp": ["#142c43", "#1f3f5f", "#2d5780", "#3d6f9f", "#6a9bcc", "#8db4dc", "#b6d0ea", "#e3edf7"] },
+      "ground": { "role": "neutral", "displayName": "Ground", "canonical": "#f0eee6", "tonalRamp": ["#1c1b18", "#3a3934", "#5e5d59", "#a3a198", "#d3d0c5", "#e8e6dc", "#f0eee6", "#faf9f5"] },
+      "ground-2": { "role": "neutral", "displayName": "Ground Wash", "canonical": "#e8e6dc", "tonalRamp": ["#1c1b18", "#3a3934", "#5e5d59", "#a3a198", "#d3d0c5", "#e8e6dc", "#f0eee6", "#faf9f5"] },
+      "on-ground": { "role": "neutral", "displayName": "On-ground Ink", "canonical": "#141413", "tonalRamp": ["#0a0a09", "#141413", "#24231f", "#3a3934", "#5e5d59", "#b0aea5", "#d3d0c5", "#ecebe4"] },
+      "on-ground-2": { "role": "neutral", "displayName": "On-ground Secondary", "canonical": "#5e5d59", "tonalRamp": ["#0a0a09", "#141413", "#24231f", "#3a3934", "#5e5d59", "#b0aea5", "#d3d0c5", "#ecebe4"] },
+      "rule": { "role": "neutral", "displayName": "Hairline", "canonical": "#d3d0c5", "tonalRamp": ["#1c1b18", "#3a3934", "#5e5d59", "#a3a198", "#d3d0c5", "#e8e6dc", "#f0eee6", "#faf9f5"] },
+      "ink": { "role": "neutral", "displayName": "Board Ink", "canonical": "#141413", "tonalRamp": ["#0a0a09", "#141413", "#24231f", "#3a3934", "#5e5d59", "#b0aea5", "#d3d0c5", "#ecebe4"] },
+      "ink-solid": { "role": "neutral", "displayName": "Print Ink", "canonical": "#0a0a09", "tonalRamp": ["#0a0a09", "#141413", "#24231f", "#3a3934", "#5e5d59", "#b0aea5", "#d3d0c5", "#ecebe4"] },
+      "ivory": { "role": "neutral", "displayName": "Ivory", "canonical": "#faf9f5", "tonalRamp": ["#3a3934", "#5e5d59", "#a3a198", "#b0aea5", "#d3d0c5", "#e8e6dc", "#f0eee6", "#faf9f5"] },
+      "cloudy": { "role": "neutral", "displayName": "Cloudy", "canonical": "#b0aea5", "tonalRamp": ["#24231f", "#3a3934", "#5e5d59", "#a3a198", "#b0aea5", "#d3d0c5", "#ecebe4", "#faf9f5"] },
+      "site": { "role": "neutral", "displayName": "Site Paper", "canonical": "#faf9f5", "tonalRamp": ["#3a3934", "#5e5d59", "#a3a198", "#b0aea5", "#d3d0c5", "#e8e6dc", "#f0eee6", "#faf9f5"] },
+      "line": { "role": "neutral", "displayName": "Frame Line", "canonical": "#a3a198", "tonalRamp": ["#24231f", "#3a3934", "#5e5d59", "#6b6a64", "#a3a198", "#d3d0c5", "#ecebe4", "#faf9f5"] },
+      "ground-dark": { "role": "neutral", "displayName": "Ground (dark mode)", "canonical": "#1c1b18", "tonalRamp": ["#0a0a09", "#141413", "#1c1b18", "#24231f", "#3a3934", "#5e5d59", "#a3a198", "#ecebe4"] },
+      "ground-2-dark": { "role": "neutral", "displayName": "Ground Wash (dark mode)", "canonical": "#24231f", "tonalRamp": ["#0a0a09", "#141413", "#1c1b18", "#24231f", "#3a3934", "#5e5d59", "#a3a198", "#ecebe4"] },
+      "on-ground-dark": { "role": "neutral", "displayName": "On-ground Text (dark mode)", "canonical": "#ecebe4", "tonalRamp": ["#3a3934", "#5e5d59", "#a3a198", "#b0aea5", "#d3d0c5", "#ecebe4", "#f0eee6", "#faf9f5"] },
+      "rule-dark": { "role": "neutral", "displayName": "Hairline (dark mode)", "canonical": "#3a3934", "tonalRamp": ["#0a0a09", "#141413", "#1c1b18", "#24231f", "#3a3934", "#5e5d59", "#a3a198", "#ecebe4"] },
+      "site-dark": { "role": "neutral", "displayName": "Site Paper (dark mode)", "canonical": "#26251f", "tonalRamp": ["#0a0a09", "#141413", "#1c1b18", "#26251f", "#3a3934", "#5e5d59", "#a3a198", "#ecebe4"] },
+      "line-dark": { "role": "neutral", "displayName": "Frame Line (dark mode)", "canonical": "#6b6a64", "tonalRamp": ["#141413", "#24231f", "#3a3934", "#5e5d59", "#6b6a64", "#a3a198", "#d3d0c5", "#ecebe4"] }
     },
     "typographyMeta": {
       "display": { "displayName": "Display", "purpose": "The hero question only; max 11ch, balanced." },
-      "headline-gate": { "displayName": "Gate Headline", "purpose": "The closing gate." },
-      "headline": { "displayName": "Headline", "purpose": "Titles on ink boards." },
-      "headline-band": { "displayName": "Band Headline", "purpose": "Uppercase titles in coloured sign bands." },
-      "numeral": { "displayName": "Step Numeral", "purpose": "Clay-light step numbers on the ink board." },
-      "title": { "displayName": "Title", "purpose": "Step titles." },
-      "sign-caption": { "displayName": "Sign Caption", "purpose": "Uppercase caption under a mandatory sign." },
-      "question": { "displayName": "Question", "purpose": "The demo question typing on the plate." },
-      "button": { "displayName": "Button", "purpose": "Entrance buttons." },
-      "nav": { "displayName": "Nav", "purpose": "Masthead links." },
-      "lede": { "displayName": "Lede", "purpose": "Hero paragraph, max 34ch." },
-      "body": { "displayName": "Body", "purpose": "Reading text, 46-58ch." },
-      "small": { "displayName": "Small", "purpose": "Hero note, sign descriptions." },
-      "fine-print": { "displayName": "Fine Print", "purpose": "Site information board." },
-      "label": { "displayName": "Label", "purpose": "Information-board field names only." },
-      "tag": { "displayName": "Understood Tag", "purpose": "How the question was understood." },
+      "headline-gate": { "displayName": "Gate Headline", "purpose": "The closing gate title." },
+      "headline": { "displayName": "Headline", "purpose": "Section titles, on the ground and on the ink board." },
+      "title": { "displayName": "Title", "purpose": "Cell and log titles." },
+      "title-role": { "displayName": "Role Title", "purpose": "Role card titles." },
+      "question": { "displayName": "Question", "purpose": "The question typing on the plate." },
+      "button": { "displayName": "Button", "purpose": "Primary and ivory buttons." },
+      "statement": { "displayName": "Statement", "purpose": "Limit statements; the secondary hero link." },
+      "example": { "displayName": "Example", "purpose": "Quoted example questions in sky." },
+      "lede": { "displayName": "Lede", "purpose": "Hero paragraph, max 36ch." },
+      "body": { "displayName": "Body", "purpose": "Reading text, 44-52ch." },
+      "small": { "displayName": "Small", "purpose": "Cell, card and log descriptions." },
+      "label": { "displayName": "Data Label", "purpose": "IBM Plex Mono uppercase: nav, plate bar, tags, spec list, footer nav and small print." },
+      "label-strong": { "displayName": "Data Number", "purpose": "IBM Plex Mono 500: [01] cell numbers, limit codes, the 001 log numbers (13px)." },
       "wordmark": { "displayName": "Wordmark", "purpose": "AUGMENTED wordmark only." }
     },
     "shadows": [
-      { "name": "board", "value": "0 2px 0 rgba(10,10,9,.12), 0 22px 40px -24px rgba(10,10,9,.7)", "purpose": "Sign boards fixed onto the hoarding." },
-      { "name": "plate", "value": "0 18px 30px -16px rgba(10,10,9,.8)", "purpose": "Question plate at the foot of the window." },
-      { "name": "answer", "value": "0 14px 26px -16px rgba(10,10,9,.7)", "purpose": "Pinned answer label." },
-      { "name": "button", "value": "0 14px 24px -14px rgba(10,10,9,.75)", "purpose": "Entrance button at rest." },
-      { "name": "button-hover", "value": "0 18px 30px -14px rgba(10,10,9,.85)", "purpose": "Entrance button on hover." },
-      { "name": "cut-window", "value": "0 0 0 clamp(8px,1.1vw,14px) #a9502f, 0 0 0 calc(clamp(8px,1.1vw,14px) + 1px) rgba(10,10,9,.25); inner: inset 0 16px 30px -8px rgba(10,10,9,.5), inset 0 -2px 0 rgba(255,255,255,.06)", "purpose": "The viewing window cut into the hoarding." },
-      { "name": "cut-gate", "value": "inset 0 0 0 clamp(8px,1.1vw,14px) #a9502f, inset 0 18px 30px -12px rgba(0,0,0,.6)", "purpose": "The closing gate cut into the hoarding." }
+      { "name": "window", "value": "0 0 0 clamp(8px, 1vw, 12px) var(--clay), 0 22px 40px -18px rgba(10, 10, 9, 0.45)", "purpose": "The clay rim and drop of the round window." },
+      { "name": "window-inner", "value": "inset 0 14px 28px -8px rgba(10, 10, 9, 0.4)", "purpose": "Depth inside the window." },
+      { "name": "plate", "value": "0 18px 30px -16px rgba(10, 10, 9, 0.6)", "purpose": "The question plate at the window's foot." },
+      { "name": "button", "value": "0 14px 24px -14px rgba(10, 10, 9, 0.6)", "purpose": "Primary buttons at rest." },
+      { "name": "card-lift", "value": "0 22px 36px -24px rgba(10, 10, 9, 0.5)", "purpose": "Role cards on hover only." },
+      { "name": "gate-frame", "value": "inset 0 0 0 clamp(8px, 1vw, 12px) var(--clay)", "purpose": "The clay inset frame of the closing gate." },
+      { "name": "breathe", "value": "0 0 0 8px rgba(250, 249, 245, 0.08), 0 14px 24px -14px rgba(10, 10, 9, 0.6)", "purpose": "Peak of the gate button's 3.2s breathing ring." }
     ],
     "motion": [
-      { "name": "beat", "value": "150ms", "purpose": "The one clock; every duration is a multiple, and the JS reads the same variable." },
+      { "name": "beat", "value": "150ms", "purpose": "The demo clock; the script reads the same variable." },
       { "name": "type", "value": "beat / 3 per character", "purpose": "Question typing." },
-      { "name": "iris-open", "value": "clip-path calc(var(--beat) * 3) cubic-bezier(.16,1,.3,1)", "purpose": "Scene opens through the window." },
-      { "name": "iris-close", "value": "clip-path calc(var(--beat) * 3) cubic-bezier(.7,0,.84,0)", "purpose": "Scene closes." },
-      { "name": "tag-stamp", "value": "scale 1.3 -> 1, calc(var(--beat) * .8) cubic-bezier(.2,1.4,.4,1)", "purpose": "Understood tags stamp in, one per beat." },
+      { "name": "iris-open", "value": "clip-path calc(var(--beat) * 3) cubic-bezier(.16, 1, .3, 1)", "purpose": "The scene opens through the window." },
+      { "name": "iris-close", "value": "clip-path calc(var(--beat) * 3) cubic-bezier(.7, 0, .84, 0)", "purpose": "The scene closes." },
+      { "name": "draw", "value": "stroke-dashoffset 1.2s cubic-bezier(.65, 0, .35, 1); walls and slabs appear 600ms after 700ms", "purpose": "The frame draws itself once on load." },
+      { "name": "tag-stamp", "value": "scale 1.25 -> 1, calc(var(--beat) * .8) cubic-bezier(.2, 1.4, .4, 1)", "purpose": "Understood tags stamp in, one per beat." },
       { "name": "light", "value": "calc(var(--beat) * 2) ease", "purpose": "Elements light; the rest dim to 40%." },
-      { "name": "leader", "value": "stroke-dashoffset calc(var(--beat) * 2) cubic-bezier(.16,1,.3,1)", "purpose": "Leader line draws to the lit centroid." },
+      { "name": "count-up", "value": "5 beats, ease-out cubic", "purpose": "The answer number counts up from 0." },
       { "name": "hold", "value": "26 beats", "purpose": "Answer hold before the iris closes." },
-      { "name": "ui", "value": "160ms ease", "purpose": "Button background and shadow; arrow shifts 4px in 200ms cubic-bezier(.2,.8,.2,1)." }
+      { "name": "reveal", "value": "opacity + translateY(22px) 700ms cubic-bezier(.16, 1, .3, 1), stagger 70ms within a row", "purpose": "Sections rise in on scroll, then hand back to hover transitions." },
+      { "name": "lift", "value": "260ms cubic-bezier(.2, .8, .2, 1)", "purpose": "Role card lift, button arrow." },
+      { "name": "spring", "value": "320ms cubic-bezier(.2, 1.4, .4, 1)", "purpose": "Sign rotate and icon tilt on hover." },
+      { "name": "wobble", "value": "520ms cubic-bezier(.36, .07, .19, .97)", "purpose": "Prohibition sign on hover." },
+      { "name": "tilt", "value": "perspective(1000px) rotateY(±7deg) rotateX(±6deg), settle 500ms cubic-bezier(.16, 1, .3, 1)", "purpose": "The window follows the mouse on fine pointers." },
+      { "name": "underline", "value": "background-size 240ms ease", "purpose": "Nav and footer link underlines slide in." },
+      { "name": "breathe", "value": "3.2s ease-in-out infinite", "purpose": "The closing button." }
     ],
     "breakpoints": [
       { "name": "phone", "value": "640px" },
       { "name": "stack", "value": "900px" },
       { "name": "narrow", "value": "1080px" }
-    ],
-    "background": {
-      "hoarding": "background-color: #c15f3c; background-image: linear-gradient(90deg, rgba(10,10,9,.2) 0 2px, rgba(255,255,255,.1) 2px 3px, transparent 3px); background-size: 300px 100%; background-position: calc(50% - 150px) 0;"
-    }
+    ]
   },
   "components": [
     {
-      "name": "Entrance Button",
+      "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Primary action on the pale ground: ink (ivory in dark mode), clay on hover.",
-      "html": "<a class=\"ds-btn\" href=\"#\"><span>Open the sample model</span><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 12h15M13 6l6 6-6 6\"/></svg></a>",
-      "css": ".ds-btn { display: inline-flex; align-items: center; gap: 14px; min-height: 60px; padding: 0 26px 0 28px; font: 700 20px/1 \"Barlow Semi Condensed\", \"Arial Narrow\", sans-serif; letter-spacing: .01em; text-decoration: none; background: var(--ink-solid, #0a0a09); color: var(--ivory, #faf9f5); border-radius: 3px; box-shadow: 0 14px 24px -14px rgba(10,10,9,.75); transition: background-color 160ms ease, box-shadow 160ms ease; } .ds-btn svg { width: 22px; height: 22px; fill: none; stroke: var(--clay-light, #e8957a); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: transform 200ms cubic-bezier(.2,.8,.2,1); } .ds-btn:hover { background: #000; box-shadow: 0 18px 30px -14px rgba(10,10,9,.85); } .ds-btn:hover svg { transform: translateX(4px); } .ds-btn:focus-visible { outline: 3px solid var(--ink-solid, #0a0a09); outline-offset: 3px; }"
+      "description": "On-ground ink (ivory in dark mode) with a clay-light arrow; clay on hover.",
+      "html": "<a class=\"ds-btn\" href=\"#\"><span>Open the sample model</span><svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M2 8h11M9 4l4 4-4 4\"/></svg></a>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; gap: 14px; min-height: 58px; padding: 0 24px 0 26px; font: 700 20px/1 \"Barlow Semi Condensed\", \"Arial Narrow\", sans-serif; text-decoration: none; background: #141413; color: #faf9f5; border-radius: 2px; box-shadow: 0 14px 24px -14px rgba(10,10,9,.6); transition: background-color 160ms ease; } .ds-btn svg { width: 20px; height: 20px; fill: none; stroke: #e8957a; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform 200ms cubic-bezier(.2,.8,.2,1); } .ds-btn:hover { background: #c15f3c; color: #fff; } .ds-btn:hover svg { transform: translateX(4px); stroke: #fff; } .ds-btn:focus-visible { outline: 3px solid #c15f3c; outline-offset: 3px; }"
     },
     {
       "name": "Ivory Button",
       "kind": "button",
       "refersTo": "button-ivory",
-      "description": "The same entrance button on ink (gate): ivory, ink label, clay arrow.",
-      "html": "<div class=\"ds-ink\"><a class=\"ds-btn-ivory\" href=\"#\"><span>Open the sample model</span><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 12h15M13 6l6 6-6 6\"/></svg></a></div>",
-      "css": ".ds-ink { background: #141413; padding: 32px; } .ds-btn-ivory { display: inline-flex; align-items: center; gap: 14px; min-height: 60px; padding: 0 26px 0 28px; font: 700 20px/1 \"Barlow Semi Condensed\", \"Arial Narrow\", sans-serif; text-decoration: none; background: var(--ivory, #faf9f5); color: var(--ink, #141413); border-radius: 3px; transition: background-color 160ms ease; } .ds-btn-ivory svg { width: 22px; height: 22px; fill: none; stroke: var(--clay, #c15f3c); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: transform 200ms cubic-bezier(.2,.8,.2,1); } .ds-btn-ivory:hover { background: #fff; } .ds-btn-ivory:hover svg { transform: translateX(4px); } .ds-btn-ivory:focus-visible { outline: 3px solid #faf9f5; outline-offset: 3px; }"
+      "description": "The gate button on ink: ivory, ink label, clay arrow, breathing.",
+      "html": "<div class=\"ds-ink\"><a class=\"ds-btn-ivory\" href=\"#\"><span>Open the sample model</span><svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M2 8h11M9 4l4 4-4 4\"/></svg></a></div>",
+      "css": ".ds-ink { background: #141413; padding: 32px; } .ds-btn-ivory { display: inline-flex; align-items: center; gap: 14px; min-height: 58px; padding: 0 24px 0 26px; font: 700 20px/1 \"Barlow Semi Condensed\", \"Arial Narrow\", sans-serif; text-decoration: none; background: #faf9f5; color: #141413; border-radius: 2px; box-shadow: 0 14px 24px -14px rgba(10,10,9,.6); animation: ds-breathe 3.2s ease-in-out infinite; transition: background-color 160ms ease; } .ds-btn-ivory svg { width: 20px; height: 20px; fill: none; stroke: #c15f3c; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform 200ms cubic-bezier(.2,.8,.2,1); } .ds-btn-ivory:hover { background: #fff; } .ds-btn-ivory:hover svg { transform: translateX(4px); } .ds-btn-ivory:focus-visible { outline: 3px solid #faf9f5; outline-offset: 3px; } @keyframes ds-breathe { 50% { box-shadow: 0 0 0 8px rgba(250,249,245,.08), 0 14px 24px -14px rgba(10,10,9,.6); } } @media (prefers-reduced-motion: reduce) { .ds-btn-ivory { animation: none; } }"
     },
     {
       "name": "Masthead",
       "kind": "nav",
       "refersTo": "nav-app",
-      "description": "Nav on the clay, no bar: logo, condensed links, EN/FR toggle, ivory app button.",
-      "html": "<div class=\"ds-mast\"><span class=\"ds-word\">Augmented</span><nav><a href=\"#\">How it works</a><a href=\"#\">Limits</a><a href=\"#\">Sign in</a><span class=\"ds-lang\"><button aria-pressed=\"true\">EN</button><button aria-pressed=\"false\">FR</button></span><a class=\"ds-app\" href=\"#\">Open the app</a></nav></div>",
-      "css": ".ds-mast { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 76px; padding: 0 24px; background: #c15f3c; color: #0a0a09; } .ds-word { font: 600 17px \"Montserrat\", \"Segoe UI\", sans-serif; letter-spacing: .18em; text-transform: uppercase; } .ds-mast nav { display: flex; align-items: center; gap: 24px; font: 600 17px/1 \"Barlow Semi Condensed\", \"Arial Narrow\", sans-serif; } .ds-mast a { color: inherit; text-decoration: none; } .ds-mast a:not(.ds-app):hover { text-decoration: underline; text-underline-offset: .22em; text-decoration-thickness: 2px; } .ds-app { background: #faf9f5; color: #141413 !important; padding: 12px 16px; border-radius: 3px; box-shadow: 0 6px 14px -10px rgba(10,10,9,.7); transition: background-color 160ms ease; } .ds-app:hover { background: #fff; } .ds-lang { display: inline-flex; border: 2px solid #0a0a09; border-radius: 3px; } .ds-lang button { font: 700 14px/1 \"Barlow Semi Condensed\", sans-serif; letter-spacing: .04em; color: #0a0a09; background: none; border: 0; padding: 8px 11px; cursor: pointer; } .ds-lang button[aria-pressed=\"true\"] { background: #0a0a09; color: #faf9f5; } .ds-lang button[aria-pressed=\"false\"]:hover { background: rgba(10,10,9,.1); } .ds-mast :focus-visible { outline: 3px solid #0a0a09; outline-offset: 3px; }"
-    },
-    {
-      "name": "Sign Board with Band",
-      "kind": "card",
-      "refersTo": "board",
-      "description": "Ivory board fixed to the hoarding, opened by a blue (can) or clay (can't) band.",
-      "html": "<div class=\"ds-ground\"><div class=\"ds-board\"><div class=\"ds-band\"><h2>What you can ask</h2><p>Plain questions in your own words.</p></div><div class=\"ds-body\">Board content</div></div></div>",
-      "css": ".ds-ground { background: #c15f3c; padding: 32px; } .ds-board { background: #faf9f5; color: #141413; border-radius: 2px; overflow: hidden; box-shadow: 0 2px 0 rgba(10,10,9,.12), 0 22px 40px -24px rgba(10,10,9,.7); } .ds-band { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 32px; padding: 20px 32px; background: #3d6f9f; color: #faf9f5; } .ds-band h2 { font: 700 34px/1.05 \"Barlow Semi Condensed\", sans-serif; text-transform: uppercase; letter-spacing: .02em; margin: 0; } .ds-band p { margin: 0; font: 500 17px/1.45 \"Barlow\", sans-serif; } .ds-body { padding: 32px; font: 400 17px/1.55 \"Barlow\", sans-serif; }"
-    },
-    {
-      "name": "Mandatory Sign",
-      "kind": "custom",
-      "refersTo": "sign-do",
-      "description": "Blue disc with ivory pictogram, caption, description and a quoted example question.",
-      "html": "<div class=\"ds-rule\"><span class=\"ds-disc\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M9 6h11M9 12h11M9 18h11\"/><circle cx=\"4.5\" cy=\"6\" r=\"1.2\"/><circle cx=\"4.5\" cy=\"12\" r=\"1.2\"/><circle cx=\"4.5\" cy=\"18\" r=\"1.2\"/></svg></span><h3>Counts and lists</h3><p>Any category, anywhere in the model.</p><p class=\"ds-ex\">How many columns are there?</p></div>",
-      "css": ".ds-rule { display: flex; flex-direction: column; align-items: center; text-align: center; background: #faf9f5; padding: 24px; color: #141413; } .ds-disc { width: 96px; height: 96px; border-radius: 50%; background: #3d6f9f; display: grid; place-items: center; margin-bottom: 14px; } .ds-disc svg { width: 62%; height: 62%; fill: none; stroke: #faf9f5; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; } .ds-rule h3 { font: 700 21px/1.1 \"Barlow Semi Condensed\", sans-serif; text-transform: uppercase; letter-spacing: .02em; margin: 0 0 4px; } .ds-rule p { margin: 0; color: #5e5d59; font: 400 15px/1.4 \"Barlow\", sans-serif; max-width: 26ch; } .ds-rule .ds-ex { margin-top: 6px; color: #3d6f9f; font: 600 17px/1.3 \"Barlow Semi Condensed\", sans-serif; } .ds-ex::before { content: \"\\201C\"; } .ds-ex::after { content: \"\\201D\"; }"
-    },
-    {
-      "name": "Prohibition Sign Row",
-      "kind": "custom",
-      "refersTo": "board",
-      "description": "Clay ring and slash over a graphite pictogram, in a ruled list of what the data cannot answer.",
-      "html": "<ul class=\"ds-limits\"><li><svg viewBox=\"0 0 40 40\" aria-hidden=\"true\"><rect class=\"p\" x=\"11\" y=\"11\" width=\"11\" height=\"11\"/><rect class=\"p\" x=\"18\" y=\"18\" width=\"11\" height=\"11\"/><circle class=\"r\" cx=\"20\" cy=\"20\" r=\"17\"/><path class=\"r\" d=\"M8 8l24 24\"/></svg><span>Clashes and overlaps</span></li><li><svg viewBox=\"0 0 40 40\" aria-hidden=\"true\"><path class=\"p\" d=\"M15 10v20M25 10v20M10 15h20M10 25h20\"/><circle class=\"r\" cx=\"20\" cy=\"20\" r=\"17\"/><path class=\"r\" d=\"M8 8l24 24\"/></svg><span>Grid lines and building orientation</span></li></ul>",
-      "css": ".ds-limits { list-style: none; margin: 0; padding: 24px; background: #faf9f5; color: #141413; font: 400 17px/1.55 \"Barlow\", sans-serif; } .ds-limits li { display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #dedcd2; } .ds-limits li:last-child { border-bottom: 0; } .ds-limits svg { width: 40px; height: 40px; flex: none; } .ds-limits .p { fill: none; stroke: #141413; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; } .ds-limits .r { fill: none; stroke: #c15f3c; stroke-width: 2.6; }"
+      "description": "No bar: logo, mono links with sliding underline, EN/FR pair, on-ground app button.",
+      "html": "<div class=\"ds-mast\"><span class=\"ds-word\">Augmented</span><nav><a href=\"#\">What you can ask</a><a href=\"#\">How it works</a><a href=\"#\">Limits</a><span class=\"ds-lang\"><button aria-pressed=\"true\">EN</button><button aria-pressed=\"false\">FR</button></span><a class=\"ds-app\" href=\"#\">Open the app</a></nav></div>",
+      "css": ".ds-mast { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 72px; padding: 0 24px; background: #f0eee6; color: #141413; } .ds-word { font: 600 16px \"Montserrat\", \"Segoe UI\", sans-serif; letter-spacing: .18em; text-transform: uppercase; } .ds-mast nav { display: flex; align-items: center; gap: 22px; font: 400 12.5px/1 \"IBM Plex Mono\", ui-monospace, monospace; letter-spacing: .05em; text-transform: uppercase; } .ds-mast nav a { color: inherit; text-decoration: none; } .ds-mast nav a:not(.ds-app) { background: linear-gradient(currentColor, currentColor) left bottom / 0 1px no-repeat; padding-bottom: 3px; transition: background-size 240ms ease, color 160ms ease; } .ds-mast nav a:not(.ds-app):hover { background-size: 100% 1px; color: #a9502f; } .ds-app { background: #141413; color: #faf9f5 !important; padding: 11px 14px; border-radius: 2px; } .ds-app:hover { background: #c15f3c; } .ds-lang { display: inline-flex; gap: 2px; } .ds-lang button { font: 500 12px/1 \"IBM Plex Mono\", monospace; color: #5e5d59; background: none; border: 1px solid transparent; padding: 7px 8px; cursor: pointer; } .ds-lang button[aria-pressed=\"true\"] { color: #141413; border-color: #141413; } .ds-mast :focus-visible { outline: 3px solid #c15f3c; outline-offset: 3px; }"
     },
     {
       "name": "Question Plate and Tags",
       "kind": "chip",
       "refersTo": "question-plate",
-      "description": "Ink plate with the typed question and stamped understood tags; dashed clay-light when data is missing. Never the query.",
-      "html": "<div class=\"ds-plate\"><div class=\"ds-ask\">Which columns support the beams on level 2?<span class=\"ds-caret\"></span></div><div class=\"ds-read\"><span class=\"ds-tag\">Columns</span><span class=\"ds-tag ds-missing\">Supports: not in the data</span></div></div>",
-      "css": ".ds-plate { padding: 16px 20px 14px; background: #0a0a09; color: #faf9f5; border-radius: 3px; box-shadow: 0 18px 30px -16px rgba(10,10,9,.8); } .ds-ask { font: 600 24px/1.2 \"Barlow Semi Condensed\", sans-serif; } .ds-caret { display: inline-block; width: 3px; height: .95em; background: #e8957a; vertical-align: -.1em; margin-left: 2px; animation: ds-blink 900ms steps(1) infinite; } @keyframes ds-blink { 50% { opacity: 0; } } .ds-read { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; } .ds-tag { font: 600 13.5px/1 \"Barlow Semi Condensed\", sans-serif; letter-spacing: .02em; color: #faf9f5; border: 1.5px solid rgba(250,249,245,.55); border-radius: 2px; padding: 6px 8px; } .ds-missing { color: #e8957a; border: 1.5px dashed #e8957a; } @media (prefers-reduced-motion: reduce) { .ds-caret { animation: none; } }"
+      "description": "Ink plate with a mono bar, the typed question and mono understood tags; dashed clay-light when data is missing. Never the query.",
+      "html": "<div class=\"ds-plate\"><div class=\"ds-bar\"><span>Question</span><span>04 / 04</span></div><div class=\"ds-ask\">Which columns support the beams on level 2?<span class=\"ds-caret\"></span></div><div class=\"ds-read\"><span class=\"ds-tag\">Columns</span><span class=\"ds-tag ds-missing\">Supports: not in the data</span></div></div>",
+      "css": ".ds-plate { background: #0a0a09; color: #faf9f5; border-radius: 2px; padding: 0 16px 14px; box-shadow: 0 18px 30px -16px rgba(10,10,9,.6); } .ds-bar { display: flex; justify-content: space-between; padding: 9px 0 8px; font: 400 11px/1 \"IBM Plex Mono\", monospace; letter-spacing: .08em; text-transform: uppercase; color: #b0aea5; } .ds-ask { font: 600 24px/1.2 \"Barlow Semi Condensed\", sans-serif; } .ds-caret { display: inline-block; width: 3px; height: .95em; background: #e8957a; vertical-align: -.1em; margin-left: 2px; animation: ds-blink 900ms steps(1) infinite; } @keyframes ds-blink { 50% { opacity: 0; } } .ds-read { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; } .ds-tag { font: 400 11px/1 \"IBM Plex Mono\", monospace; letter-spacing: .05em; text-transform: uppercase; border: 1px solid rgba(250,249,245,.55); padding: 6px 7px; } .ds-missing { color: #e8957a; border: 1px dashed #e8957a; } @media (prefers-reduced-motion: reduce) { .ds-caret { animation: none; } }"
     },
     {
-      "name": "Pinned Answer Label",
-      "kind": "custom",
-      "refersTo": "answer-label",
-      "description": "Ivory label pinned to the lit elements; the number in large bold clay.",
-      "html": "<div class=\"ds-site\"><div class=\"ds-answer\"><strong>17</strong> steel framing members on Level 2.</div></div>",
-      "css": ".ds-site { background: #f0eee6; padding: 24px; } .ds-answer { display: inline-block; max-width: 280px; padding: 12px 14px 13px; background: #faf9f5; color: #141413; font: 500 15.5px/1.38 \"Barlow\", sans-serif; border-radius: 2px; box-shadow: 0 14px 26px -16px rgba(10,10,9,.7); } .ds-answer strong { display: inline-block; font: 700 1.5em/1 \"Barlow Semi Condensed\", sans-serif; color: #c15f3c; margin-right: 2px; }"
-    },
-    {
-      "name": "Site Information Board",
+      "name": "Can Cell",
       "kind": "card",
+      "refersTo": "can-sign",
+      "description": "Numbered ruled cell: mono [01], blue round sign, title, description, quoted example. Sign rotates and turns clay on hover.",
+      "html": "<article class=\"ds-cell\"><span class=\"ds-n\">[01]</span><span class=\"ds-sign\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M9 6h11M9 12h11M9 18h11\"/><circle cx=\"4.5\" cy=\"6\" r=\"1.2\"/><circle cx=\"4.5\" cy=\"12\" r=\"1.2\"/><circle cx=\"4.5\" cy=\"18\" r=\"1.2\"/></svg></span><h3>Counts and lists</h3><p>Any category, anywhere in the model.</p><p class=\"ds-ex\">How many columns are there?</p></article>",
+      "css": ".ds-cell { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 4px 14px; align-content: start; max-width: 320px; padding: 18px 20px 22px; background: #f0eee6; color: #141413; border-top: 1px solid #d3d0c5; border-bottom: 1px solid #d3d0c5; transition: background-color 200ms ease; } .ds-cell:hover { background: #e8e6dc; } .ds-n { grid-column: 1 / -1; font: 500 11.5px/1 \"IBM Plex Mono\", monospace; letter-spacing: .06em; color: #a9502f; margin-bottom: 12px; } .ds-sign { width: 46px; height: 46px; border-radius: 50%; background: #3d6f9f; display: grid; place-items: center; grid-row: span 3; transition: transform 320ms cubic-bezier(.2,1.4,.4,1), background-color 200ms ease; } .ds-sign svg { width: 26px; height: 26px; fill: none; stroke: #faf9f5; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; } .ds-cell:hover .ds-sign { transform: rotate(-10deg) scale(1.12); background: #c15f3c; } .ds-cell h3 { margin: 2px 0 0; font: 700 21px/1.1 \"Barlow Semi Condensed\", sans-serif; } .ds-cell p { margin: 0; font: 400 15px/1.45 \"Barlow\", sans-serif; color: #5e5d59; } .ds-cell .ds-ex { margin-top: 8px; font: 600 16.5px/1.3 \"Barlow Semi Condensed\", sans-serif; color: #3d6f9f; transition: transform 220ms ease; } .ds-cell:hover .ds-ex { transform: translateX(4px); } .ds-ex::before { content: \"\\201C\"; } .ds-ex::after { content: \"\\201D\"; } @media (prefers-reduced-motion: reduce) { .ds-sign, .ds-ex { transition: none; } .ds-cell:hover .ds-sign, .ds-cell:hover .ds-ex { transform: none; } }"
+    },
+    {
+      "name": "How Board Log",
+      "kind": "custom",
+      "refersTo": "how-board",
+      "description": "Ink board: mono spec list and the 001-004 log in clay-light; row titles slide on hover.",
+      "html": "<div class=\"ds-board\"><dl class=\"ds-spec\"><dt>Reads</dt><dd>Revit models, through Autodesk Platform Services</dd><dt>Never</dt><dd>Changes the model</dd></dl><ol class=\"ds-log\"><li><span class=\"ds-ln\">001</span><div><h3>The model is read once</h3><p>Every element's properties are cleaned into one table.</p></div></li><li><span class=\"ds-ln\">002</span><div><h3>Your question becomes a query</h3><p>Plain questions are matched in code.</p></div></li></ol></div>",
+      "css": ".ds-board { background: #141413; color: #faf9f5; border-radius: 2px; padding: 32px 28px; display: grid; gap: 28px; } .ds-spec { margin: 0; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 7px 16px; font: 400 12px/1.5 \"IBM Plex Mono\", monospace; letter-spacing: .05em; text-transform: uppercase; } .ds-spec dt { color: #b0aea5; } .ds-spec dd { margin: 0; } .ds-log { list-style: none; margin: 0; padding: 0; } .ds-log li { display: grid; grid-template-columns: 48px minmax(0,1fr); gap: 12px; padding: 16px 0; border-bottom: 1px solid rgba(250,249,245,.14); } .ds-log li:last-child { border-bottom: 0; } .ds-ln { font: 500 13px/1.7 \"IBM Plex Mono\", monospace; color: #e8957a; transition: color 200ms ease; } .ds-log h3 { margin: 0 0 4px; font: 700 21px/1.15 \"Barlow Semi Condensed\", sans-serif; transition: transform 220ms ease; } .ds-log p { margin: 0; color: #b0aea5; font: 400 15.5px/1.45 \"Barlow\", sans-serif; } .ds-log li:hover h3 { transform: translateX(6px); } .ds-log li:hover .ds-ln { color: #faf9f5; } @media (prefers-reduced-motion: reduce) { .ds-log h3 { transition: none; } .ds-log li:hover h3 { transform: none; } }"
+    },
+    {
+      "name": "Limit",
+      "kind": "custom",
       "refersTo": "board",
-      "description": "Footer: ink head, ruled 3-column label/value grid in fine print.",
-      "html": "<div class=\"ds-info\"><div class=\"ds-info-head\"><span>AUGMENTED</span><span>Open the app · How it works</span></div><dl class=\"ds-facts\"><div><dt>Reads</dt><dd>Revit models, through Autodesk Platform Services</dd></div><div><dt>Writes to the model</dt><dd>Never: it only reads</dd></div><div><dt>This page</dt><dd>English and French</dd></div></dl></div>",
-      "css": ".ds-info { background: #faf9f5; color: #141413; border-radius: 2px; font: 400 13.5px/1.4 \"Barlow\", sans-serif; box-shadow: 0 22px 40px -24px rgba(10,10,9,.7); overflow: hidden; } .ds-info-head { display: flex; justify-content: space-between; padding: 14px 24px; background: #141413; color: #faf9f5; font: 600 15px/1.3 \"Barlow Semi Condensed\", sans-serif; } .ds-facts { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); } .ds-facts > div { display: grid; grid-template-columns: 9.5em minmax(0,1fr); gap: 12px; padding: 10px 24px; border-bottom: 1px solid #dedcd2; border-right: 1px solid #dedcd2; } .ds-facts > div:nth-child(3n) { border-right: 0; } .ds-facts dt { font: 700 12px/1.5 \"Barlow Semi Condensed\", sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #5e5d59; } .ds-facts dd { margin: 0; }"
+      "description": "Clay ring-and-slash over an on-ground pictogram, a mono clay-ink code and a condensed statement; the sign wobbles on hover.",
+      "html": "<ul class=\"ds-limits\"><li><span class=\"ds-code\"><svg class=\"ds-no\" viewBox=\"0 0 40 40\" aria-hidden=\"true\"><rect class=\"p\" x=\"11\" y=\"11\" width=\"11\" height=\"11\"/><rect class=\"p\" x=\"18\" y=\"18\" width=\"11\" height=\"11\"/><circle class=\"r\" cx=\"20\" cy=\"20\" r=\"17\"/><path class=\"r\" d=\"M8 8l24 24\"/></svg><span>Not in the data</span></span><p>Clashes and overlaps</p></li></ul>",
+      "css": ".ds-limits { list-style: none; margin: 0; padding: 0; max-width: 280px; background: #f0eee6; color: #141413; border-top: 1px solid #d3d0c5; } .ds-limits li { padding: 18px 18px 22px; border-bottom: 1px solid #d3d0c5; transition: background-color 200ms ease; } .ds-limits li:hover { background: #e8e6dc; } .ds-code { display: flex; align-items: center; gap: 10px; font: 500 11.5px/1 \"IBM Plex Mono\", monospace; letter-spacing: .06em; text-transform: uppercase; color: #a9502f; } .ds-no { width: 34px; height: 34px; flex: none; } .ds-no .p { fill: none; stroke: #141413; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; } .ds-no .r { fill: none; stroke: #c15f3c; stroke-width: 2.6; } .ds-limits li:hover .ds-no { animation: ds-wobble 520ms cubic-bezier(.36,.07,.19,.97); } @keyframes ds-wobble { 20% { transform: rotate(-14deg); } 45% { transform: rotate(10deg); } 70% { transform: rotate(-5deg); } 100% { transform: none; } } .ds-limits p { margin: 14px 0 0; font: 600 18px/1.25 \"Barlow Semi Condensed\", sans-serif; } @media (prefers-reduced-motion: reduce) { .ds-limits li:hover .ds-no { animation: none; } }"
+    },
+    {
+      "name": "Role Card",
+      "kind": "card",
+      "refersTo": "role-card",
+      "description": "Ruled card with an authored stroke icon, role, use case and example; lifts on hover with a clay top bar and a tilting icon.",
+      "html": "<article class=\"ds-role\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 3 3 7.5l9 4.5 9-4.5Z\"/><path d=\"m3 12 9 4.5 9-4.5\"/><path d=\"m3 16.5 9 4.5 9-4.5\"/></svg><h3>BIM managers</h3><p>Audit the model: find elements with missing materials, marks or levels.</p><p class=\"ds-ex\">Elements with no mark</p></article>",
+      "css": ".ds-role { position: relative; display: flex; flex-direction: column; max-width: 340px; padding: 22px 22px 20px; border: 1px solid #d3d0c5; border-radius: 2px; background: #f0eee6; color: #141413; transition: transform 260ms cubic-bezier(.2,.8,.2,1), box-shadow 260ms ease, border-color 200ms ease, background-color 200ms ease; } .ds-role::before { content: \"\"; position: absolute; left: -1px; right: -1px; top: -1px; height: 3px; background: #c15f3c; transform: scaleX(0); transform-origin: left; transition: transform 320ms cubic-bezier(.2,.8,.2,1); } .ds-role:hover { transform: translateY(-5px); background: #faf9f5; border-color: transparent; box-shadow: 0 22px 36px -24px rgba(10,10,9,.5); } .ds-role:hover::before { transform: scaleX(1); } .ds-icon { width: 46px; height: 46px; fill: none; stroke: #141413; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 18px; transition: stroke 200ms ease, transform 320ms cubic-bezier(.2,1.4,.4,1); } .ds-role:hover .ds-icon { stroke: #c15f3c; transform: rotate(-6deg) scale(1.08); } .ds-role h3 { margin: 0 0 6px; font: 700 23px/1.1 \"Barlow Semi Condensed\", sans-serif; } .ds-role p { margin: 0; color: #5e5d59; font: 400 15.5px/1.45 \"Barlow\", sans-serif; } .ds-role .ds-ex { margin-top: auto; padding-top: 16px; display: flex; align-items: center; gap: 8px; color: #3d6f9f; font: 600 16.5px/1.3 \"Barlow Semi Condensed\", sans-serif; } .ds-role .ds-ex::after { content: \"\"; width: 14px; height: 2px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform 260ms ease; } .ds-role:hover .ds-ex::after { transform: scaleX(1); } @media (prefers-reduced-motion: reduce) { .ds-role, .ds-role::before, .ds-icon { transition: none; } .ds-role:hover, .ds-role:hover .ds-icon { transform: none; } }"
+    },
+    {
+      "name": "Gate",
+      "kind": "card",
+      "refersTo": "gate",
+      "description": "Two-leaf ink panel with a clay inset frame; headline left, ivory button bottom-right.",
+      "html": "<div class=\"ds-gate\"><div><h2>Try it on the sample model</h2><p>The Revit structural sample is loaded and ready.</p></div><div><a class=\"ds-gbtn\" href=\"#\">Open the sample model</a></div></div>",
+      "css": ".ds-gate { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); background: #141413; color: #faf9f5; border-radius: 2px; box-shadow: inset 0 0 0 10px #c15f3c; } .ds-gate > div { padding: 40px 36px; } .ds-gate > div + div { border-left: 2px solid rgba(250,249,245,.14); display: flex; align-items: flex-end; justify-content: flex-end; } .ds-gate h2 { margin: 0 0 16px; font: 700 48px/0.95 \"Barlow Semi Condensed\", sans-serif; letter-spacing: -.02em; max-width: 12ch; } .ds-gate p { margin: 0; color: #b0aea5; font: 400 17px/1.55 \"Barlow\", sans-serif; } .ds-gbtn { display: inline-flex; align-items: center; min-height: 58px; padding: 0 24px 0 26px; font: 700 20px/1 \"Barlow Semi Condensed\", sans-serif; text-decoration: none; background: #faf9f5; color: #141413; border-radius: 2px; } .ds-gbtn:hover { background: #fff; } .ds-gbtn:focus-visible { outline: 3px solid #faf9f5; outline-offset: 3px; }"
     }
   ],
   "narrative": {
-    "northStar": "The Site Hoarding",
-    "overview": "The page is the printed hoarding around a live building site. The product is what you watch through the round viewing window cut into it. Clay panels fill the page edge to edge, with a joint every 300px. Ivory sign boards are fixed to the panels, and the type is billboard-scale ink set in a condensed grotesque. The hoarding is loud and graphic. The window is the only place where the work shows: an isometric frame whose elements light up in clay while the answer is pinned to them.\n\nThe hierarchy is deliberately one-sided. The question is set huge, the answer much smaller, and a dense ruled site information board closes the page. Everything is printed: the clay, the seams and the signs stay the same in light and dark mode. Only the boards and the view through the window dim. The signage carries real content. Blue mandatory signs are what you can ask, clay ring-and-slash signs are what the data cannot answer, and the closing is a two-leaf ink gate set into the hoarding.\n\nThe owner has rejected two things for this surface: drawing-sheet frames and grids, and a black navigation bar across the top.",
+    "northStar": "The Site Window",
+    "overview": "A pale site hoarding with one round window cut into it, through which you watch the work. Through the window is an isometric frame drawn in lines; a question types onto a dark plate at the window's foot, the matching elements light in clay, and a clay count marker is pinned to them with a leader. Everything around the window is site signage: billboard-scale condensed headlines, blue round signs for what you can ask, an ink board for how an answer is made, clay ring-and-slash signs for what it cannot answer, and an ink gate framed in clay to close.\n\nThe data is labelled like a drawing set. Small IBM Plex Mono capitals carry every piece of data: the nav, the plate bar, the understood tags, the spec list, the [01] cell numbers, the 001–004 log, the limit codes and the footer small print. They never set a headline or a paragraph. Content sits in numbered cells divided by hairlines, not in boxes.\n\nThe page is lively but plain. Hovers lift, tilt and slide; sections rise in as they scroll into view; the window tilts with the mouse; the answer number counts up. All of it switches off under reduced motion. The owner has rejected an orange/clay page background, drawing-sheet frames and corner crosses, a black nav bar, a ruled information-board footer, a scrolling ticker strip and a three.js 3D model in the window.",
     "keyCharacteristics": [
-      "Clay field edge to edge, with a panel joint every 300px (a 2px dark gap and a 1px lit edge).",
-      "Condensed Barlow Semi Condensed headlines in ink at billboard scale; Barlow for reading.",
-      "Ivory boards fixed to the panels with soft drop shadows; the window and the gate are cut in with inset depth.",
-      "Site-signage grammar: blue discs for \"can\", clay ring-and-slash for \"can't\".",
-      "One clock (150ms beat) drives the whole demo.",
-      "Claude's palette only, pinned."
+      "Pale ground (#f0eee6 light, #1c1b18 dark) edge to edge; clay is an accent only.",
+      "Barlow Semi Condensed billboard headlines; Barlow for reading; IBM Plex Mono capitals for data only.",
+      "One round window with a clay rim, an iris transition and a line-drawn isometric frame.",
+      "Hairlines between sections and cells; no frames.",
+      "Signage grammar: blue round signs for \"can\", clay ring-and-slash for \"can't\".",
+      "Claude's palette only."
     ],
     "rules": [
-      { "name": "The Pinned Palette Rule", "body": "Claude's palette is the owner's commitment: clay, ink, ivory, sky and cloudy, plus their deepened or lightened steps. Do not add new hues.", "section": "colors" },
-      { "name": "The Ink-on-Clay Rule", "body": "Text printed on clay is always #0a0a09 (4.7:1 at body size). Do not set #141413, graphite or ivory text on clay.", "section": "colors" },
-      { "name": "The Printed Hoarding Rule", "body": "Clay, its joints and the coloured sign bands do not change in dark mode. Only the boards, the window's site, its lines and the pin change.", "section": "colors" },
-      { "name": "The One Shout Rule", "body": "The hero question is the only display-scale line in the first viewport. The answer is set at a fraction of that size.", "section": "typography" },
-      { "name": "The 300px Panel Rule", "body": "Hoarding joints repeat at exactly 300px, wide enough to read as panels rather than stripes. Do not tighten them.", "section": "layout" },
-      { "name": "The Fixed-or-Cut Rule", "body": "Every surface either stands on the hoarding (drop shadow) or is cut into it (inset). Nothing floats.", "section": "elevation" },
-      { "name": "The One Clock Rule", "body": "Every duration is a multiple of `--beat` (150ms), and the script reads the same variable. Typing runs at a third of a beat, tags land one per beat, the iris takes 3 beats and an answer holds for 26. With reduced motion, the first scene is shown static.", "section": "components" },
-      { "name": "The Exact Match Rule", "body": "The demo uses only real answers from the sample models, and the number of lit elements equals the number stated (17 level-2 beams, 9 walls, 17 concrete pieces).", "section": "components" },
+      { "name": "The Pinned Palette Rule", "body": "Claude's palette only: clay, ink, ivory, cloudy and sky, plus their lightened or deepened steps. No new hues.", "section": "colors" },
+      { "name": "The Clay-Is-An-Accent Rule", "body": "Clay marks lit elements, the window rim, the gate frame, hover and focus. It never fills the page ground or a section.", "section": "colors" },
+      { "name": "The Mono-Is-Data Rule", "body": "IBM Plex Mono sets labels, codes, numbers and small print, always small and uppercase. Never a headline, a sentence of reading copy or a button label.", "section": "typography" },
+      { "name": "The One Shout Rule", "body": "The hero question is the only display-scale line in the first viewport.", "section": "typography" },
+      { "name": "The Hairline Rule", "body": "Structure is drawn with 1px rules between sections and cells. No outer frames, margins or corner marks.", "section": "layout" },
+      { "name": "The Flat-At-Rest Rule", "body": "Cells and cards are flat at rest; a role card earns its shadow only on hover.", "section": "elevation" },
+      { "name": "The One Clock Rule", "body": "The demo runs on `--beat` (150ms), read by the script too: typing at a third of a beat, one tag per beat, the iris in 3, the count-up in 5, an answer held for 26.", "section": "components" },
+      { "name": "The Exact Match Rule", "body": "The demo uses only real sample-model answers, and the lit elements equal the stated count: 17 level-2 beams, 9 walls, 17 concrete pieces (9 walls, 6 pads, 2 slabs).", "section": "components" },
       { "name": "The Understood-not-Executed Rule", "body": "The demo shows how a question was understood, as tags. It never shows the query or the SQL.", "section": "components" }
     ],
     "dos": [
-      "Do set every piece of text on clay in print ink (#0a0a09).",
-      "Do keep the hoarding, its 300px joints and the sign bands the same in both colour schemes; dim only the boards and the window.",
-      "Do make every surface either fixed onto the hoarding (drop shadow) or cut into it (inset with a clay-deep edge).",
-      "Do use blue discs for what Augmented can do and clay ring-and-slash signs for what it cannot, each with real content.",
-      "Do time every animation in multiples of `--beat` (150ms) and provide a static reduced-motion state.",
-      "Do use only real sample-model answers, with lit elements matching the stated count."
+      "Do keep the page ground pale (dark in dark mode) and use clay as an accent only.",
+      "Do set data labels in small uppercase IBM Plex Mono and everything else in Barlow or Barlow Semi Condensed.",
+      "Do divide content with 1px hairlines into numbered cells.",
+      "Do use blue round signs for what Augmented can do and clay ring-and-slash signs for what it cannot, each with real content.",
+      "Do use only real sample-model answers, with lit elements matching the stated count.",
+      "Do switch every animation and hover movement off under `prefers-reduced-motion`.",
+      "Do route every visible string through the EN/FR dictionary."
     ],
     "donts": [
-      "Don't add drawing-sheet frames, title blocks or background grid lines to the landing page (the owner rejected them; that system belongs to the app pages).",
-      "Don't put an ink bar across the top of the page; the masthead sits on the clay.",
+      "Don't fill the page or a section with clay (the owner rejected the orange background).",
+      "Don't add drawing-sheet frames, margins or corner crosses to the landing page.",
+      "Don't put a black bar across the top; the masthead sits on the ground.",
+      "Don't close with a ruled information-board footer; keep the quiet footer.",
+      "Don't add a scrolling ticker strip.",
+      "Don't replace the line-drawn frame with a three.js 3D model.",
       "Don't show the internal query or SQL anywhere public; show understood tags instead.",
-      "Don't introduce colours outside Claude's palette.",
-      "Don't add decorative hardware (bolts, screws, backing mats) to boards; they were removed in the finish review.",
-      "Don't set clay as text at body size on ivory; use it only for large bold numerals."
+      "Don't introduce colours outside Claude's palette."
     ]
   }
 }

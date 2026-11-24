@@ -104,6 +104,15 @@ a { color: inherit; text-underline-offset: 3px; }
   text-decoration: none;
 }
 .logo__mark { display: block; flex: none; height: 34px; width: auto; }
+/* "Ask Augmented": a light, spaced ASK stacked above the wordmark. */
+.logo__stack { display: grid; line-height: 1; }
+.logo__ask {
+  color: #b0aea5;               /* light grey on the dark bar */
+  font: 300 11px/1 "Montserrat", "Segoe UI", sans-serif;
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  margin: 0 0 4px 1px;
+}
 /* Wordmark from the supplied logo: wide geometric capitals. */
 .logo__word {
   color: var(--bar-text);
@@ -114,6 +123,7 @@ a { color: inherit; text-underline-offset: 3px; }
 }
 
 .topbar__divider { flex: none; width: 1px; height: 28px; background: var(--bar-line); }
+.segmented[hidden], .title-block__cell[hidden] { display: none; }
 
 .topbar__group {
   display: flex;

@@ -47,7 +47,14 @@ initViewer(document.getElementById('preview')).then(viewer => {
     // The address ends in the model's file name ("#rstbasicsampleproject.rvt"), so a
     // reload or a shared link opens the same model. Old links with a URN still work.
     const wanted = decodeURIComponent(window.location.hash.substring(1));
-    setupModelSelection(viewer, wanted);
+    // A question in the address ("/app?ask=Steel beams on level 2#rstbasicsampleproject.rvt"),
+    // e.g. from the landing page's examples: asked once the model has loaded, then removed
+    // from the address so a reload doesn't ask it again.
+    const askOnArrival = new URLSearchParams(window.location.search).get('ask');
+    if (askOnArrival) history.replaceState(null, '', window.location.pathname + window.location.hash);
+    setupModelSelection(viewer, wanted)
+        .then(() => modelReady)
+        .then(() => { if (askOnArrival) send(askOnArrival.slice(0, 500)); });
     setupModelUpload(viewer);
 });
 
@@ -72,7 +79,9 @@ async function setupModelSelection(viewer, wanted) {
         const start = found ? wanted : models.find(model => DEFAULT_MODEL_NAME.test(model.name))?.name;
         for (const model of models) {
             const isWanted = model.name === start || model.urn === start;
-            dropdown.add(new Option(model.name, model.urn, false, isWanted));
+            const option = new Option(model.label || model.name, model.urn, false, isWanted);   // samples have a friendly name
+            option.dataset.file = model.name;   // the file name, for the address ("#rstbasicsampleproject.rvt")
+            dropdown.add(option);
         }
         dropdown.onchange = () => onModelSelected(viewer, dropdown.value);
         if (dropdown.value) {
@@ -137,11 +146,13 @@ async function onModelSelected(viewer, urn) {
         delete window.onModelSelectedTimeout;
     }
     const dropdown = document.getElementById('models');
-    const name = dropdown.options[dropdown.selectedIndex]?.text || DASH;
+    const option = dropdown.options[dropdown.selectedIndex];
+    const name = option?.text || DASH;
     setModelName(name);
-    // Show the readable file name in the address instead of the long URN.
-    // replaceState changes the address without adding a Back-button step per model.
-    history.replaceState(null, '', `#${encodeURIComponent(name)}`);
+    // Show the file name in the address instead of the long URN (never the friendly
+    // label: a shared link must still find the model). replaceState changes the address
+    // without adding a Back-button step per model.
+    history.replaceState(null, '', `#${encodeURIComponent(option?.dataset.file || name)}`);
     // The Viewer extensions (Logger, Summary) read the selected model from here.
     window.selectedModelUrn = urn;
     modelReady = new Promise(resolve => { resolveModelReady = resolve; });
@@ -247,6 +258,18 @@ async function loadAccount() {
     // Guests see that uploading needs signing in before they click.
     const upload = document.getElementById('upload');
     upload.title = isGuest ? 'Sign in to upload a Revit model' : 'Upload a new model';
+    upload.querySelector('span').textContent = isGuest ? 'Sign in to upload' : 'Upload';
+    // Guests see what's left of today's free use instead of raw token counts.
+    document.getElementById('tbTokens').hidden = isGuest;
+    document.getElementById('tbFree').hidden = !isGuest;
+    showFreeLeft(account.budget);
+}
+
+// "62% left" of a guest's free daily use (the budget counts tokens; people think in questions).
+function showFreeLeft(budget) {
+    if (!budget || budget.kind !== 'guest' || !budget.limit) return;
+    const left = Math.max(0, Math.round(100 * (1 - budget.used / budget.limit)));
+    document.getElementById('tbFreeLeft').textContent = left === 0 ? 'Used up · sign in' : `${left}% left`;
 }
 // The upload button waits for this, so a click right after the page opens is checked too.
 const accountReady = loadAccount();
@@ -966,6 +989,7 @@ async function ask(prompt) {
 
         updateTokens(data);
         warnAboutBudget(data.budget);
+        showFreeLeft(data.budget);
         // If the status check failed earlier (e.g. the model was still processing),
         // a working answer means the model is ready now: refresh the chip.
         if (data.cache && indexStatus.state !== 'ready') loadIndexStatus(currentUrn());

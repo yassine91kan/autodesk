@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml" />
+    <title>Augmented 4D</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500&display=swap" />
+    <link rel="stylesheet" href="https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/style.css" />
+    <style>
+      :root {
+        --ground: #f0eee6; --ground-2: #e8e6dc; --ivory: #faf9f5; --ink: #141413; --ink-2: #5e5d59;
+        --rule: #d3d0c5; --clay: #c15f3c; --clay-ink: #a9502f; --clay-hover: #8f4427; --on-clay: #ffffff;
+        --sky: #3d6f9f; --critical: #b3261e;
+        --display: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
+        --body: 'Barlow', 'Segoe UI', system-ui, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --ground: #1c1b18; --ground-2: #24231f; --ivory: #26251f; --ink: #ecebe4; --ink-2: #a3a198;
+          --rule: #3a3934; --clay: #e8957a; --clay-ink: #e8957a; --clay-hover: #f0ae97; --on-clay: #141413;
+          --sky: #8db4dc; --critical: #f2867e;
+        }
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        background: var(--ground); color: var(--ink); font: 15px/1.4 var(--body);
+        display: grid; grid-template-rows: auto minmax(240px, 1fr) auto minmax(180px, 38vh); overflow: hidden;
+      }
+      header {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; padding: 10px 16px;
+        border-bottom: 1px solid var(--rule);
+      }
+      h1 { margin: 0; font: 700 23px/1 var(--display); letter-spacing: -0.01em; }
+      h1 span { color: var(--clay-ink); }
+      header label { font: 600 13px var(--display); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
+      select, input[type="date"] {
+        font: 500 15px var(--body); color: var(--ink); background: var(--ivory);
+        border: 1px solid var(--rule); border-radius: 2px; padding: 5px 8px;
+      }
+      .stats { display: flex; gap: 22px; margin-left: auto; }
+      .stat dt { font: 600 11px var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); }
+      .stat dd { margin: 0; font: 700 20px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+      dl { margin: 0; }
+
+      #viewer { position: relative; min-height: 0; }
+      .notice {
+        position: absolute; inset: 0; display: grid; place-items: center; z-index: 5;
+        font: 600 18px var(--display); color: var(--ink-2); background: var(--ground); text-align: center; padding: 16px;
+      }
+      .notice[hidden] { display: none; }
+
+      .transport {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 16px;
+        border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); background: var(--ivory);
+      }
+      .transport button {
+        font: 700 15px var(--display); background: var(--clay-ink); color: var(--on-clay); border: 0; border-radius: 2px;
+        padding: 7px 14px; cursor: pointer; min-width: 84px;
+      }
+      .transport button:hover { background: var(--clay-hover); }
+      .transport button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--rule); min-width: 0; }
+      #slider { flex: 1 1 260px; accent-color: var(--clay); }
+      #dateLabel { font: 700 20px var(--display); font-variant-numeric: tabular-nums; min-width: 150px; }
+      #dayLabel { color: var(--ink-2); font-variant-numeric: tabular-nums; min-width: 90px; }
+      .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 600 13px var(--display); color: var(--ink-2); }
+      .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+      .transport label { font: 500 14px var(--body); color: var(--ink-2); display: flex; gap: 6px; align-items: center; }
+
+      #gantt { overflow: auto; background: var(--ground); position: relative; }
+      #gantt svg { display: block; }
+      .row-label { font: 600 13px var(--display); fill: var(--ink); cursor: pointer; }
+      .row-label.critical { fill: var(--critical); }
+      .tick { font: 500 11px var(--body); fill: var(--ink-2); }
+      .grid { stroke: var(--rule); stroke-width: 1; }
+      .bar { cursor: pointer; }
+      .bar rect.track { opacity: .28; }
+      .bar.critical rect.track { stroke: var(--critical); stroke-width: 1.5; opacity: .5; }
+      .bar.active rect.track { opacity: .5; }
+      .playhead { stroke: var(--ink); stroke-width: 1.5; }
+      .rowband { fill: var(--ivory); }
+
+      @media (max-width: 640px) {
+        body { grid-template-rows: auto minmax(220px, 45vh) auto minmax(200px, 1fr); overflow: auto; }
+        .stats { margin-left: 0; gap: 14px; }
+        .stat dd { font-size: 17px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Augmented <span>4D</span></h1>
+      <label>Model <select id="models"></select></label>
+      <label>Start <input type="date" id="start" /></label>
+      <dl class="stats">
+        <div class="stat"><dt>Duration</dt><dd id="statDuration">–</dd></div>
+        <div class="stat"><dt>Finish</dt><dd id="statFinish">–</dd></div>
+        <div class="stat"><dt>Built</dt><dd id="statBuilt">–</dd></div>
+        <div class="stat"><dt>Concrete placed</dt><dd id="statConcrete">–</dd></div>
+      </dl>
+    </header>
+
+    <div id="viewer"><div class="notice" id="notice">Loading the model…</div></div>
+
+    <div class="transport">
+      <button id="play" type="button">Play</button>
+      <button id="reset" class="ghost" type="button" title="Back to day 0">⟲</button>
+      <span id="dateLabel">–</span>
+      <input id="slider" type="range" min="0" max="1" step="0.05" value="0" aria-label="Schedule day" />
+      <span id="dayLabel">–</span>
+      <label>Speed
+        <select id="speed">
+          <option value="2">2 days/s</option>
+          <option value="5" selected>5 days/s</option>
+          <option value="15">15 days/s</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="ghost" checked /> Ghost unbuilt</label>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <div id="gantt" aria-label="Gantt chart"></div>
+
+    <script src="https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.js"></script>
+    <script src="/4d.js" type="module"></script>
+  </body>
+</html>

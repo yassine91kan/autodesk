@@ -4,8 +4,37 @@
     {
       "name": "landing-static",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5510", "--directory", "wwwroot"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5510",
+        "--directory",
+        "wwwroot"
+      ],
       "port": 5510
+    },
+    {
+      "name": "app-local",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "server.js"
+      ],
+      "port": 8091,
+      "env": {
+        "PORT": "8091"
+      }
+    },
+    {
+      "name": "app-local-disk",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "server.js"
+      ],
+      "port": 8092,
+      "env": {
+        "PORT": "8092",
+        "DATA_DIR": "data"
+      }
     }
   ]
 }

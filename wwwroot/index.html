@@ -4,19 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml" />
-    <title>Augmented</title>
+    <title>Ask Augmented</title>
+    <meta name="description" content="Ask the Revit sample model a question in plain English: exact numbers from the model data, with every element counted highlighted in 3D. No sign-up needed." />
+    <link rel="canonical" href="https://www.askaugmented.com/app" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Montserrat:wght@600&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Montserrat:wght@300;600&display=swap" />
     <link rel="stylesheet" href="https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/style.css" />
     <link rel="stylesheet" href="assets/css/drawing-sheet.css" />
   </head>
   <body>
     <header class="topbar">
-      <a class="topbar__logo logo" href="/" aria-label="Augmented, home">
+      <a class="topbar__logo logo" href="/" aria-label="Ask Augmented, home">
         <img class="logo__mark" src="assets/images/augmented-mark.svg" width="47" height="36" alt="" />
-        <span class="logo__word">Augmented</span>
+        <span class="logo__stack"><span class="logo__ask">Ask</span><span class="logo__word">Augmented</span></span>
       </a>
 
       <span class="topbar__divider" aria-hidden="true"></span>
@@ -36,7 +38,9 @@
         <input class="sr-only" type="file" id="input" tabindex="-1" aria-hidden="true" />
       </div>
 
-      <fieldset class="topbar__group segmented">
+      <!-- Hidden: both "Type 0" and "Type 2" run the same assistant (ask_agent_simple), so the
+           choice meant nothing to visitors. main.js still reads the checked radio. -->
+      <fieldset class="topbar__group segmented" hidden>
         <legend class="sr-only">Assistant</legend>
         <svg class="topbar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
@@ -131,9 +135,9 @@
                   <li>Matching elements are selected in orange in the model, and the sheet border lights up the zones they are in. Click an element to select it on its own.</li>
                   <li>Try:
                     <span class="notes__examples">
-                      <button type="button" class="example">Show me the columns</button>
-                      <button type="button" class="example">How many beams are there?</button>
-                      <button type="button" class="example">Show me the floors</button>
+                      <button type="button" class="example">How many columns are there?</button>
+                      <button type="button" class="example">Steel beams on level 2</button>
+                      <button type="button" class="example">The 5 longest beams</button>
                     </span>
                   </li>
                 </ol>
@@ -166,9 +170,14 @@
                 <dt>Date</dt>
                 <dd id="tbDate">–</dd>
               </div>
-              <div class="title-block__cell" title="Prompt · completion tokens for the last answer">
+              <!-- Signed in: tokens of the last answer. Guests: what's left of today's free use (main.js). -->
+              <div class="title-block__cell" id="tbTokens" title="Prompt · completion tokens for the last answer">
                 <dt>Tokens</dt>
                 <dd><span id="promptToken">0</span> · <span id="compToken">0</span></dd>
+              </div>
+              <div class="title-block__cell" id="tbFree" title="Guests can ask questions for free each day. Sign in for unlimited questions." hidden>
+                <dt>Free today</dt>
+                <dd id="tbFreeLeft">100% left</dd>
               </div>
             </dl>
           </aside>

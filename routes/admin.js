@@ -79,7 +79,7 @@ router.get('/admin/questions', (req, res) => {
   .wrap { overflow-x: auto; } a { color: inherit; }
 </style></head><body>
 <h1>Question log</h1>
-<p>Every question asked in the app, kept ${KEEP_DAYS} days. "Who" is a scrambled code per visitor, not a name.</p>
+<p>Every question asked in the app, kept ${KEEP_DAYS} days. "Who" is a scrambled code per visitor, not a name. <a href="/admin/contacts">Contact messages</a></p>
 <h2>Last 14 days</h2>
 <div class="wrap"><table><tr><th>Day</th><th>Questions</th><th>Tokens</th><th>Code only</th><th>👍</th><th>👎</th><th>Errors</th></tr>
 ${dayRows || '<tr><td colspan="7">No questions yet.</td></tr>'}</table></div>

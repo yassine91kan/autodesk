@@ -1,0 +1,2 @@
+title: Export for Dataverse
+tooltip: Exports the model as two CSV files (elements and totals) to import into Dataverse for a Copilot Studio agent.

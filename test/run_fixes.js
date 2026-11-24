@@ -115,6 +115,21 @@ check('any other OpenAI failure -> "could not be reached"', /could not be reache
 check('Autodesk downloads stop after 90 s, sign-in after 15 s', aps.DOWNLOAD_TIMEOUT_MS === 90000 && aps.AUTH_TIMEOUT_MS === 15000);
 check('axios and fetch timeouts are both recognised', aps.isTimeout({ code: 'ECONNABORTED' }) && aps.isTimeout({ name: 'TimeoutError' }) && !aps.isTimeout(new Error('404')));
 
+log('\n=== The model list: guests see only the samples ===');
+{
+    const { visibleModels } = require('../routes/models');
+    const bucket = ['drive_shaft.dwg', 'Snowdon Towers Sample Architectural.rvt', 'capture.js', 'rstbasicsampleproject.rvt', 'Seaport-Civic-Center_Architecture.rvt', 'client-tower.rvt']
+        .map(objectKey => ({ objectKey, objectId: `urn:adsk.objects:os.object:bucket/${objectKey}` }));
+    const guest = visibleModels(bucket, 'guest');
+    check('guests see the 3 samples, structural first, with friendly names',
+        JSON.stringify(guest.map(m => m.label)) === '["Structural sample","Seaport Civic Center (architecture)","Snowdon Towers (architecture)"]', JSON.stringify(guest));
+    check('guests never see capture.js, drive_shaft.dwg or an uploaded client model', !guest.some(m => /capture|drive_shaft|client/.test(m.name)));
+    const member = visibleModels(bucket, 'member');
+    check('signed-in users see every model, but never a file that is not a model (capture.js)',
+        member.length === 5 && !member.some(m => m.name === 'capture.js') && member.some(m => m.name === 'client-tower.rvt'), JSON.stringify(member.map(m => m.name)));
+    check('each model keeps its file name (the address #Model.rvt still finds it)', guest[0].name === 'rstbasicsampleproject.rvt' && guest[0].urn.length > 10);
+}
+
 (async () => {
     // A stuck Autodesk download: axios gives up and the user is told to try again (503).
     const axios = require('axios');

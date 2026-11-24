@@ -1,0 +1,2 @@
+title: Export for Claude
+tooltip: Exports every model element and its parameters to a .zip of CSV files that Claude can query.

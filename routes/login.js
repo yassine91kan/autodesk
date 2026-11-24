@@ -39,10 +39,10 @@ const PUBLIC_PATHS = new Set([
     '/assets/images/favicon.svg'
 ]);
 
-// What guests may do besides reading pages (GET): ask questions and send the Viewer's
-// coordinates. Everything else (uploading a model, the older LangChain assistant, whose
+// What guests may do besides reading pages (GET): ask questions, send the Viewer's
+// coordinates, and send the landing page's contact form. Everything else (uploading a model, the older LangChain assistant, whose
 // tokens aren't counted) needs signing in.
-const GUEST_WRITES = new Set(['POST /ask_agent_simple', 'PUT /ask_agent_simple', 'POST /model_positions', 'POST /feedback', 'POST /login', 'POST /logout']);
+const GUEST_WRITES = new Set(['POST /ask_agent_simple', 'PUT /ask_agent_simple', 'POST /model_positions', 'POST /feedback', 'POST /contact', 'POST /login', 'POST /logout']);
 
 // Slows down password guessing: after 10 wrong passwords from one address,
 // that address must wait 15 minutes.
